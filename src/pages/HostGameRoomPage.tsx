@@ -13,6 +13,7 @@ import BackgroundContainer from "@/components/BackgroundContainer";
 import { useToast } from "@/components/ui/use-toast";
 import { Player } from "@/types";
 import TrophyAnimation from "@/components/TrophyAnimation";
+import CreatorAttribution from "@/components/CreatorAttribution";
 
 const PlayerStates = () => {
   const { activeGame, currentQuestion } = useGame();
