@@ -3,15 +3,15 @@
 // Multiplayer between host/player across tabs or devices will NOT sync in real time without backend like Supabase.
 // To truly connect host and player in real time, connect Lovable to Supabase via the Lovable Supabase integration!
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { GameRoom, Player, Quiz, Question } from "../types";
 import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
 
 // Simulate a server-side store for active games
 const activeGamesStore: { [key: string]: GameRoom } = {};
 
-// Poll interval in milliseconds - increased for more responsiveness
-const POLL_INTERVAL = 500;
+// Poll interval in milliseconds - increased for more real-time responsiveness
+const POLL_INTERVAL = 300;
 
 // Create some predefined test games
 const TEST_GAME_CODES = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
@@ -24,6 +24,7 @@ interface GameContextType {
   isHost: boolean;
   createGame: (quizId: string) => GameRoom;
   joinGame: (code: string, nickname: string) => { success: boolean; message?: string };
+  validateGameCode: (code: string) => { valid: boolean; message?: string };
   startGame: () => void;
   endGame: () => void;
   submitAnswer: (questionId: string, optionId: string) => void;
@@ -47,6 +48,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
 
   // Initialize the test games
   useEffect(() => {
@@ -76,6 +78,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const interval = setInterval(() => {
       refreshGameState();
+      setLastRefreshTime(Date.now());
     }, POLL_INTERVAL);
 
     return () => clearInterval(interval);
@@ -96,7 +99,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [activeGame, currentQuiz]);
 
   // Function to refresh game state from the "server"
-  const refreshGameState = () => {
+  const refreshGameState = useCallback(() => {
     if (!activeGame) return;
 
     const gameCode = activeGame.code;
@@ -123,9 +126,30 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     }
-  };
+  }, [activeGame, currentPlayer, isHost]);
 
-  const createGame = (quizId: string): GameRoom => {
+  // Validate game code function
+  const validateGameCode = useCallback((code: string): { valid: boolean; message?: string } => {
+    if (!code || code.length !== 6) {
+      return { valid: false, message: "Game code must be 6 characters" };
+    }
+    
+    const upperCode = code.trim().toUpperCase();
+    const gameExists = !!activeGamesStore[upperCode];
+    
+    if (!gameExists) {
+      return { valid: false, message: `Game with code ${upperCode} not found` };
+    }
+    
+    const game = activeGamesStore[upperCode];
+    if (game.status === "finished") {
+      return { valid: false, message: "This game has already ended" };
+    }
+    
+    return { valid: true };
+  }, []);
+
+  const createGame = useCallback((quizId: string): GameRoom => {
     // Fetch and set the quiz for the host
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
       const quiz = sampleQuizzes.find(q => q.id === quizId);
@@ -153,15 +177,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Add the new game to the store
     activeGamesStore[gameCode] = newGame;
     
-    // Log available games for debugging
+    console.log("Game created with code:", gameCode);
     console.log("Available games:", Object.keys(activeGamesStore));
     
     setActiveGame(newGame);
     setIsHost(true);
     return newGame;
-  };
+  }, []);
 
-  const joinGame = (code: string, nickname: string): { success: boolean; message?: string } => {
+  const joinGame = useCallback((code: string, nickname: string): { success: boolean; message?: string } => {
     if (!code) {
       return { success: false, message: "Please enter a game code" };
     }
@@ -172,25 +196,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const upperCode = code.trim().toUpperCase();
     
-    // Log available games for debugging
-    console.log("Trying to join game with code:", upperCode);
-    console.log("Available games:", Object.keys(activeGamesStore));
+    // Validate game code first
+    const validation = validateGameCode(upperCode);
+    if (!validation.valid) {
+      return { success: false, message: validation.message };
+    }
     
     const gameToJoin = activeGamesStore[upperCode];
-    if (!gameToJoin) {
-      return { 
-        success: false, 
-        message: `Game with code ${upperCode} not found. Please verify your game code and try again.`
-      };
-    }
-
-    // Check if game already started
-    if (gameToJoin.status === "finished") {
-      return { 
-        success: false, 
-        message: "This game has already ended. Please join another game."
-      };
-    }
 
     // Check if nickname is unique in this game
     if (gameToJoin.players.some(p => p.nickname.trim().toLowerCase() === nickname.trim().toLowerCase())) {
@@ -225,10 +237,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return { success: true };
-  };
+  }, [validateGameCode]);
 
   // Start the game
-  const startGame = () => {
+  const startGame = useCallback(() => {
     if (activeGame) {
       const updatedGame: GameRoom = {
         ...activeGame,
@@ -239,10 +251,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       activeGamesStore[activeGame.code] = updatedGame;
       setActiveGame(updatedGame);
     }
-  };
+  }, [activeGame]);
 
   // End the game
-  const endGame = () => {
+  const endGame = useCallback(() => {
     if (activeGame) {
       const updatedGame: GameRoom = {
         ...activeGame,
@@ -252,10 +264,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       activeGamesStore[activeGame.code] = updatedGame;
       setActiveGame(updatedGame);
     }
-  };
+  }, [activeGame]);
 
   // Submit an answer to a question
-  const submitAnswer = (questionId: string, optionId: string) => {
+  const submitAnswer = useCallback((questionId: string, optionId: string) => {
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;
 
     const isCorrect = optionId === currentQuestion.correctOption;
@@ -299,10 +311,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       activeGamesStore[activeGame.code] = updatedGame;
       setActiveGame(updatedGame);
     }
-  };
+  }, [activeGame, currentPlayer, currentQuestion, currentQuiz]);
 
   // Move to the next question
-  const nextQuestion = () => {
+  const nextQuestion = useCallback(() => {
     if (!activeGame || !currentQuiz) return;
 
     const nextIndex = activeGame.currentQuestionIndex + 1;
@@ -318,7 +330,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       activeGamesStore[activeGame.code] = updatedGame;
       setActiveGame(updatedGame);
     }
-  };
+  }, [activeGame, currentQuiz, endGame]);
 
   const value = {
     activeGame,
@@ -328,6 +340,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isHost,
     createGame,
     joinGame,
+    validateGameCode,
     startGame,
     endGame,
     submitAnswer,

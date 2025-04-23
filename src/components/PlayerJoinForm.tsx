@@ -7,7 +7,7 @@ import { useGame } from "@/contexts/GameContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { use3DTilt } from "@/utils/animationUtils";
-import { AlertCircle, Check, Info } from "lucide-react";
+import { AlertCircle, Check, Info, Loader } from "lucide-react";
 
 const PlayerJoinForm: React.FC = () => {
   const [gameCode, setGameCode] = useState("");
@@ -15,7 +15,8 @@ const PlayerJoinForm: React.FC = () => {
   const [isJoining, setIsJoining] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isValidCode, setIsValidCode] = useState<boolean | null>(null);
-  const { joinGame } = useGame();
+  const [isValidating, setIsValidating] = useState(false);
+  const { joinGame, validateGameCode } = useGame();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
@@ -25,16 +26,35 @@ const PlayerJoinForm: React.FC = () => {
   const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
 
   useEffect(() => {
-    // Basic client-side validation
+    // Reset validation state when user types
+    if (gameCode.length > 0) {
+      setIsValidCode(null);
+      setErrorMessage(null);
+    }
+    
+    // Basic client-side validation for format
     if (gameCode.length === 6) {
-      // Format matches expected pattern
-      setIsValidCode(true);
+      setIsValidating(true);
+      
+      // Validate the game code with a small delay to simulate network request
+      const timeoutId = setTimeout(() => {
+        const validationResult = validateGameCode(gameCode);
+        setIsValidCode(validationResult.valid);
+        if (!validationResult.valid) {
+          setErrorMessage(validationResult.message || "Invalid game code");
+        } else {
+          setErrorMessage(null);
+        }
+        setIsValidating(false);
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
     } else if (gameCode.length > 0) {
       setIsValidCode(false);
     } else {
       setIsValidCode(null);
     }
-  }, [gameCode]);
+  }, [gameCode, validateGameCode]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +99,6 @@ const PlayerJoinForm: React.FC = () => {
 
   const handleDemoCode = () => {
     setGameCode(randomDemoCode);
-    setIsValidCode(true);
     toast({
       title: "Demo code applied!",
       description: `Using code: ${randomDemoCode}`,
@@ -97,7 +116,7 @@ const PlayerJoinForm: React.FC = () => {
       <CardContent className="pt-6">
         <form onSubmit={handleJoin} className="space-y-4">
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-quiz-dark">Join a Quiz Game</h2>
+            <h2 className="text-xl font-bold text-quiz-dark dark:text-white">Join a Quiz Game</h2>
             <p className="text-gray-500 dark:text-gray-300 text-sm">Enter the game code and your nickname to join</p>
             <button 
               type="button" 
@@ -110,7 +129,7 @@ const PlayerJoinForm: React.FC = () => {
           </div>
           
           {errorMessage && (
-            <div className="bg-destructive/15 border border-destructive/30 text-destructive rounded-md px-3 py-2 flex items-center gap-2 animate-fade-in">
+            <div className="bg-destructive/15 border border-destructive/30 text-destructive dark:text-red-300 rounded-md px-3 py-2 flex items-center gap-2 animate-fade-in">
               <AlertCircle size={16} className="shrink-0" />
               <p className="text-sm">{errorMessage}</p>
             </div>
@@ -133,11 +152,15 @@ const PlayerJoinForm: React.FC = () => {
                 }}
                 maxLength={6}
               />
-              {isValidCode === true && (
+              {isValidating ? (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-500">
+                  <Loader size={20} className="animate-spin" />
+                </div>
+              ) : isValidCode === true ? (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
                   <Check size={20} />
                 </div>
-              )}
+              ) : null}
             </div>
             
             <div className="transform transition-all duration-300 hover:scale-105">
@@ -155,9 +178,14 @@ const PlayerJoinForm: React.FC = () => {
           <Button
             type="submit"
             className="quiz-btn-primary w-full transform transition-all duration-300 hover:scale-105 animate-pulse-scale"
-            disabled={isJoining}
+            disabled={isJoining || isValidating}
           >
-            {isJoining ? "Joining..." : "Join Game"}
+            {isJoining ? (
+              <>
+                <Loader size={16} className="mr-2 animate-spin" />
+                Joining...
+              </>
+            ) : "Join Game"}
           </Button>
         </form>
       </CardContent>
