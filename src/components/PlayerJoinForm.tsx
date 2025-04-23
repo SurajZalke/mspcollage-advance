@@ -25,8 +25,8 @@ const PlayerJoinForm: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      if (gameCode.length !== 6) {
-        throw new Error("Game code must be 6 characters");
+      if (gameCode.trim().length !== 6) {
+        throw new Error("Game code must be exactly 6 characters");
       }
       
       if (!nickname.trim()) {
@@ -42,7 +42,7 @@ const PlayerJoinForm: React.FC = () => {
         });
         navigate("/game-room");
       } else {
-        throw new Error("Game not found. Check your game code.");
+        throw new Error("Game not found. Please verify your game code and try again.");
       }
     } catch (error: any) {
       setErrorMessage(error.message);

@@ -110,16 +110,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const joinGame = (code: string, nickname: string): boolean => {
     if (!code || !nickname) return false;
-    const upperCode = code.toUpperCase();
+    
+    const upperCode = code.trim().toUpperCase();
+    
     const gameToJoin = activeGamesStore[upperCode];
-
     if (!gameToJoin) {
+      console.log(`Game with code ${upperCode} not found. Available games:`, Object.keys(activeGamesStore));
       return false;
     }
 
-    // Prevent duplicate nickname join
     if (gameToJoin.players.some(p => p.nickname.trim().toLowerCase() === nickname.trim().toLowerCase())) {
-      // Player already joined, disallow
+      console.log(`Nickname ${nickname} already taken in game ${upperCode}`);
       return false;
     }
 
@@ -133,7 +134,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentPlayer(newPlayer);
     setIsHost(false);
 
-    // Add player to the game on the "server"
     gameToJoin.players.push(newPlayer);
     activeGamesStore[upperCode] = {...gameToJoin};
 
