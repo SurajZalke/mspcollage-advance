@@ -1,6 +1,12 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { GameRoom, Player, Quiz, Question } from "../types";
 import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
+import { use3DTilt } from "../utils/animationUtils";
+
+// Simulate a server-side store for active games
+// This allows both host and players to see the same game state
+const activeGamesStore: { [key: string]: GameRoom } = {};
 
 interface GameContextType {
   activeGame: GameRoom | null;
@@ -14,6 +20,7 @@ interface GameContextType {
   endGame: () => void;
   submitAnswer: (questionId: string, optionId: string) => void;
   nextQuestion: () => void;
+  refreshGameState: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -32,6 +39,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
+  
+  // Polling interval for game state updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshGameState();
+    }, 2000); // Poll every 2 seconds
+    
+    return () => clearInterval(interval);
+  }, [activeGame]);
 
   useEffect(() => {
     if (activeGame && currentQuiz && activeGame.status === "active") {
@@ -46,7 +62,31 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeGame, currentQuiz]);
 
+  // Function to refresh game state from the "server"
+  const refreshGameState = () => {
+    if (!activeGame) return;
+    
+    const gameCode = activeGame.code;
+    const storedGame = activeGamesStore[gameCode];
+    
+    if (storedGame) {
+      // Update local state with latest game state from "server"
+      setActiveGame(storedGame);
+      
+      // If we're not the host, make sure we have the current quiz
+      if (!isHost && storedGame.quizId) {
+        import('../utils/gameUtils').then(({ sampleQuizzes }) => {
+          const quiz = sampleQuizzes.find(q => q.id === storedGame.quizId);
+          if (quiz) {
+            setCurrentQuiz(quiz);
+          }
+        });
+      }
+    }
+  };
+
   const createGame = (quizId: string): GameRoom => {
+    // Load the quiz data
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
       const quiz = sampleQuizzes.find(q => q.id === quizId);
       if (quiz) {
@@ -65,80 +105,83 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentQuestionIndex: -1
     };
     
+    // Store game in "server" store
+    activeGamesStore[gameCode] = newGame;
+    
     setActiveGame(newGame);
     setIsHost(true);
+    console.log(`Game created with code: ${gameCode}`);
     return newGame;
   };
 
   const joinGame = (code: string, nickname: string): boolean => {
     if (!code || !nickname) return false;
     
-    if (!activeGame) {
-      import('../utils/gameUtils').then(({ sampleQuizzes }) => {
-        setCurrentQuiz(sampleQuizzes[0]);
-      });
-
-      const newPlayer: Player = {
-        id: generatePlayerId(),
-        nickname,
-        score: 0,
-        answers: []
-      };
-      
-      setCurrentPlayer(newPlayer);
-      
-      const newGame: GameRoom = {
-        id: `game_${Math.random().toString(36).substr(2, 9)}`,
-        code: code,
-        hostId: "mockHostId",
-        quizId: "quiz1",
-        players: [newPlayer],
-        status: "waiting",
-        currentQuestionIndex: -1
-      };
-      
-      setActiveGame(newGame);
-      return true;
-    } else {
-      const newPlayer: Player = {
-        id: generatePlayerId(),
-        nickname,
-        score: 0,
-        answers: []
-      };
-      
-      setCurrentPlayer(newPlayer);
-      
-      setActiveGame(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          players: [...prev.players, newPlayer]
-        };
-      });
-      
-      return true;
+    // Check if the game exists in our "server" store
+    const gameToJoin = activeGamesStore[code.toUpperCase()];
+    
+    if (!gameToJoin) {
+      console.log("Game not found with code:", code);
+      return false;
     }
+    
+    const newPlayer: Player = {
+      id: generatePlayerId(),
+      nickname,
+      score: 0,
+      answers: []
+    };
+    
+    setCurrentPlayer(newPlayer);
+    setIsHost(false);
+    
+    // Add player to the game on the "server"
+    gameToJoin.players.push(newPlayer);
+    activeGamesStore[code.toUpperCase()] = gameToJoin;
+    
+    // Update local state
+    setActiveGame(gameToJoin);
+    
+    // Load the quiz data
+    import('../utils/gameUtils').then(({ sampleQuizzes }) => {
+      const quiz = sampleQuizzes.find(q => q.id === gameToJoin.quizId);
+      if (quiz) {
+        setCurrentQuiz(quiz);
+      }
+    });
+    
+    console.log(`Player ${nickname} joined game ${code}`);
+    return true;
   };
 
   const startGame = () => {
     if (activeGame) {
-      setActiveGame({
+      const updatedGame = {
         ...activeGame,
         status: "active",
         currentQuestionIndex: 0,
         startTime: new Date()
-      });
+      };
+      
+      // Update in "server" store
+      activeGamesStore[activeGame.code] = updatedGame;
+      
+      setActiveGame(updatedGame);
     }
   };
 
   const endGame = () => {
     if (activeGame) {
-      setActiveGame({
+      const updatedGame = {
         ...activeGame,
         status: "finished",
         endTime: new Date()
-      });
+      };
+      
+      // Update in "server" store
+      activeGamesStore[activeGame.code] = updatedGame;
+      
+      setActiveGame(updatedGame);
     }
   };
 
@@ -162,6 +205,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timeToAnswer
     };
     
+    // Update the player's data
     const updatedPlayer = {
       ...currentPlayer,
       score: currentPlayer.score + scoreChange,
@@ -170,14 +214,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setCurrentPlayer(updatedPlayer);
     
-    const updatedPlayers = activeGame.players.map(p => 
-      p.id === currentPlayer.id ? updatedPlayer : p
-    );
-    
-    setActiveGame({
-      ...activeGame,
-      players: updatedPlayers
-    });
+    // Update the game on the "server"
+    const gameToUpdate = activeGamesStore[activeGame.code];
+    if (gameToUpdate) {
+      const updatedPlayers = gameToUpdate.players.map(p => 
+        p.id === currentPlayer.id ? updatedPlayer : p
+      );
+      
+      const updatedGame = {
+        ...gameToUpdate,
+        players: updatedPlayers
+      };
+      
+      activeGamesStore[activeGame.code] = updatedGame;
+      setActiveGame(updatedGame);
+    }
   };
 
   const nextQuestion = () => {
@@ -188,10 +239,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (nextIndex >= currentQuiz.questions.length) {
       endGame();
     } else {
-      setActiveGame({
+      const updatedGame = {
         ...activeGame,
         currentQuestionIndex: nextIndex
-      });
+      };
+      
+      // Update in "server" store
+      activeGamesStore[activeGame.code] = updatedGame;
+      
+      setActiveGame(updatedGame);
     }
   };
 
@@ -206,7 +262,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     startGame,
     endGame,
     submitAnswer,
-    nextQuestion
+    nextQuestion,
+    refreshGameState
   };
 
   return (

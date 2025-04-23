@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { use3DTilt } from "@/utils/animationUtils";
 
 interface GameCodeDisplayProps {
   code: string;
@@ -8,12 +9,19 @@ interface GameCodeDisplayProps {
 }
 
 const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) => {
+  const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
+  
   return (
-    <Card className="quiz-card text-center">
+    <Card 
+      ref={cardRef} 
+      onMouseMove={handleMouseMove} 
+      onMouseLeave={resetTilt}
+      className="quiz-card text-center transition-all duration-300 hover:shadow-xl"
+    >
       <CardContent className="pt-6 space-y-4">
         <div>
           <h3 className="text-lg font-medium text-gray-700">Game Code</h3>
-          <div className="text-4xl font-bold tracking-wider mt-2 text-quiz-primary">
+          <div className="text-4xl font-bold tracking-wider mt-2 text-quiz-primary animate-pulse-scale">
             {code}
           </div>
         </div>

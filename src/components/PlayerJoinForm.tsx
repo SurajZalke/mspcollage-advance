@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useGame } from "@/contexts/GameContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { use3DTilt } from "@/utils/animationUtils";
 
 const PlayerJoinForm: React.FC = () => {
   const [gameCode, setGameCode] = useState("");
@@ -14,6 +15,7 @@ const PlayerJoinForm: React.FC = () => {
   const { joinGame } = useGame();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +39,7 @@ const PlayerJoinForm: React.FC = () => {
         });
         navigate("/game-room");
       } else {
-        throw new Error("Failed to join game. Check your game code.");
+        throw new Error("Game not found. Check your game code.");
       }
     } catch (error: any) {
       toast({
@@ -51,7 +53,12 @@ const PlayerJoinForm: React.FC = () => {
   };
 
   return (
-    <Card className="quiz-card shadow-lg w-full max-w-md mx-auto">
+    <Card 
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={resetTilt}
+      className="quiz-card shadow-lg w-full max-w-md mx-auto transition-all duration-300 hover:shadow-xl"
+    >
       <CardContent className="pt-6">
         <form onSubmit={handleJoin} className="space-y-4">
           <div className="space-y-2">
@@ -60,7 +67,7 @@ const PlayerJoinForm: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            <div>
+            <div className="transform transition-all duration-300 hover:scale-105">
               <Input
                 type="text"
                 placeholder="GAME CODE"
@@ -71,7 +78,7 @@ const PlayerJoinForm: React.FC = () => {
               />
             </div>
             
-            <div>
+            <div className="transform transition-all duration-300 hover:scale-105">
               <Input
                 type="text"
                 placeholder="Your nickname"
@@ -85,7 +92,7 @@ const PlayerJoinForm: React.FC = () => {
           
           <Button
             type="submit"
-            className="quiz-btn-primary w-full"
+            className="quiz-btn-primary w-full transform transition-all duration-300 hover:scale-105 animate-pulse-scale"
             disabled={isJoining}
           >
             {isJoining ? "Joining..." : "Join Game"}
