@@ -36,16 +36,16 @@ const PlayerGameRoomPage: React.FC = () => {
   if (!activeGame || !currentPlayer) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-100">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-[#1a1f2c] dark:via-[#31137c] dark:to-[#4b287e]">
+      <header className="bg-white dark:bg-gray-900/60 shadow">
         <div className="container mx-auto p-4 flex justify-between items-center">
           <Logo />
           
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-gray-300">
               Game Code: <span className="font-bold text-quiz-primary">{activeGame.code}</span>
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-gray-300">
               Player: <span className="font-medium">{currentPlayer.nickname}</span>
             </span>
           </div>
@@ -54,22 +54,22 @@ const PlayerGameRoomPage: React.FC = () => {
       
       <main className="container mx-auto p-4 py-8">
         {activeGame.status === "waiting" ? (
-          <div className="max-w-lg mx-auto quiz-card p-8 text-center">
+          <div className="max-w-lg mx-auto quiz-card p-8 text-center glass-dark">
             <h2 className="text-2xl font-bold text-quiz-dark mb-4">
               Waiting for host to start
             </h2>
             
-            <div className="w-24 h-24 mx-auto mb-8 animate-pulse-scale quiz-gradient-bg rounded-full flex items-center justify-center">
+            <div className="w-24 h-24 mx-auto mb-8 animate-pulse-scale quiz-gradient-bg rounded-full flex items-center justify-center attractive-glow">
               <span className="text-white text-3xl font-bold">
                 {activeGame.players.length}
               </span>
             </div>
             
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               The quiz will begin when the host starts the game. Get ready!
             </p>
             
-            <Button variant="outline" onClick={handleLeaveGame}>
+            <Button variant="outline" onClick={handleLeaveGame} className="hover:bg-red-500/10 hover:text-red-500 transition-colors">
               Leave Game
             </Button>
           </div>
@@ -79,11 +79,11 @@ const PlayerGameRoomPage: React.FC = () => {
               <>
                 <div className="mb-4 flex justify-between items-center">
                   <div>
-                    <span className="text-sm font-medium text-gray-600">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                       Score: <span className="text-quiz-primary font-bold">{currentPlayer.score}</span>
                     </span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleLeaveGame}>
+                  <Button variant="outline" size="sm" onClick={handleLeaveGame} className="hover:bg-red-500/10 hover:text-red-500 transition-colors">
                     Leave Game
                   </Button>
                 </div>
@@ -94,13 +94,13 @@ const PlayerGameRoomPage: React.FC = () => {
                 />
               </>
             ) : (
-              <div className="quiz-card p-6 text-center">
+              <div className="quiz-card glass-dark p-6 text-center">
                 <h2 className="text-xl font-bold text-quiz-dark mb-4">
                   Waiting for next question
                 </h2>
                 <div className="py-8">
-                  <div className="w-16 h-16 mx-auto mb-6 animate-pulse quiz-gradient-bg rounded-full"></div>
-                  <p className="text-gray-600">
+                  <div className="w-16 h-16 mx-auto mb-6 animate-pulse quiz-gradient-bg rounded-full attractive-glow"></div>
+                  <p className="text-gray-600 dark:text-gray-300">
                     The host is preparing the next question
                   </p>
                 </div>
@@ -108,14 +108,14 @@ const PlayerGameRoomPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="max-w-lg mx-auto quiz-card p-8 text-center">
+          <div className="max-w-lg mx-auto quiz-card glass-dark p-8 text-center">
             <h2 className="text-2xl font-bold text-quiz-dark mb-4">
               Quiz Ended
             </h2>
             
             <div className="py-6 mb-6">
               <p className="text-lg mb-2">Your final score</p>
-              <div className="text-4xl font-bold text-quiz-primary">
+              <div className="text-4xl font-bold text-quiz-primary animate-pulse-scale">
                 {currentPlayer.score}
               </div>
             </div>

@@ -1,4 +1,3 @@
-
 // Note: Frontend-only implementation (works in ONE SESSION).
 // Multiplayer between host/player across tabs or devices will NOT sync in real time without backend like Supabase.
 // To truly connect host and player in real time, connect Lovable to Supabase via the Lovable Supabase integration!
@@ -6,7 +5,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { GameRoom, Player, Quiz, Question } from "../types";
 import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
-import { use3DTilt } from "../utils/animationUtils";
 
 // Simulate a server-side store for active games
 const activeGamesStore: { [key: string]: GameRoom } = {};
