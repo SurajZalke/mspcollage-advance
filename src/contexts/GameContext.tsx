@@ -156,9 +156,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const startGame = () => {
     if (activeGame) {
-      const updatedGame = {
+      const updatedGame: GameRoom = {
         ...activeGame,
-        status: "active",
+        status: "active" as "waiting" | "active" | "finished",
         currentQuestionIndex: 0,
         startTime: new Date()
       };
@@ -172,9 +172,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const endGame = () => {
     if (activeGame) {
-      const updatedGame = {
+      const updatedGame: GameRoom = {
         ...activeGame,
-        status: "finished",
+        status: "finished" as "waiting" | "active" | "finished",
         endTime: new Date()
       };
       
@@ -239,7 +239,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (nextIndex >= currentQuiz.questions.length) {
       endGame();
     } else {
-      const updatedGame = {
+      const updatedGame: GameRoom = {
         ...activeGame,
         currentQuestionIndex: nextIndex
       };
