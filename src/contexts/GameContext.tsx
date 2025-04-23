@@ -1,3 +1,4 @@
+
 // Note: Frontend-only implementation (works in ONE SESSION).
 // Multiplayer between host/player across tabs or devices will NOT sync in real time without backend like Supabase.
 // To truly connect host and player in real time, connect Lovable to Supabase via the Lovable Supabase integration!
@@ -8,6 +9,12 @@ import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
 
 // Simulate a server-side store for active games
 const activeGamesStore: { [key: string]: GameRoom } = {};
+
+// Poll interval in milliseconds
+const POLL_INTERVAL = 1500;
+
+// Create some predefined test games
+const TEST_GAME_CODE = "TEST12";
 
 interface GameContextType {
   activeGame: GameRoom | null;
@@ -41,15 +48,35 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
 
-  // Polling interval for game state updates
+  // Initialize the test game
+  useEffect(() => {
+    // Create the test game if it doesn't exist
+    if (!activeGamesStore[TEST_GAME_CODE]) {
+      const testGame: GameRoom = {
+        id: "test_game_id",
+        code: TEST_GAME_CODE,
+        hostId: "test_host_id",
+        quizId: "quiz1",
+        players: [],
+        status: "waiting",
+        currentQuestionIndex: -1
+      };
+      
+      activeGamesStore[TEST_GAME_CODE] = testGame;
+      console.log("Test game created with code:", TEST_GAME_CODE);
+    }
+  }, []);
+
+  // Polling interval for game state updates - more frequent for better real-time feeling
   useEffect(() => {
     const interval = setInterval(() => {
       refreshGameState();
-    }, 2000);
+    }, POLL_INTERVAL);
 
     return () => clearInterval(interval);
   }, [activeGame]);
 
+  // Update current question whenever game or quiz changes
   useEffect(() => {
     if (activeGame && currentQuiz && activeGame.status === "active") {
       const questionIndex = activeGame.currentQuestionIndex;
@@ -72,6 +99,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (storedGame) {
       setActiveGame(storedGame);
+      
+      // If we're not the host, we need to fetch quiz data too
       if (!isHost && storedGame.quizId) {
         import('../utils/gameUtils').then(({ sampleQuizzes }) => {
           const quiz = sampleQuizzes.find(q => q.id === storedGame.quizId);
@@ -79,6 +108,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setCurrentQuiz(quiz);
           }
         });
+      }
+      
+      // Update player data if we're a player
+      if (!isHost && currentPlayer) {
+        const updatedPlayerData = storedGame.players.find(p => p.id === currentPlayer.id);
+        if (updatedPlayerData) {
+          setCurrentPlayer(updatedPlayerData);
+        }
       }
     }
   };
@@ -91,7 +128,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    const gameCode = generateGameCode();
+    // Create a unique game code that doesn't exist yet
+    let gameCode;
+    do {
+      gameCode = generateGameCode();
+    } while (activeGamesStore[gameCode]);
+
     const newGame: GameRoom = {
       id: `game_${Math.random().toString(36).substr(2, 9)}`,
       code: gameCode,
@@ -102,21 +144,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentQuestionIndex: -1
     };
 
-    // Create a test game for demo purposes
-    const testGameCode = "TEST12";
-    const testGame: GameRoom = {
-      id: "test_game_id",
-      code: testGameCode,
-      hostId: "test_host_id",
-      quizId: "quiz1",
-      players: [],
-      status: "waiting",
-      currentQuestionIndex: -1
-    };
-    
-    // Add both games to the store
+    // Add the new game to the store
     activeGamesStore[gameCode] = newGame;
-    activeGamesStore[testGameCode] = testGame;
     
     // Log available games for debugging
     console.log("Available games:", Object.keys(activeGamesStore));
@@ -141,34 +170,33 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("Trying to join game with code:", upperCode);
     console.log("Available games:", Object.keys(activeGamesStore));
     
-    // Add demo game code if not exists (for testing only)
-    if (!activeGamesStore["TEST12"]) {
-      activeGamesStore["TEST12"] = {
-        id: "test_game_id",
-        code: "TEST12",
-        hostId: "test_host_id",
-        quizId: "quiz1",
-        players: [],
-        status: "waiting",
-        currentQuestionIndex: -1
-      };
-    }
-    
     const gameToJoin = activeGamesStore[upperCode];
     if (!gameToJoin) {
       return { 
         success: false, 
-        message: `Game with code ${upperCode} not found. Available codes: ${Object.keys(activeGamesStore).join(", ") || "none"}`
+        message: `Game with code ${upperCode} not found. Please verify your game code and try again.`
       };
     }
 
+    // Check if game already started
+    if (gameToJoin.status === "finished") {
+      return { 
+        success: false, 
+        message: "This game has already ended. Please join another game."
+      };
+    }
+
+    // Check if nickname is unique in this game
     if (gameToJoin.players.some(p => p.nickname.trim().toLowerCase() === nickname.trim().toLowerCase())) {
-      return { success: false, message: `Nickname ${nickname} already taken in this game` };
+      return { 
+        success: false, 
+        message: `Nickname "${nickname}" is already taken in this game. Please choose another nickname.`
+      };
     }
 
     const newPlayer: Player = {
       id: generatePlayerId(),
-      nickname,
+      nickname: nickname.trim(),
       score: 0,
       answers: []
     };
@@ -176,11 +204,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentPlayer(newPlayer);
     setIsHost(false);
 
+    // Add player to the game
     gameToJoin.players.push(newPlayer);
     activeGamesStore[upperCode] = {...gameToJoin};
 
-    setActiveGame(activeGamesStore[upperCode]);
+    setActiveGame(gameToJoin);
 
+    // Load quiz data
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
       const quiz = sampleQuizzes.find(q => q.id === gameToJoin.quizId);
       if (quiz) {
@@ -191,6 +221,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
+  // Start the game
   const startGame = () => {
     if (activeGame) {
       const updatedGame: GameRoom = {
@@ -204,6 +235,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // End the game
   const endGame = () => {
     if (activeGame) {
       const updatedGame: GameRoom = {
@@ -216,17 +248,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Submit an answer to a question
   const submitAnswer = (questionId: string, optionId: string) => {
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;
 
     const isCorrect = optionId === currentQuestion.correctOption;
-    const timeToAnswer = 10;
+    const timeToAnswer = Math.floor(Math.random() * 10) + 1; // Simulate time taken 1-10 seconds
 
     let scoreChange = 0;
     if (isCorrect) {
-      scoreChange = currentQuestion.points;
+      // Calculate score based on time taken
+      const timeBonus = Math.max(0, (currentQuestion.timeLimit - timeToAnswer) / currentQuestion.timeLimit);
+      scoreChange = currentQuestion.points + Math.floor(currentQuestion.points * timeBonus * 0.5);
     } else if (currentQuiz.hasNegativeMarking) {
-      scoreChange = -(currentQuestion.points * currentQuiz.negativeMarkingValue / 100);
+      scoreChange = -Math.floor(currentQuestion.points * currentQuiz.negativeMarkingValue / 100);
     }
 
     const newAnswer = {
@@ -260,6 +295,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Move to the next question
   const nextQuestion = () => {
     if (!activeGame || !currentQuiz) return;
 

@@ -9,12 +9,12 @@ interface BackgroundContainerProps {
 const BackgroundContainer: React.FC<BackgroundContainerProps> = ({ children, className = "" }) => {
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   
-  // Define background colors
+  // Enhanced vibrant background colors
   const backgrounds = [
-    "bg-red-600", // Red
-    "bg-green-600", // Green 
-    "bg-blue-600", // Blue
-    "bg-black", // Black
+    "bg-gradient-to-br from-red-600 to-pink-500", // Red to pink gradient
+    "bg-gradient-to-br from-green-600 to-emerald-400", // Green gradient 
+    "bg-gradient-to-br from-blue-700 to-cyan-500", // Blue gradient
+    "bg-gradient-to-br from-purple-800 to-indigo-900", // Deep purple gradient
   ];
   
   // Change background color every 10 seconds

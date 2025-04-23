@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,22 +7,50 @@ import { useGame } from "@/contexts/GameContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { use3DTilt } from "@/utils/animationUtils";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Check } from "lucide-react";
 
 const PlayerJoinForm: React.FC = () => {
   const [gameCode, setGameCode] = useState("");
   const [nickname, setNickname] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isValidCode, setIsValidCode] = useState<boolean | null>(null);
   const { joinGame } = useGame();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
 
+  // Demo code for easy testing
+  const demoCode = "TEST12";
+
+  useEffect(() => {
+    // Basic client-side validation
+    if (gameCode.length === 6) {
+      // Format matches expected pattern
+      setIsValidCode(true);
+    } else if (gameCode.length > 0) {
+      setIsValidCode(false);
+    } else {
+      setIsValidCode(null);
+    }
+  }, [gameCode]);
+
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsJoining(true);
     setErrorMessage(null);
+
+    if (!gameCode) {
+      setErrorMessage("Please enter a game code");
+      setIsJoining(false);
+      return;
+    }
+
+    if (!nickname) {
+      setErrorMessage("Please enter a nickname");
+      setIsJoining(false);
+      return;
+    }
 
     try {      
       const result = joinGame(gameCode.toUpperCase(), nickname.trim());
@@ -48,19 +76,30 @@ const PlayerJoinForm: React.FC = () => {
     }
   };
 
+  const handleDemoCode = () => {
+    setGameCode(demoCode);
+    setIsValidCode(true);
+  };
+
   return (
     <Card 
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={resetTilt}
-      className="quiz-card shadow-lg w-full max-w-md mx-auto transition-all duration-300 hover:shadow-xl glass-dark"
+      className="quiz-card shadow-lg w-full max-w-md mx-auto transition-all duration-300 hover:shadow-xl glass-dark border-2 border-indigo-300/30"
     >
       <CardContent className="pt-6">
         <form onSubmit={handleJoin} className="space-y-4">
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-quiz-dark">Join a Quiz Game</h2>
             <p className="text-gray-500 dark:text-gray-300 text-sm">Enter the game code and your nickname to join</p>
-            <p className="text-amber-500 text-sm animate-pulse">Try code: TEST12</p>
+            <button 
+              type="button" 
+              onClick={handleDemoCode}
+              className="text-amber-500 text-sm animate-pulse hover:text-amber-600 focus:outline-none underline"
+            >
+              Try demo code: TEST12
+            </button>
           </div>
           
           {errorMessage && (
@@ -71,15 +110,27 @@ const PlayerJoinForm: React.FC = () => {
           )}
           
           <div className="space-y-4">
-            <div className="transform transition-all duration-300 hover:scale-105">
+            <div className="relative">
               <Input
                 type="text"
                 placeholder="GAME CODE"
-                className="quiz-input text-center text-2xl font-bold tracking-widest uppercase"
+                className={`quiz-input text-center text-2xl font-bold tracking-widest uppercase ${
+                  isValidCode === true ? 'border-green-500 focus:ring-green-500' : 
+                  isValidCode === false ? 'border-red-500 focus:ring-red-500' : ''
+                }`}
                 value={gameCode}
-                onChange={(e) => setGameCode(e.target.value)}
+                onChange={(e) => {
+                  // Allow only alphanumeric characters and limit to 6 chars
+                  const value = e.target.value.replace(/[^A-Za-z0-9]/g, '').substring(0, 6);
+                  setGameCode(value.toUpperCase());
+                }}
                 maxLength={6}
               />
+              {isValidCode === true && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
+                  <Check size={20} />
+                </div>
+              )}
             </div>
             
             <div className="transform transition-all duration-300 hover:scale-105">

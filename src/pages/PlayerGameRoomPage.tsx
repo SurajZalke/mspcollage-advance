@@ -6,6 +6,7 @@ import Logo from "@/components/Logo";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import { Button } from "@/components/ui/button";
 import BackgroundContainer from "@/components/BackgroundContainer";
+import { AlertCircle, Award, Clock } from "lucide-react";
 
 const PlayerGameRoomPage: React.FC = () => {
   const { 
@@ -14,9 +15,19 @@ const PlayerGameRoomPage: React.FC = () => {
     currentQuiz, 
     currentQuestion,
     submitAnswer,
-    isHost
+    isHost,
+    refreshGameState
   } = useGame();
   const navigate = useNavigate();
+
+  // More frequent refreshes for better real-time experience
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshGameState();
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [refreshGameState]);
 
   // Redirect if not in an active game
   useEffect(() => {
@@ -44,7 +55,7 @@ const PlayerGameRoomPage: React.FC = () => {
           
           <div className="flex items-center space-x-4">
             <span className="text-sm text-white">
-              Game Code: <span className="font-bold text-quiz-primary">{activeGame.code}</span>
+              Game Code: <span className="font-bold text-quiz-primary animate-pulse">{activeGame.code}</span>
             </span>
             <span className="text-sm text-white">
               Player: <span className="font-medium">{currentPlayer.nickname}</span>
@@ -60,10 +71,13 @@ const PlayerGameRoomPage: React.FC = () => {
               Waiting for host to start
             </h2>
             
-            <div className="w-24 h-24 mx-auto mb-8 animate-pulse-scale quiz-gradient-bg rounded-full flex items-center justify-center attractive-glow">
+            <div className="relative w-24 h-24 mx-auto mb-8 animate-pulse-scale quiz-gradient-bg rounded-full flex items-center justify-center attractive-glow">
               <span className="text-white text-3xl font-bold">
                 {activeGame.players.length}
               </span>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center animate-bounce">
+                <span className="text-green-900 text-sm font-bold">+1</span>
+              </div>
             </div>
             
             <p className="text-gray-600 dark:text-gray-300 mb-6">
@@ -79,9 +93,10 @@ const PlayerGameRoomPage: React.FC = () => {
             {currentQuestion ? (
               <>
                 <div className="mb-4 flex justify-between items-center">
-                  <div>
+                  <div className="flex items-center gap-2">
+                    <Award className="text-yellow-500" size={20} />
                     <span className="text-sm font-medium text-white">
-                      Score: <span className="text-quiz-primary font-bold">{currentPlayer.score}</span>
+                      Score: <span className="text-quiz-primary font-bold text-lg">{currentPlayer.score}</span>
                     </span>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleLeaveGame} className="hover:bg-red-500/10 hover:text-red-500 transition-colors">
@@ -100,7 +115,9 @@ const PlayerGameRoomPage: React.FC = () => {
                   Waiting for next question
                 </h2>
                 <div className="py-8">
-                  <div className="w-16 h-16 mx-auto mb-6 animate-pulse quiz-gradient-bg rounded-full attractive-glow"></div>
+                  <div className="w-16 h-16 mx-auto mb-6 animate-pulse quiz-gradient-bg rounded-full flex items-center justify-center attractive-glow">
+                    <Clock size={24} className="text-white" />
+                  </div>
                   <p className="text-gray-600 dark:text-gray-300">
                     The host is preparing the next question
                   </p>
