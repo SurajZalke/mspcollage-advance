@@ -1,10 +1,11 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
 import Logo from "@/components/Logo";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import { Button } from "@/components/ui/button";
+import BackgroundContainer from "@/components/BackgroundContainer";
 
 const PlayerGameRoomPage: React.FC = () => {
   const { 
@@ -16,24 +17,6 @@ const PlayerGameRoomPage: React.FC = () => {
     isHost
   } = useGame();
   const navigate = useNavigate();
-  const [currentBgIndex, setCurrentBgIndex] = useState(0);
-  
-  // Define background colors
-  const backgrounds = [
-    "bg-red-600", // Red
-    "bg-green-600", // Green 
-    "bg-blue-600", // Blue
-    "bg-black", // Black
-  ];
-  
-  // Change background color every 10 seconds
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setCurrentBgIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-    }, 10000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
 
   // Redirect if not in an active game
   useEffect(() => {
@@ -54,7 +37,7 @@ const PlayerGameRoomPage: React.FC = () => {
   if (!activeGame || !currentPlayer) return null;
 
   return (
-    <div className={`min-h-screen transition-colors duration-1000 ${backgrounds[currentBgIndex]} dark:bg-gradient-to-br dark:from-[#1a1f2c] dark:via-[#31137c] dark:to-[#4b287e]`}>
+    <BackgroundContainer>
       <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
         <div className="container mx-auto p-4 flex justify-between items-center">
           <Logo />
@@ -144,7 +127,7 @@ const PlayerGameRoomPage: React.FC = () => {
           </div>
         )}
       </main>
-    </div>
+    </BackgroundContainer>
   );
 };
 

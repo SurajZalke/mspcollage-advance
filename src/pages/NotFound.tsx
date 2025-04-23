@@ -1,31 +1,13 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import BackgroundContainer from "@/components/BackgroundContainer";
 
 const NotFound: React.FC = () => {
-  const [currentBgIndex, setCurrentBgIndex] = useState(0);
-  
-  // Define background colors
-  const backgrounds = [
-    "bg-red-600", // Red
-    "bg-green-600", // Green 
-    "bg-blue-600", // Blue
-    "bg-black", // Black
-  ];
-  
-  // Change background color every 10 seconds
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setCurrentBgIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-    }, 10000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
-  
   return (
-    <div className={`min-h-screen flex flex-col justify-center items-center p-4 transition-colors duration-1000 ${backgrounds[currentBgIndex]} dark:bg-gradient-to-br dark:from-[#1a1f2c] dark:via-[#432f7b] dark:to-[#7efaf8]`}>
+    <BackgroundContainer className="flex flex-col justify-center items-center p-4">
       <div className="mb-8">
         <Logo size="lg" />
       </div>
@@ -41,7 +23,7 @@ const NotFound: React.FC = () => {
           </Button>
         </Link>
       </div>
-    </div>
+    </BackgroundContainer>
   );
 };
 

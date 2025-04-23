@@ -19,30 +19,22 @@ const PlayerJoinForm: React.FC = () => {
   const { toast } = useToast();
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsJoining(true);
     setErrorMessage(null);
 
-    try {
-      if (gameCode.trim().length !== 6) {
-        throw new Error("Game code must be exactly 6 characters");
-      }
+    try {      
+      const result = joinGame(gameCode.toUpperCase(), nickname.trim());
       
-      if (!nickname.trim()) {
-        throw new Error("Please enter a nickname");
-      }
-      
-      const joined = joinGame(gameCode.toUpperCase(), nickname.trim());
-      
-      if (joined) {
+      if (result.success) {
         toast({
           title: "Success!",
           description: "You've joined the game!",
         });
         navigate("/game-room");
       } else {
-        throw new Error("Game not found. Please verify your game code and try again.");
+        throw new Error(result.message || "Failed to join game");
       }
     } catch (error: any) {
       setErrorMessage(error.message);
@@ -68,6 +60,7 @@ const PlayerJoinForm: React.FC = () => {
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-quiz-dark">Join a Quiz Game</h2>
             <p className="text-gray-500 dark:text-gray-300 text-sm">Enter the game code and your nickname to join</p>
+            <p className="text-amber-500 text-sm animate-pulse">Try code: TEST12</p>
           </div>
           
           {errorMessage && (

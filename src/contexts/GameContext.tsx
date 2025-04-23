@@ -16,7 +16,7 @@ interface GameContextType {
   currentQuestion: Question | null;
   isHost: boolean;
   createGame: (quizId: string) => GameRoom;
-  joinGame: (code: string, nickname: string) => boolean;
+  joinGame: (code: string, nickname: string) => { success: boolean; message?: string };
   startGame: () => void;
   endGame: () => void;
   submitAnswer: (questionId: string, optionId: string) => void;
@@ -102,26 +102,68 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentQuestionIndex: -1
     };
 
+    // Create a test game for demo purposes
+    const testGameCode = "TEST12";
+    const testGame: GameRoom = {
+      id: "test_game_id",
+      code: testGameCode,
+      hostId: "test_host_id",
+      quizId: "quiz1",
+      players: [],
+      status: "waiting",
+      currentQuestionIndex: -1
+    };
+    
+    // Add both games to the store
     activeGamesStore[gameCode] = newGame;
+    activeGamesStore[testGameCode] = testGame;
+    
+    // Log available games for debugging
+    console.log("Available games:", Object.keys(activeGamesStore));
+    
     setActiveGame(newGame);
     setIsHost(true);
     return newGame;
   };
 
-  const joinGame = (code: string, nickname: string): boolean => {
-    if (!code || !nickname) return false;
+  const joinGame = (code: string, nickname: string): { success: boolean; message?: string } => {
+    if (!code) {
+      return { success: false, message: "Please enter a game code" };
+    }
+    
+    if (!nickname) {
+      return { success: false, message: "Please enter a nickname" };
+    }
     
     const upperCode = code.trim().toUpperCase();
     
+    // Log available games for debugging
+    console.log("Trying to join game with code:", upperCode);
+    console.log("Available games:", Object.keys(activeGamesStore));
+    
+    // Add demo game code if not exists (for testing only)
+    if (!activeGamesStore["TEST12"]) {
+      activeGamesStore["TEST12"] = {
+        id: "test_game_id",
+        code: "TEST12",
+        hostId: "test_host_id",
+        quizId: "quiz1",
+        players: [],
+        status: "waiting",
+        currentQuestionIndex: -1
+      };
+    }
+    
     const gameToJoin = activeGamesStore[upperCode];
     if (!gameToJoin) {
-      console.log(`Game with code ${upperCode} not found. Available games:`, Object.keys(activeGamesStore));
-      return false;
+      return { 
+        success: false, 
+        message: `Game with code ${upperCode} not found. Available codes: ${Object.keys(activeGamesStore).join(", ") || "none"}`
+      };
     }
 
     if (gameToJoin.players.some(p => p.nickname.trim().toLowerCase() === nickname.trim().toLowerCase())) {
-      console.log(`Nickname ${nickname} already taken in game ${upperCode}`);
-      return false;
+      return { success: false, message: `Nickname ${nickname} already taken in this game` };
     }
 
     const newPlayer: Player = {
@@ -146,7 +188,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    return true;
+    return { success: true };
   };
 
   const startGame = () => {
