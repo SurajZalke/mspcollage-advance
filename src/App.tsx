@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { GameProvider } from "./contexts/GameContext";
+import { useEffect } from "react";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -18,28 +19,35 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <GameProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/host-login" element={<HostLoginPage />} />
-              <Route path="/host-signup" element={<HostSignupPage />} />
-              <Route path="/host-dashboard" element={<HostDashboardPage />} />
-              <Route path="/host-game-room" element={<HostGameRoomPage />} />
-              <Route path="/game-room" element={<PlayerGameRoomPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </GameProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  useEffect(() => {
+    // Enable dark mode by default for eye-catching effect.
+    document.documentElement.classList.add("dark");
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <GameProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/host-login" element={<HostLoginPage />} />
+                <Route path="/host-signup" element={<HostSignupPage />} />
+                <Route path="/host-dashboard" element={<HostDashboardPage />} />
+                <Route path="/host-game-room" element={<HostGameRoomPage />} />
+                <Route path="/game-room" element={<PlayerGameRoomPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </GameProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

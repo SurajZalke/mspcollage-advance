@@ -155,7 +155,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (activeGame) {
       const updatedGame: GameRoom = {
         ...activeGame,
-        status: "active",
+        status: "active" as "active",
         currentQuestionIndex: 0,
         startTime: new Date()
       };
@@ -168,7 +168,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (activeGame) {
       const updatedGame: GameRoom = {
         ...activeGame,
-        status: "finished",
+        status: "finished" as "finished",
         endTime: new Date()
       };
       activeGamesStore[activeGame.code] = updatedGame;
