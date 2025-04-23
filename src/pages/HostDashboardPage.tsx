@@ -44,7 +44,7 @@ const HostDashboardPage: React.FC = () => {
     // If the user is logged in, filter to only show their quizzes and public quizzes
     if (currentUser) {
       const filteredQuizzes = combinedQuizzes.filter(quiz => 
-        !quiz.authorId || quiz.authorId === currentUser.id
+        !quiz.createdBy || quiz.createdBy === currentUser.id
       );
       setQuizzes(filteredQuizzes);
     } else {
@@ -231,3 +231,4 @@ const HostDashboardPage: React.FC = () => {
 };
 
 export default HostDashboardPage;
+

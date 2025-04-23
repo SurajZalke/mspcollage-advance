@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,22 +128,20 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     
     setIsSubmitting(true);
     
-    // In a real app, you would save this quiz to your database
     const newQuiz = {
       id: `quiz_${Date.now()}`,
       title,
       description,
       subject,
       grade,
-      authorId: currentUser?.id,
-      authorName: currentUser?.name,
+      createdBy: currentUser?.id || "",
+      topic: subject,
       questions,
       hasNegativeMarking: false,
       negativeMarkingValue: 0,
-      createdAt: new Date().toISOString()
+      createdAt: new Date(),
     };
     
-    // For this demo, we'll save it to localStorage
     const savedQuizzes = JSON.parse(localStorage.getItem("customQuizzes") || "[]");
     savedQuizzes.push(newQuiz);
     localStorage.setItem("customQuizzes", JSON.stringify(savedQuizzes));
