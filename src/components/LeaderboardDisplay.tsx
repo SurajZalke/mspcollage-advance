@@ -1,20 +1,36 @@
 
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Player } from "@/types";
+import { Player, Quiz } from "@/types";
 
+// Add prop for quiz info, to display marking
 interface LeaderboardDisplayProps {
   players: Player[];
+  activeQuiz?: Quiz;
 }
 
-const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players }) => {
-  // Sort players by score (highest first)
+const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players, activeQuiz }) => {
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+  // Show marking type summary
+  const markingType = activeQuiz
+    ? activeQuiz.hasNegativeMarking
+      ? `Negative Marking: -${activeQuiz.negativeMarkingValue}%`
+      : "Simple Marking"
+    : undefined;
 
   return (
     <Card className="quiz-card">
       <CardHeader className="pb-2">
-        <CardTitle className="text-center text-quiz-dark">Leaderboard</CardTitle>
+        <CardTitle className="text-center text-quiz-dark">
+          Leaderboard
+        </CardTitle>
+        {markingType && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+            {markingType}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {sortedPlayers.length === 0 ? (
@@ -28,7 +44,7 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players }) => {
                 key={player.id}
                 className={`flex items-center justify-between p-3 rounded-lg ${
                   index === 0 
-                    ? "bg-yellow-50 border border-yellow-200" 
+                    ? "bg-yellow-50 border border-yellow-200 animate-winner"
                     : index === 1 
                     ? "bg-gray-50 border border-gray-200"
                     : index === 2 
@@ -61,3 +77,4 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players }) => {
 };
 
 export default LeaderboardDisplay;
+
