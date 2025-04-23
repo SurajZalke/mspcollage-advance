@@ -7,6 +7,9 @@ const Index = () => {
     // Always use dark mode for better color experience
     document.documentElement.classList.add("dark");
     
+    // Update page title to match the new branding
+    document.title = "MSP COLLEGE - Quiz Game";
+    
     // Monitor system dark mode preference, but keep dark mode
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     

@@ -17,7 +17,7 @@ import { Player } from "@/types";
 const PlayerStates = () => {
   const { activeGame, currentQuestion } = useGame();
   const [showResults, setShowResults] = useState(false);
-  const toast = useToast();
+  const { toast } = useToast();
 
   if (!activeGame) return null;
 
@@ -28,7 +28,7 @@ const PlayerStates = () => {
 
   const toggleResults = () => {
     setShowResults(!showResults);
-    toast.toast({
+    toast({
       title: showResults ? "Results hidden" : "Results shown",
       description: showResults ? "Player answers are now hidden" : "Player answers are now visible",
     });
@@ -191,9 +191,8 @@ const WaitingRoom: React.FC<{
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState } = useGame();
+  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState, createGame } = useGame();
   const navigate = useNavigate();
-  const [showResults, setShowResults] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -244,10 +243,44 @@ const HostGameRoomPage: React.FC = () => {
     };
   }, [refreshGameState]);
 
+  // Add this useEffect to help debug the loading issue
+  useEffect(() => {
+    console.log("HostGameRoomPage rendered with currentUser:", currentUser);
+    console.log("HostGameRoomPage rendered with activeGame:", activeGame);
+    console.log("HostGameRoomPage rendered with isHost:", isHost);
+    
+    // If activeGame is null and we have a user, try to navigate back to dashboard
+    if (!activeGame && currentUser && isHost === false) {
+      console.log("No active game found but user is logged in, redirecting to dashboard");
+      toast({
+        title: "No active game found",
+        description: "Redirecting to dashboard",
+        variant: "destructive"
+      });
+      // Give a small delay before redirecting
+      setTimeout(() => navigate("/host-dashboard"), 1500);
+    }
+  }, [currentUser, activeGame, isHost, navigate, toast]);
+
+  // Debugging useEffect to log when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log("HostGameRoomPage unmounting");
+    };
+  }, []);
+
+  // Modified redirection logic
   useEffect(() => {
     if (!currentUser) {
+      console.log("No user found, redirecting to login");
       navigate("/host-login");
-    } else if (!activeGame || !isHost) {
+      return;
+    }
+    
+    // Only redirect if both activeGame is null and isHost is false
+    // This prevents redirection during initial loading when these values are being set
+    if (currentUser && !activeGame && isHost === false) {
+      console.log("User logged in but no active game and not hosting, redirecting to dashboard");
       navigate("/host-dashboard");
     }
   }, [currentUser, activeGame, isHost, navigate]);
@@ -261,7 +294,6 @@ const HostGameRoomPage: React.FC = () => {
   };
 
   const handleNextQuestion = () => {
-    setShowResults(false);
     nextQuestion();
     
     toast({
@@ -291,7 +323,48 @@ const HostGameRoomPage: React.FC = () => {
     }, 600);
   };
 
-  if (!currentUser || !activeGame || !currentQuiz) return null;
+  // Early return with loading state
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Loading...</h2>
+          <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // If we have a user but no active game and aren't in host mode, show an error message
+  if (!activeGame && !isHost) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <h2 className="text-xl font-bold mb-4 text-red-500">No Active Game</h2>
+          <p className="mb-6 text-gray-600 dark:text-gray-300">
+            There's no active game session. Please create a new game from the dashboard.
+          </p>
+          <Button 
+            onClick={() => navigate("/host-dashboard")}
+            className="quiz-btn-primary"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuiz) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Loading quiz information...</h2>
+          <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden">
@@ -329,7 +402,7 @@ const HostGameRoomPage: React.FC = () => {
         <main className="container mx-auto p-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-              {activeGame.status === "waiting" ? (
+              {activeGame?.status === "waiting" ? (
                 <WaitingRoom 
                   players={activeGame.players}
                   onStartGame={handleStartGame}
@@ -337,7 +410,7 @@ const HostGameRoomPage: React.FC = () => {
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
                 />
-              ) : activeGame.status === "active" ? (
+              ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-quiz-dark dark:text-white">
@@ -371,7 +444,7 @@ const HostGameRoomPage: React.FC = () => {
                         question={currentQuestion} 
                         onAnswer={() => {}} 
                         showTimer={false}
-                        isHostView
+                        isHostView={true}
                       />
                     </div>
                   )}
@@ -397,16 +470,20 @@ const HostGameRoomPage: React.FC = () => {
             </div>
             
             <div className="space-y-6">
-              <div className="transform hover:scale-[1.02] transition-all duration-300">
-                <GameCodeDisplay
-                  code={activeGame.code}
-                  playerCount={activeGame.players.length}
-                />
-              </div>
-              
-              <div className="transform hover:scale-[1.02] transition-all duration-300">
-                <LeaderboardDisplay players={activeGame.players} />
-              </div>
+              {activeGame && (
+                <>
+                  <div className="transform hover:scale-[1.02] transition-all duration-300">
+                    <GameCodeDisplay
+                      code={activeGame.code}
+                      playerCount={activeGame.players.length}
+                    />
+                  </div>
+                  
+                  <div className="transform hover:scale-[1.02] transition-all duration-300">
+                    <LeaderboardDisplay players={activeGame.players} />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </main>
