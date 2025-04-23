@@ -11,6 +11,8 @@ interface QuestionDisplayProps {
   showTimer?: boolean;
   isHostView?: boolean;
   disableOptions?: boolean;
+  markingType?: string;
+  negativeValue?: number;
 }
 
 const QuestionDisplay: React.FC<QuestionDisplayProps> = ({ 
@@ -18,7 +20,9 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   onAnswer,
   showTimer = true,
   isHostView = false,
-  disableOptions = false
+  disableOptions = false,
+  markingType,
+  negativeValue
 }) => {
   const [timeLeft, setTimeLeft] = useState(question.timeLimit);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -113,6 +117,13 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         </div>
         
         <div className="text-center text-sm text-gray-500">
+          {markingType && (
+            <span className="text-xs font-medium mr-2">
+              {markingType === "negative" ? 
+                `Negative marking (-${negativeValue}%)` : 
+                "Simple marking"}
+            </span>
+          )}
           Points: {question.points} {isAnswered && "• Question submitted"}
         </div>
       </CardContent>

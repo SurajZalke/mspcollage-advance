@@ -345,9 +345,7 @@ const HostGameRoomPage: React.FC = () => {
     if (!currentQuiz && activeGame?.quizId) {
       import('@/utils/gameUtils').then(({ sampleQuizzes }) => {
         const foundQuiz = sampleQuizzes.find(q => q.id === activeGame.quizId);
-        if (foundQuiz) {
-          if (typeof setCurrentQuiz === "function") setCurrentQuiz(foundQuiz);
-        }
+        console.log("Found quiz:", foundQuiz);
       });
     }
   }, [activeGame, currentQuiz]);
