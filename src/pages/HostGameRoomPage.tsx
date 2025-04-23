@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Player } from "@/types";
 import TrophyAnimation from "@/components/TrophyAnimation";
 import CreatorAttribution from "@/components/CreatorAttribution";
+import { Progress } from "@/components/ui/progress";
 
 const PlayerStates = () => {
   const { activeGame, currentQuestion } = useGame();
@@ -119,13 +120,19 @@ const PlayerStates = () => {
   );
 };
 
-const WaitingRoom: React.FC<{
+const WaitingRoom = React.memo(({ 
+  players, 
+  onStartGame, 
+  cardRef, 
+  handleMouseMove, 
+  resetTilt 
+}: {
   players: Player[];
   onStartGame: () => void;
   cardRef: React.RefObject<HTMLDivElement>;
   handleMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   resetTilt: () => void;
-}> = ({ players, onStartGame, cardRef, handleMouseMove, resetTilt }) => {
+}) => {
   return (
     <div 
       ref={cardRef}
@@ -187,7 +194,7 @@ const WaitingRoom: React.FC<{
       )}
     </div>
   );
-};
+});
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -196,6 +203,7 @@ const HostGameRoomPage: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -223,15 +231,15 @@ const HostGameRoomPage: React.FC = () => {
     const interval = setInterval(() => {
       refreshGameState();
       setConnectionStatus("connected");
-    }, 500);
+    }, 300);
 
     const connectionCheck = setInterval(() => {
       const simulateNetworkDelay = Math.random() > 0.9;
       if (simulateNetworkDelay) {
         setConnectionStatus("connecting");
-        setTimeout(() => setConnectionStatus("connected"), 800);
+        setTimeout(() => setConnectionStatus("connected"), 500);
       }
-    }, 5000);
+    }, 3000);
     
     return () => {
       clearInterval(interval);
@@ -344,21 +352,38 @@ const HostGameRoomPage: React.FC = () => {
 
   useEffect(() => {
     if (!currentQuiz && activeGame?.quizId) {
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 100) progress = 100;
+        setLoadingProgress(progress);
+      }, 300);
+
       import('@/utils/gameUtils').then(({ sampleQuizzes }) => {
         const foundQuiz = sampleQuizzes.find(q => q.id === activeGame.quizId);
-        console.log("Found quiz:", foundQuiz);
+        if (foundQuiz) {
+          clearInterval(progressInterval);
+          setLoadingProgress(100);
+        }
       });
+
+      return () => clearInterval(progressInterval);
     }
   }, [activeGame, currentQuiz]);
 
   if (!currentQuiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-4">Loading quiz information...</h2>
-          <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent mx-auto"></div>
+      <BackgroundContainer className="flex items-center justify-center min-h-screen">
+        <div className="text-center p-8 bg-black/20 backdrop-blur-md rounded-lg w-full max-w-md">
+          <h2 className="text-2xl font-bold text-white mb-6">Loading quiz information...</h2>
+          <Progress value={loadingProgress} className="w-full h-3 mb-8" />
+          <div className="animate-spin h-12 w-12 border-4 border-indigo-500 rounded-full border-t-transparent mx-auto"></div>
+          <p className="text-white/80 mt-6">
+            Please wait while we prepare your quiz experience...
+          </p>
+          <CreatorAttribution />
         </div>
-      </div>
+      </BackgroundContainer>
     );
   }
 
@@ -452,7 +477,7 @@ const HostGameRoomPage: React.FC = () => {
                         showTimer={false}
                         isHostView={true}
                         markingType={currentQuiz.hasNegativeMarking ? "negative" : "simple"}
-                        negativeValue={currentQuiz.negativeMarkingValue}
+                        negativeValue={currentQuiz.negativeMarkingValue || 0}
                       />
                     </div>
                   )}
