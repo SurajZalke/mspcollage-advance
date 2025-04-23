@@ -68,8 +68,8 @@ export const scienceSubjects = [
   }
 ];
 
-// Sample quiz questions
-export const sampleQuestions = [
+// Sample quiz questions - Physics
+const physicsQuestions = [
   {
     id: "q1",
     text: "What is Newton's First Law of Motion?",
@@ -85,6 +85,36 @@ export const sampleQuestions = [
   },
   {
     id: "q2",
+    text: "Which scientist formulated the theory of relativity?",
+    options: [
+      { id: "a", text: "Isaac Newton" },
+      { id: "b", text: "Galileo Galilei" },
+      { id: "c", text: "Albert Einstein" },
+      { id: "d", text: "Niels Bohr" }
+    ],
+    correctOption: "c",
+    points: 10,
+    timeLimit: 20
+  },
+  {
+    id: "q3",
+    text: "What is the SI unit of electric current?",
+    options: [
+      { id: "a", text: "Volt" },
+      { id: "b", text: "Watt" },
+      { id: "c", text: "Ampere" },
+      { id: "d", text: "Ohm" }
+    ],
+    correctOption: "c",
+    points: 10,
+    timeLimit: 20
+  }
+];
+
+// Sample quiz questions - Chemistry
+const chemistryQuestions = [
+  {
+    id: "q1",
     text: "Which of the following is an organic compound?",
     options: [
       { id: "a", text: "NaCl" },
@@ -97,7 +127,37 @@ export const sampleQuestions = [
     timeLimit: 20
   },
   {
+    id: "q2",
+    text: "What is the pH of a neutral solution?",
+    options: [
+      { id: "a", text: "0" },
+      { id: "b", text: "7" },
+      { id: "c", text: "14" },
+      { id: "d", text: "1" }
+    ],
+    correctOption: "b",
+    points: 10,
+    timeLimit: 20
+  },
+  {
     id: "q3",
+    text: "Which element has the symbol 'Au'?",
+    options: [
+      { id: "a", text: "Silver" },
+      { id: "b", text: "Gold" },
+      { id: "c", text: "Aluminum" },
+      { id: "d", text: "Argon" }
+    ],
+    correctOption: "b",
+    points: 10,
+    timeLimit: 20
+  }
+];
+
+// Sample quiz questions - Biology
+const biologyQuestions = [
+  {
+    id: "q1",
     text: "What is the powerhouse of the cell?",
     options: [
       { id: "a", text: "Nucleus" },
@@ -106,6 +166,75 @@ export const sampleQuestions = [
       { id: "d", text: "Golgi Apparatus" }
     ],
     correctOption: "b",
+    points: 10,
+    timeLimit: 20
+  },
+  {
+    id: "q2",
+    text: "Which of the following is NOT a type of blood cell?",
+    options: [
+      { id: "a", text: "Red blood cells" },
+      { id: "b", text: "White blood cells" },
+      { id: "c", text: "Platelets" },
+      { id: "d", text: "Stem cells" }
+    ],
+    correctOption: "d",
+    points: 10,
+    timeLimit: 20
+  },
+  {
+    id: "q3",
+    text: "What is the process by which plants make their own food?",
+    options: [
+      { id: "a", text: "Respiration" },
+      { id: "b", text: "Photosynthesis" },
+      { id: "c", text: "Digestion" },
+      { id: "d", text: "Excretion" }
+    ],
+    correctOption: "b",
+    points: 10,
+    timeLimit: 20
+  }
+];
+
+// Sample quiz questions - Mathematics
+const mathQuestions = [
+  {
+    id: "q1",
+    text: "What is the value of π (pi) to two decimal places?",
+    options: [
+      { id: "a", text: "3.14" },
+      { id: "b", text: "3.12" },
+      { id: "c", text: "3.16" },
+      { id: "d", text: "3.18" }
+    ],
+    correctOption: "a",
+    points: 10,
+    timeLimit: 20
+  },
+  {
+    id: "q2",
+    text: "What is the formula for the area of a circle?",
+    options: [
+      { id: "a", text: "πr" },
+      { id: "b", text: "2πr" },
+      { id: "c", text: "πr²" },
+      { id: "d", text: "2πr²" }
+    ],
+    correctOption: "c",
+    points: 10,
+    timeLimit: 20
+  },
+  {
+    id: "q3",
+    text: "What is the Pythagorean theorem?",
+    options: [
+      { id: "a", text: "a² + b² = c²" },
+      { id: "b", text: "a + b = c" },
+      { id: "c", text: "a² - b² = c²" },
+      { id: "d", text: "a × b = c" }
+    ],
+    correctOption: "a",
     points: 10,
     timeLimit: 20
   }
@@ -122,7 +251,7 @@ export const sampleQuizzes = [
     topic: "Mechanics",
     createdBy: "host1",
     createdAt: new Date(),
-    questions: sampleQuestions.slice(0, 2),
+    questions: physicsQuestions,
     hasNegativeMarking: true,
     negativeMarkingValue: 25
   },
@@ -135,8 +264,34 @@ export const sampleQuizzes = [
     topic: "Botany",
     createdBy: "host1",
     createdAt: new Date(),
-    questions: sampleQuestions.slice(2),
+    questions: biologyQuestions,
     hasNegativeMarking: false,
     negativeMarkingValue: 0
+  },
+  {
+    id: "quiz3",
+    title: "Chemistry Fundamentals",
+    description: "Basic chemistry concepts for high school students",
+    subject: "Chemistry",
+    grade: "11" as const,
+    topic: "Organic",
+    createdBy: "host1",
+    createdAt: new Date(),
+    questions: chemistryQuestions,
+    hasNegativeMarking: true,
+    negativeMarkingValue: 20
+  },
+  {
+    id: "quiz4",
+    title: "Mathematics Challenge",
+    description: "Test your math skills with these challenging questions",
+    subject: "Mathematics",
+    grade: "12" as const,
+    topic: "Algebra",
+    createdBy: "host1",
+    createdAt: new Date(),
+    questions: mathQuestions,
+    hasNegativeMarking: true,
+    negativeMarkingValue: 15
   }
 ];

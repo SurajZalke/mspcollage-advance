@@ -1,26 +1,21 @@
-
 import React, { useEffect } from "react";
 import HomePage from "./HomePage";
 
 const Index = () => {
-  // Monitor system dark mode preference
+  // Apply dark mode by default for better color scheme
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    // Apply theme based on system preference
-    const applyTheme = (isDark: boolean) => {
-      if (isDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-    
-    // Initial setup - force dark mode for better color experience
+    // Always use dark mode for better color experience
     document.documentElement.classList.add("dark");
     
-    // Listen for changes
-    const listener = (event: MediaQueryListEvent) => applyTheme(event.matches);
+    // Monitor system dark mode preference, but keep dark mode
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    // Listen for changes - but we'll keep dark mode even if they change
+    const listener = () => {
+      // We're always using dark mode for this app
+      document.documentElement.classList.add("dark");
+    };
+    
     mediaQuery.addEventListener('change', listener);
     
     return () => mediaQuery.removeEventListener('change', listener);

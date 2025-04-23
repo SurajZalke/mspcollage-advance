@@ -14,6 +14,7 @@ const BackgroundContainer: React.FC<BackgroundContainerProps> = ({ children, cla
     "bg-gradient-to-br from-red-700 via-red-500 to-orange-400", // Red to orange
     "bg-gradient-to-br from-emerald-700 via-green-500 to-lime-300", // Green gradient 
     "bg-gradient-to-br from-indigo-900 via-blue-600 to-cyan-400", // Blue gradient
+    "bg-gradient-to-br from-purple-800 via-violet-600 to-pink-500", // Purple gradient
     "bg-gradient-to-br from-black via-gray-800 to-gray-700", // Black gradient
   ];
   

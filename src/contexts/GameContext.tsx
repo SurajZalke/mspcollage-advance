@@ -11,10 +11,10 @@ import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
 const activeGamesStore: { [key: string]: GameRoom } = {};
 
 // Poll interval in milliseconds - increased for more responsiveness
-const POLL_INTERVAL = 1000;
+const POLL_INTERVAL = 500;
 
 // Create some predefined test games
-const TEST_GAME_CODES = ["TEST12", "DEMO01", "PLAY22"]; 
+const TEST_GAME_CODES = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
 
 interface GameContextType {
   activeGame: GameRoom | null;
@@ -126,6 +126,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const createGame = (quizId: string): GameRoom => {
+    // Fetch and set the quiz for the host
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
       const quiz = sampleQuizzes.find(q => q.id === quizId);
       if (quiz) {

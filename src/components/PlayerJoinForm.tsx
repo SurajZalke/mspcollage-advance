@@ -21,7 +21,7 @@ const PlayerJoinForm: React.FC = () => {
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
 
   // Demo codes for easy testing
-  const demoCodes = ["TEST12", "DEMO01", "PLAY22"];
+  const demoCodes = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
   const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
 
   useEffect(() => {
