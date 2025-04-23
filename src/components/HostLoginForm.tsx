@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,24 +7,30 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
+import { AlertCircle, LogIn } from "lucide-react";
 
 const HostLoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { login, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isLoggedIn()) {
+      navigate("/host-dashboard");
+    }
+  }, [isLoggedIn, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!email || !password) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Input",
-        description: "Please enter both email and password.",
-      });
+      setError("Please enter both email and password");
       return;
     }
 
@@ -32,17 +38,9 @@ const HostLoginForm: React.FC = () => {
     
     try {
       await login(email, password);
-      toast({
-        title: "Welcome back!",
-        description: "You've successfully logged in.",
-      });
       navigate("/host-dashboard");
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: error.message,
-      });
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -53,16 +51,23 @@ const HostLoginForm: React.FC = () => {
       <CardContent className="pt-6">
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-quiz-dark">Host Login</h2>
-            <p className="text-gray-500 text-sm">Sign in to access your host dashboard</p>
+            <h2 className="text-xl font-bold text-quiz-dark dark:text-white">Host Login</h2>
+            <p className="text-gray-500 dark:text-gray-300 text-sm">Sign in to access your host dashboard</p>
           </div>
+          
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 p-3 rounded-md flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">{error}</span>
+            </div>
+          )}
           
           <div className="space-y-3">
             <div>
               <Input
                 type="email"
                 placeholder="Email"
-                className="quiz-input"
+                className="quiz-input dark:bg-gray-800 dark:border-gray-700"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -72,7 +77,7 @@ const HostLoginForm: React.FC = () => {
               <Input
                 type="password"
                 placeholder="Password"
-                className="quiz-input"
+                className="quiz-input dark:bg-gray-800 dark:border-gray-700"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -81,13 +86,26 @@ const HostLoginForm: React.FC = () => {
           
           <Button
             type="submit"
-            className="quiz-btn-primary w-full"
+            className="quiz-btn-primary w-full flex items-center justify-center gap-2"
             disabled={isLoading}
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Signing in...
+              </span>
+            ) : (
+              <>
+                <LogIn className="h-4 w-4" />
+                Sign In
+              </>
+            )}
           </Button>
           
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             Don't have an account?{" "}
             <Link to="/host-signup" className="text-quiz-primary hover:underline font-medium">
               Sign up

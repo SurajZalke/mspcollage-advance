@@ -4,15 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Logo from "@/components/Logo";
 import QuizCard from "@/components/QuizCard";
 import { useGame } from "@/contexts/GameContext";
 import { Quiz, ScienceSubject } from "@/types";
 import { scienceSubjects, sampleQuizzes } from "@/utils/gameUtils";
 import { useToast } from "@/components/ui/use-toast";
-import { Filter, Search, BookOpen, Users, Play, Award } from "lucide-react";
+import { Filter, Search, BookOpen, Users, Play, Award, Plus } from "lucide-react";
 import BackgroundContainer from "@/components/BackgroundContainer";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import CreateQuizForm from "@/components/CreateQuizForm";
 
 const HostDashboardPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -25,22 +27,30 @@ const HostDashboardPage: React.FC = () => {
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
-
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!currentUser) {
-      navigate("/host-login");
-    }
-  }, [currentUser, navigate]);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Load subjects and quizzes
   useEffect(() => {
     // Load subjects
     setSubjects(scienceSubjects);
     
-    // Load quizzes (in a real app, these would be fetched from a server)
-    setQuizzes(sampleQuizzes);
-  }, []);
+    // Load quizzes (combine sample quizzes with custom quizzes)
+    const combinedQuizzes = [...sampleQuizzes];
+    
+    // Load custom quizzes from localStorage if they exist
+    const customQuizzes = JSON.parse(localStorage.getItem("customQuizzes") || "[]");
+    combinedQuizzes.push(...customQuizzes);
+    
+    // If the user is logged in, filter to only show their quizzes and public quizzes
+    if (currentUser) {
+      const filteredQuizzes = combinedQuizzes.filter(quiz => 
+        !quiz.authorId || quiz.authorId === currentUser.id
+      );
+      setQuizzes(filteredQuizzes);
+    } else {
+      setQuizzes(sampleQuizzes); // Only show sample quizzes if not logged in
+    }
+  }, [currentUser, createDialogOpen]); // Re-run when dialog closes to refresh quizzes
 
   // Filter quizzes based on selected filters
   const filteredQuizzes = quizzes.filter(quiz => {
@@ -183,37 +193,24 @@ const HostDashboardPage: React.FC = () => {
             
             <TabsContent value="create-quiz">
               <div className="quiz-card p-6 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
-                <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Create a New Quiz</h2>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Create custom quizzes for your students by selecting a subject, grade level, and topic.
-                </p>
-                
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-6">
-                  <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-4">Choose a Subject and Topic</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {subjects.map((subject) => (
-                      <div key={subject.id} className="quiz-card p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm transform transition-all duration-300 hover:scale-105">
-                        <h4 className="font-bold text-quiz-dark dark:text-gray-200 mb-2">{subject.name}</h4>
-                        <ul className="text-sm space-y-1">
-                          {subject.topics.map((topic) => (
-                            <li key={topic.id} className="flex justify-between">
-                              <span className="dark:text-gray-300">{topic.name}</span>
-                              <span className="text-xs bg-quiz-light dark:bg-indigo-900 px-1 rounded text-quiz-secondary dark:text-indigo-300">
-                                {topic.quizCount} quizzes
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
                 <div className="text-center">
-                  <Button className="quiz-btn-primary">
-                    Create Custom Quiz
-                  </Button>
+                  <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Create a New Quiz</h2>
+                  <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+                    Create custom quizzes for your students by selecting a subject, grade level, and adding your own questions.
+                    All your created quizzes will appear in your "My Quizzes" tab.
+                  </p>
+                  
+                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="quiz-btn-primary flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create New Quiz
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl p-0">
+                      <CreateQuizForm onClose={() => setCreateDialogOpen(false)} />
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </TabsContent>

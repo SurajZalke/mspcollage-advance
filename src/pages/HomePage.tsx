@@ -1,128 +1,151 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
-import PlayerJoinForm from "@/components/PlayerJoinForm";
-import { Sparkles, Star, Zap } from "lucide-react";
 import BackgroundContainer from "@/components/BackgroundContainer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { LogIn, Play, Settings, Users } from "lucide-react";
 
 const HomePage: React.FC = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is logged in, redirect to dashboard
+  const handleHostClick = () => {
+    if (currentUser) {
+      navigate("/host-dashboard");
+    } else {
+      navigate("/host-login");
+    }
+  };
+
+  const handleJoinClick = () => {
+    navigate("/game-room");
+  };
+
   return (
-    <BackgroundContainer className="animate-gradient-x">
-      <div className="container mx-auto px-4 py-8 md:py-16">
-        <div className="flex justify-center mb-8 animate-float">
-          <Logo size="lg" />
-        </div>
+    <BackgroundContainer className="homepage-background">
+      <div className="min-h-screen flex flex-col">
+        <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-sm">
+          <div className="container mx-auto p-4 flex justify-between items-center">
+            <Logo />
+            
+            {currentUser ? (
+              <div className="space-x-2">
+                <Button 
+                  variant="ghost" 
+                  className="dark:text-white dark:hover:bg-white/10"
+                  onClick={() => navigate("/host-dashboard")}
+                >
+                  Dashboard
+                </Button>
+              </div>
+            ) : (
+              <div className="space-x-2">
+                <Button 
+                  variant="ghost" 
+                  className="dark:text-white dark:hover:bg-white/10"
+                  onClick={() => navigate("/host-login")}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </Button>
+                <Button 
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => navigate("/host-signup")}
+                >
+                  Host Sign Up
+                </Button>
+              </div>
+            )}
+          </div>
+        </header>
         
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white animate-pulse-scale drop-shadow-lg">
-              Interactive Science Quizzes for Grades 11-12
-            </h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
-              Join a quiz room or host your own science-based quizzes to enhance learning and assess knowledge.
+        <main className="container mx-auto flex-1 flex flex-col justify-center items-center p-4">
+          <div className="text-center mb-12 animate-fade-in">
+            <h1 className="text-5xl font-bold gradient-heading mb-4">Interactive Science Quiz Platform</h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Create and participate in engaging science quizzes for high school students. 
+              Perfect for classroom activities or remote learning.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-10">
-            <div className="flex flex-col items-center space-y-6">
-              <div className="w-full relative">
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center transform rotate-12 animate-pulse z-10">
-                  <Star size={20} className="text-yellow-900" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
+            <div className="quiz-card p-8 text-center transform hover:scale-105 transition-all duration-300 bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg hover:shadow-xl border border-indigo-100 dark:border-indigo-900/50">
+              <div className="mb-4">
+                <div className="mx-auto bg-indigo-100 dark:bg-indigo-900/50 w-16 h-16 rounded-full flex items-center justify-center">
+                  <Users className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <PlayerJoinForm />
               </div>
-              
-              <div className="text-center text-white/90 text-sm bg-black/30 p-2 rounded-lg backdrop-blur-sm">
-                Players don't need an account to join a quiz - just enter a game code!
-              </div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Join as Player</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                Enter a game code to join a quiz as a player. Compete with others and test your knowledge!
+              </p>
+              <Button onClick={handleJoinClick} className="quiz-btn-primary w-full">
+                <Play className="h-4 w-4 mr-2" />
+                Join Game
+              </Button>
             </div>
             
-            <div className="flex flex-col items-center space-y-6">
-              <div className="quiz-card w-full max-w-md p-6 text-center relative overflow-hidden glass-dark border-2 border-purple-300/30">
-                <div className="absolute -top-3 -left-3 w-12 h-12 bg-purple-400 rounded-full flex items-center justify-center transform -rotate-12 animate-float z-10">
-                  <Sparkles size={20} className="text-purple-900" />
-                </div>
-                
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/10 to-purple-500/10 z-0"></div>
-                
-                <div className="relative z-10">
-                  <h2 className="text-xl font-bold text-quiz-dark mb-4">Host a Quiz</h2>
-                  <p className="text-gray-600 mb-6">
-                    Create, customize and host interactive quizzes for your students or friends
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <Link to="/host-login">
-                      <Button className="quiz-btn-primary w-full relative group overflow-hidden">
-                        <span className="relative z-10">Sign In as Host</span>
-                        <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                      </Button>
-                    </Link>
-                    
-                    <Link to="/host-signup">
-                      <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/20 w-full">
-                        Create Host Account
-                      </Button>
-                    </Link>
-                  </div>
+            <div className="quiz-card p-8 text-center transform hover:scale-105 transition-all duration-300 bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg hover:shadow-xl border border-indigo-100 dark:border-indigo-900/50">
+              <div className="mb-4">
+                <div className="mx-auto bg-purple-100 dark:bg-purple-900/50 w-16 h-16 rounded-full flex items-center justify-center">
+                  <Settings className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
-              
-              <div className="text-center text-white/90 text-sm bg-black/30 p-2 rounded-lg backdrop-blur-sm">
-                Hosts can create and save quizzes, track results, and more
-              </div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Host a Game</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                Create your own quiz, invite players, and host an interactive learning session.
+              </p>
+              <Button onClick={handleHostClick} className="bg-purple-600 hover:bg-purple-700 text-white w-full">
+                {currentUser ? 'Go to Dashboard' : 'Host Sign In'}
+              </Button>
             </div>
           </div>
           
-          <div className="mt-16">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-white inline-flex items-center">
-                Science Stream Quiz Features
-                <Zap className="ml-2 text-yellow-500" size={24} />
-              </h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-pink-500 bg-black/30 backdrop-blur-md text-white">
-                <div className="text-center mb-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-red-500 text-white text-xl font-bold attractive-glow">
-                    1
-                  </div>
+          <div className="mt-16 text-center max-w-3xl">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              How It Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+              <div className="flex flex-col items-center">
+                <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">1</span>
                 </div>
-                <h3 className="text-lg font-bold text-center mb-2">Specialized Content</h3>
-                <p className="text-gray-200 text-center">
-                  Quizzes specifically for 11th and 12th grade science stream subjects
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Create Quiz</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-center">
+                  Teachers create custom quizzes with various question types
                 </p>
               </div>
-              
-              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-blue-500 bg-black/30 backdrop-blur-md text-white">
-                <div className="text-center mb-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white text-xl font-bold attractive-glow">
-                    2
-                  </div>
+              <div className="flex flex-col items-center">
+                <div className="bg-green-100 dark:bg-green-900/30 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                  <span className="text-xl font-bold text-green-600 dark:text-green-400">2</span>
                 </div>
-                <h3 className="text-lg font-bold text-center mb-2">Real-time Competition</h3>
-                <p className="text-gray-200 text-center">
-                  Engage students in competitive real-time quizzes with live leaderboards
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Share Code</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-center">
+                  Students join using a unique game code
                 </p>
               </div>
-              
-              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-green-500 bg-black/30 backdrop-blur-md text-white">
-                <div className="text-center mb-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white text-xl font-bold attractive-glow">
-                    3
-                  </div>
+              <div className="flex flex-col items-center">
+                <div className="bg-amber-100 dark:bg-amber-900/30 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                  <span className="text-xl font-bold text-amber-600 dark:text-amber-400">3</span>
                 </div>
-                <h3 className="text-lg font-bold text-center mb-2">Customizable Scoring</h3>
-                <p className="text-gray-200 text-center">
-                  Choose between standard and negative marking to suit different testing styles
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Play & Learn</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-center">
+                  Compete in real-time and see instant results
                 </p>
               </div>
             </div>
           </div>
-        </div>
+        </main>
+        
+        <footer className="bg-white/10 dark:bg-gray-900/60 py-4 backdrop-blur-sm">
+          <div className="container mx-auto text-center text-gray-600 dark:text-gray-400 text-sm">
+            <p>© 2025 Science Quiz Platform — Interactive learning tool for science education</p>
+          </div>
+        </footer>
       </div>
     </BackgroundContainer>
   );

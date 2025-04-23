@@ -1,43 +1,308 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
 import Logo from "@/components/Logo";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import { Button } from "@/components/ui/button";
 import BackgroundContainer from "@/components/BackgroundContainer";
-import { AlertCircle, Award, Clock, Wifi, WifiOff, RefreshCw, CheckCircle } from "lucide-react";
+import { AlertCircle, Award, Clock, Wifi, WifiOff, RefreshCw, CheckCircle, UserRound, LogIn, ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import confetti from 'canvas-confetti';
 
-const PlayerGameRoomPage: React.FC = () => {
-  const { 
-    activeGame, 
-    currentPlayer, 
-    currentQuiz, 
-    currentQuestion,
-    submitAnswer,
-    isHost,
-    refreshGameState
-  } = useGame();
+const JoinGameForm = () => {
+  const [gameCode, setGameCode] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isValidCode, setIsValidCode] = useState<boolean | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const { joinGame, validateGameCode } = useGame();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
-  const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
-  const [hasAnswered, setHasAnswered] = useState(false);
 
-  // More frequent refreshes for better real-time experience
+  // Demo codes for easy testing
+  const demoCodes = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
+  const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
+
   useEffect(() => {
-    setConnectionStatus("connecting");
-    const fetchInterval = setInterval(() => {
-      refreshGameState();
-      setLastUpdateTime(Date.now());
-      setConnectionStatus("connected");
-    }, 500); // Poll every 500ms for more real-time feeling
+    // Reset validation state when user types
+    if (gameCode.length > 0) {
+      setIsValidCode(null);
+      setErrorMessage(null);
+    }
     
-    // Simulate network status check
+    // Basic client-side validation for format
+    if (gameCode.length === 6) {
+      setIsValidating(true);
+      
+      // Validate the game code with a small delay to simulate network request
+      const timeoutId = setTimeout(() => {
+        const validationResult = validateGameCode(gameCode);
+        setIsValidCode(validationResult.valid);
+        if (!validationResult.valid) {
+          setErrorMessage(validationResult.message || "Invalid game code");
+        } else {
+          setErrorMessage(null);
+        }
+        setIsValidating(false);
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    } else if (gameCode.length > 0) {
+      setIsValidCode(false);
+    } else {
+      setIsValidCode(null);
+    }
+  }, [gameCode, validateGameCode]);
+
+  const handleJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsJoining(true);
+    setErrorMessage(null);
+
+    if (!gameCode) {
+      setErrorMessage("Please enter a game code");
+      setIsJoining(false);
+      return;
+    }
+
+    if (!nickname) {
+      setErrorMessage("Please enter a nickname");
+      setIsJoining(false);
+      return;
+    }
+
+    try {      
+      const result = joinGame(gameCode.toUpperCase(), nickname.trim());
+      
+      if (result.success) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        
+        toast({
+          title: "Successfully joined!",
+          description: `Welcome to the game, ${nickname}!`,
+        });
+      } else {
+        throw new Error(result.message || "Failed to join game");
+      }
+    } catch (error: any) {
+      setErrorMessage(error.message);
+      toast({
+        variant: "destructive",
+        title: "Error joining game",
+        description: error.message,
+      });
+      setIsJoining(false);
+    }
+  };
+
+  const handleDemoCode = () => {
+    setGameCode(randomDemoCode);
+    toast({
+      title: "Demo code applied!",
+      description: `Using code: ${randomDemoCode}`,
+      variant: "default"
+    });
+  };
+
+  return (
+    <Card className="quiz-card shadow-lg w-full max-w-md mx-auto transition-all duration-300 hover:shadow-xl glass-dark border-2 border-indigo-300/30">
+      <CardContent className="pt-6">
+        <form onSubmit={handleJoin} className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-quiz-dark dark:text-white">Join a Quiz Game</h2>
+            <p className="text-gray-500 dark:text-gray-300 text-sm">Enter the game code and your nickname to join</p>
+            <button 
+              type="button" 
+              onClick={handleDemoCode}
+              className="text-amber-500 text-sm animate-pulse hover:text-amber-600 focus:outline-none underline flex items-center gap-1"
+            >
+              <Clock size={14} />
+              <span>Try demo code: {randomDemoCode}</span>
+            </button>
+          </div>
+          
+          {errorMessage && (
+            <div className="bg-destructive/15 border border-destructive/30 text-destructive dark:text-red-300 rounded-md px-3 py-2 flex items-center gap-2 animate-fade-in">
+              <AlertCircle size={16} className="shrink-0" />
+              <p className="text-sm">{errorMessage}</p>
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="GAME CODE"
+                className={`quiz-input text-center text-2xl font-bold tracking-widest uppercase ${
+                  isValidCode === true ? 'border-green-500 focus:ring-green-500' : 
+                  isValidCode === false ? 'border-red-500 focus:ring-red-500' : ''
+                }`}
+                value={gameCode}
+                onChange={(e) => {
+                  // Allow only alphanumeric characters and limit to 6 chars
+                  const value = e.target.value.replace(/[^A-Za-z0-9]/g, '').substring(0, 6);
+                  setGameCode(value.toUpperCase());
+                }}
+                maxLength={6}
+              />
+              {isValidating ? (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-500">
+                  <RefreshCw size={20} className="animate-spin" />
+                </div>
+              ) : isValidCode === true ? (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
+                  <CheckCircle size={20} />
+                </div>
+              ) : null}
+            </div>
+            
+            <div className="transform transition-all duration-300 hover:scale-105">
+              <Input
+                type="text"
+                placeholder="Your nickname"
+                className="quiz-input"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={20}
+              />
+            </div>
+          </div>
+          
+          <Button
+            type="submit"
+            className="quiz-btn-primary w-full transform transition-all duration-300 hover:scale-105 animate-pulse-scale flex items-center gap-2"
+            disabled={isJoining || isValidating}
+          >
+            {isJoining ? (
+              <>
+                <RefreshCw size={16} className="animate-spin" />
+                Joining...
+              </>
+            ) : (
+              <>
+                <LogIn size={16} />
+                Join Game
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+const GameWaiting = ({ nickname }: { nickname: string }) => {
+  return (
+    <Card className="quiz-card p-6 text-center">
+      <CardContent className="space-y-6">
+        <div>
+          <UserRound size={48} className="mx-auto text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full" />
+          <h2 className="text-xl font-bold mt-2 dark:text-white">Welcome, {nickname}!</h2>
+          <p className="text-gray-600 dark:text-gray-300">You've successfully joined the game.</p>
+        </div>
+        
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
+          <h3 className="font-medium text-indigo-700 dark:text-indigo-300 mb-2">Waiting for the host to start the game</h3>
+          <div className="flex justify-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          </div>
+        </div>
+        
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Please wait for the host to start the quiz. Don't close this window!
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const GameResults = ({ player, onLeave }: { player: any; onLeave: () => void }) => {
+  useEffect(() => {
+    // Trigger confetti when showing results
+    confetti({
+      particleCount: 200,
+      spread: 160,
+      origin: { y: 0.3 }
+    });
+  }, []);
+
+  return (
+    <Card className="quiz-card p-6">
+      <CardContent className="space-y-6">
+        <div className="text-center">
+          <div className="inline-block p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+            <Award size={48} className="text-amber-500" />
+          </div>
+          <h2 className="text-xl font-bold mt-3 dark:text-white">Game Completed!</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Thanks for playing, {player.nickname}!
+          </p>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-semibold dark:text-white">Your Results</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                {player.score}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">Total Score</div>
+            </div>
+            
+            <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {player.answers.filter(a => a.correct).length} / {player.answers.length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">Correct Answers</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-center">
+          <Button 
+            onClick={onLeave} 
+            className="quiz-btn-primary"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Leave Game
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const PlayerGameRoomPage: React.FC = () => {
+  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState } = useGame();
+  const navigate = useNavigate();
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
+  const [timeLeft, setTimeLeft] = useState(0);
+  const { toast } = useToast();
+  
+  // Enhanced polling for better real-time experience
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshGameState();
+      setConnectionStatus("connected");
+    }, 500); // Poll every 500ms for more responsive updates
+    
+    // Simulate occasional network hiccups for visual feedback
     const connectionCheck = setInterval(() => {
-      // Random occasional "network hiccup" for visual feedback
-      const simulateNetworkDelay = Math.random() > 0.9;
+      const simulateNetworkDelay = Math.random() > 0.95;
       if (simulateNetworkDelay) {
         setConnectionStatus("connecting");
         setTimeout(() => setConnectionStatus("connected"), 800);
@@ -45,44 +310,32 @@ const PlayerGameRoomPage: React.FC = () => {
     }, 5000);
     
     return () => {
-      clearInterval(fetchInterval);
+      clearInterval(interval);
       clearInterval(connectionCheck);
     };
   }, [refreshGameState]);
-
-  // Redirect if not in an active game
-  useEffect(() => {
-    if (!activeGame || !currentPlayer || isHost) {
-      navigate("/");
-    }
-  }, [activeGame, currentPlayer, isHost, navigate]);
-
-  // Check if player has answered current question
-  useEffect(() => {
-    if (currentPlayer && currentQuestion) {
-      const answered = currentPlayer.answers.some(a => a.questionId === currentQuestion.id);
-      setHasAnswered(answered);
-    } else {
-      setHasAnswered(false);
-    }
-  }, [currentPlayer, currentQuestion]);
-
-  const handleAnswer = (questionId: string, optionId: string) => {
+  
+  const handleAnswerSubmit = (questionId: string, optionId: string) => {
     submitAnswer(questionId, optionId);
-    setHasAnswered(true);
-    
     toast({
       title: "Answer submitted!",
-      description: "Wait for next question",
+      description: "Your answer has been recorded.",
     });
   };
-
+  
+  const handleLeaveGame = () => {
+    navigate("/");
+    toast({
+      title: "Left game",
+      description: "You've successfully left the game",
+    });
+  };
+  
   const handleManualRefresh = () => {
     setConnectionStatus("connecting");
     refreshGameState();
     setTimeout(() => {
       setConnectionStatus("connected");
-      setLastUpdateTime(Date.now());
       toast({
         title: "Refreshed",
         description: "Game state updated",
@@ -90,141 +343,121 @@ const PlayerGameRoomPage: React.FC = () => {
     }, 600);
   };
 
-  const handleLeaveGame = () => {
-    toast({
-      title: "Leaving game",
-      description: "You've left the game session",
-    });
-    navigate("/");
-    window.location.reload();
+  // Check if player answered current question
+  const hasAnsweredCurrentQuestion = () => {
+    if (!currentPlayer || !currentQuestion) return false;
+    return currentPlayer.answers.some(a => a.questionId === currentQuestion.id);
   };
-
-  if (!activeGame || !currentPlayer) return null;
-
+  
+  const renderContent = () => {
+    if (!activeGame) {
+      return <JoinGameForm />;
+    }
+    
+    if (activeGame.status === "waiting") {
+      return <GameWaiting nickname={currentPlayer?.nickname || "Player"} />;
+    }
+    
+    if (activeGame.status === "finished") {
+      return <GameResults player={currentPlayer} onLeave={handleLeaveGame} />;
+    }
+    
+    // Game is active
+    if (currentQuestion) {
+      const disableOptions = hasAnsweredCurrentQuestion();
+      
+      return (
+        <div className="space-y-5">
+          <div className="flex justify-between items-center">
+            <div className="text-sm font-medium dark:text-gray-300">
+              Question {activeGame.currentQuestionIndex + 1} / {/* Total questions count would be more accurate with currentQuiz */}
+            </div>
+            <div className="flex items-center gap-1 text-sm">
+              <span className={`inline-block w-2 h-2 rounded-full ${connectionStatus === "connected" ? "bg-green-500" : "bg-amber-500 animate-pulse"}`}></span>
+              <span className="dark:text-gray-300">{connectionStatus === "connected" ? "Connected" : "Connecting..."}</span>
+            </div>
+          </div>
+          
+          <QuestionDisplay 
+            question={currentQuestion} 
+            onAnswer={handleAnswerSubmit}
+            disableOptions={disableOptions}
+          />
+          
+          {hasAnsweredCurrentQuestion() && (
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow text-center">
+              <p className="text-gray-700 dark:text-gray-300">
+                Waiting for other players and the host to continue...
+              </p>
+              <div className="flex justify-center space-x-2 mt-2">
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
+          )}
+          
+          {currentPlayer && (
+            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow">
+              <div className="flex items-center gap-2">
+                <UserRound size={16} className="text-indigo-500" />
+                <span className="font-medium dark:text-white">{currentPlayer.nickname}</span>
+              </div>
+              
+              <div className="bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1 rounded-full">
+                <span className="font-medium text-indigo-700 dark:text-indigo-300">Score: {currentPlayer.score}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="text-center space-y-4">
+        <p className="dark:text-gray-300">Waiting for host to select the next question...</p>
+        <div className="flex justify-center space-x-2 mt-2">
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <BackgroundContainer>
-      <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
-        <div className="container mx-auto p-4 flex justify-between items-center">
-          <Logo />
-          
-          <div className="flex items-center space-x-4">
-            <div 
-              className="flex items-center gap-1 cursor-pointer bg-black/20 px-2 py-1 rounded-md hover:bg-black/30 transition-colors" 
-              onClick={handleManualRefresh}
-            >
-              {connectionStatus === "connected" ? (
-                <Wifi size={16} className="text-green-400" />
-              ) : (
-                <RefreshCw size={16} className="text-amber-400 animate-spin" />
-              )}
-              <span className="text-xs text-white">
-                {connectionStatus === "connected" ? "Live" : "Updating..."}
-              </span>
-            </div>
-            <span className="text-sm text-white px-2 py-1 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-md">
-              Game: <span className="font-bold text-quiz-primary animate-pulse">{activeGame.code}</span>
-            </span>
-            <span className="text-sm text-white px-2 py-1 bg-gray-800/30 rounded-md">
-              <span className="font-medium">{currentPlayer.nickname}</span>
-            </span>
-          </div>
-        </div>
-      </header>
-      
-      <main className="container mx-auto p-4 py-8">
-        {activeGame.status === "waiting" ? (
-          <div className="max-w-lg mx-auto quiz-card p-8 text-center glass-dark">
-            <h2 className="text-2xl font-bold text-quiz-dark dark:text-white mb-4">
-              Waiting for host to start
-            </h2>
+      <div className="min-h-screen flex flex-col">
+        <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
+          <div className="container mx-auto p-4 flex justify-between items-center">
+            <Logo />
             
-            <div className="relative w-24 h-24 mx-auto mb-8 animate-pulse-scale quiz-gradient-bg rounded-full flex items-center justify-center attractive-glow">
-              <span className="text-white text-3xl font-bold">
-                {activeGame.players.length}
-              </span>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center animate-bounce">
-                <span className="text-green-900 text-sm font-bold">+1</span>
-              </div>
-            </div>
-            
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              The quiz will begin when the host starts the game. Get ready!
-            </p>
-            
-            <Button variant="outline" onClick={handleLeaveGame} className="hover:bg-red-500/10 hover:text-red-500 transition-colors">
-              Leave Game
-            </Button>
-          </div>
-        ) : activeGame.status === "active" ? (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-4 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/10 dark:bg-black/20 px-3 py-1.5 rounded-full">
-                  <Award className="text-yellow-500" size={18} />
-                  <span className="text-sm font-medium text-white">
-                    Score: <span className="text-quiz-primary font-bold text-lg">{currentPlayer.score}</span>
+            {activeGame && (
+              <div className="flex items-center gap-4">
+                <div 
+                  className="flex items-center gap-1 cursor-pointer bg-black/20 px-2 py-1 rounded-md hover:bg-black/30 transition-colors" 
+                  onClick={handleManualRefresh}
+                >
+                  {connectionStatus === "connected" ? (
+                    <Wifi size={16} className="text-green-400" />
+                  ) : (
+                    <RefreshCw size={16} className="text-amber-400 animate-spin" />
+                  )}
+                  <span className="text-xs text-white">
+                    {connectionStatus === "connected" ? "Live" : "Updating..."}
                   </span>
-                </div>
-                
-                {hasAnswered && currentQuestion && (
-                  <div className="bg-green-500/20 text-green-300 px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
-                    <CheckCircle size={16} />
-                    <span>Answer submitted</span>
-                  </div>
-                )}
-              </div>
-              <Button variant="outline" size="sm" onClick={handleLeaveGame} className="hover:bg-red-500/10 hover:text-red-500 transition-colors">
-                Leave Game
-              </Button>
-            </div>
-            
-            {currentQuestion ? (
-              <QuestionDisplay 
-                question={currentQuestion}
-                onAnswer={handleAnswer}
-                disableOptions={hasAnswered}
-              />
-            ) : (
-              <div className="quiz-card glass-dark p-6 text-center">
-                <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">
-                  Waiting for next question
-                </h2>
-                <div className="py-8">
-                  <div className="w-16 h-16 mx-auto mb-6 animate-pulse quiz-gradient-bg rounded-full flex items-center justify-center attractive-glow">
-                    <Clock size={24} className="text-white" />
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    The host is preparing the next question
-                  </p>
                 </div>
               </div>
             )}
           </div>
-        ) : (
-          <div className="max-w-lg mx-auto quiz-card glass-dark p-8 text-center">
-            <h2 className="text-2xl font-bold text-quiz-dark dark:text-white mb-4">
-              Quiz Ended
-            </h2>
-            
-            <div className="py-6 mb-6">
-              <p className="text-lg mb-2 dark:text-gray-200">Your final score</p>
-              <div className="text-5xl font-bold text-quiz-primary animate-pulse-scale">
-                {currentPlayer.score}
-              </div>
-              
-              <div className="mt-6 p-4 bg-white/10 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Thanks for playing! Join another game with a new code.
-                </p>
-              </div>
-            </div>
-            
-            <Button className="quiz-btn-primary" onClick={handleLeaveGame}>
-              Back to Home
-            </Button>
+        </header>
+        
+        <main className="container mx-auto p-4 py-8 flex-1 flex justify-center">
+          <div className="w-full max-w-2xl">
+            {renderContent()}
           </div>
-        )}
-      </main>
+        </main>
+      </div>
     </BackgroundContainer>
   );
 };

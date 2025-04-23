@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { use3DTilt } from "@/utils/animationUtils";
 import { Sparkles, Star, Copy, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import confetti from 'canvas-confetti';
 
 interface GameCodeDisplayProps {
   code: string;
@@ -18,6 +19,14 @@ const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) 
   const copyCodeToClipboard = () => {
     navigator.clipboard.writeText(code);
     setCopied(true);
+    
+    // Trigger confetti effect
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    
     toast({
       title: "Copied!",
       description: "Game code copied to clipboard",
@@ -41,7 +50,7 @@ const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) 
           <Sparkles size={28} color="#F97316" className="animate-fade-in" />
         </div>
         <div 
-          className="text-4xl font-bold tracking-wider mt-2 text-quiz-primary animate-pulse-scale select-all cursor-pointer flex items-center justify-center gap-2"
+          className="text-4xl font-bold tracking-wider mt-2 text-quiz-primary animate-pulse-scale select-all cursor-pointer flex items-center justify-center gap-2 bg-indigo-900/20 py-2 px-4 rounded-lg"
           onClick={copyCodeToClipboard}
         >
           {code}
@@ -51,6 +60,7 @@ const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) 
             <Copy size={20} className="text-gray-400 hover:text-white transition-colors" />
           )}
         </div>
+        <p className="text-xs text-gray-400 dark:text-gray-300">Click to copy</p>
         <div className="border-t border-gray-300 dark:border-glow-purple/30 pt-4">
           <h3 className="text-lg font-medium text-gray-700 dark:text-purple-200">Players Joined</h3>
           <div className="text-3xl font-bold mt-2 text-quiz-secondary animate-float flex justify-center items-center gap-2">

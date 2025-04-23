@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { GameProvider } from "./contexts/GameContext";
 import { useEffect } from "react";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -37,8 +38,16 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/host-login" element={<HostLoginPage />} />
                 <Route path="/host-signup" element={<HostSignupPage />} />
-                <Route path="/host-dashboard" element={<HostDashboardPage />} />
-                <Route path="/host-game-room" element={<HostGameRoomPage />} />
+                <Route path="/host-dashboard" element={
+                  <ProtectedRoute>
+                    <HostDashboardPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/host-game-room" element={
+                  <ProtectedRoute>
+                    <HostGameRoomPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/game-room" element={<PlayerGameRoomPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
