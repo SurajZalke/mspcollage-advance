@@ -10,11 +10,11 @@ import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
 // Simulate a server-side store for active games
 const activeGamesStore: { [key: string]: GameRoom } = {};
 
-// Poll interval in milliseconds
-const POLL_INTERVAL = 1500;
+// Poll interval in milliseconds - increased for more responsiveness
+const POLL_INTERVAL = 1000;
 
 // Create some predefined test games
-const TEST_GAME_CODE = "TEST12";
+const TEST_GAME_CODES = ["TEST12", "DEMO01", "PLAY22"]; 
 
 interface GameContextType {
   activeGame: GameRoom | null;
@@ -48,23 +48,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
 
-  // Initialize the test game
+  // Initialize the test games
   useEffect(() => {
-    // Create the test game if it doesn't exist
-    if (!activeGamesStore[TEST_GAME_CODE]) {
-      const testGame: GameRoom = {
-        id: "test_game_id",
-        code: TEST_GAME_CODE,
-        hostId: "test_host_id",
-        quizId: "quiz1",
-        players: [],
-        status: "waiting",
-        currentQuestionIndex: -1
-      };
-      
-      activeGamesStore[TEST_GAME_CODE] = testGame;
-      console.log("Test game created with code:", TEST_GAME_CODE);
-    }
+    // Create test games if they don't exist
+    TEST_GAME_CODES.forEach((code, index) => {
+      if (!activeGamesStore[code]) {
+        const testGame: GameRoom = {
+          id: `test_game_id_${index}`,
+          code: code,
+          hostId: `test_host_id_${index}`,
+          quizId: "quiz1",
+          players: [],
+          status: "waiting",
+          currentQuestionIndex: -1
+        };
+        
+        activeGamesStore[code] = testGame;
+        console.log("Test game created with code:", code);
+      }
+    });
+    
+    // Log all available games for debugging
+    console.log("Available games in store:", Object.keys(activeGamesStore));
   }, []);
 
   // Polling interval for game state updates - more frequent for better real-time feeling

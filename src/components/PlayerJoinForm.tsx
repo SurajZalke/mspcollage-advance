@@ -7,7 +7,7 @@ import { useGame } from "@/contexts/GameContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { use3DTilt } from "@/utils/animationUtils";
-import { AlertCircle, Check } from "lucide-react";
+import { AlertCircle, Check, Info } from "lucide-react";
 
 const PlayerJoinForm: React.FC = () => {
   const [gameCode, setGameCode] = useState("");
@@ -20,8 +20,9 @@ const PlayerJoinForm: React.FC = () => {
   const { toast } = useToast();
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
 
-  // Demo code for easy testing
-  const demoCode = "TEST12";
+  // Demo codes for easy testing
+  const demoCodes = ["TEST12", "DEMO01", "PLAY22"];
+  const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
 
   useEffect(() => {
     // Basic client-side validation
@@ -77,8 +78,13 @@ const PlayerJoinForm: React.FC = () => {
   };
 
   const handleDemoCode = () => {
-    setGameCode(demoCode);
+    setGameCode(randomDemoCode);
     setIsValidCode(true);
+    toast({
+      title: "Demo code applied!",
+      description: `Using code: ${randomDemoCode}`,
+      variant: "default"
+    });
   };
 
   return (
@@ -96,9 +102,10 @@ const PlayerJoinForm: React.FC = () => {
             <button 
               type="button" 
               onClick={handleDemoCode}
-              className="text-amber-500 text-sm animate-pulse hover:text-amber-600 focus:outline-none underline"
+              className="text-amber-500 text-sm animate-pulse hover:text-amber-600 focus:outline-none underline flex items-center gap-1"
             >
-              Try demo code: TEST12
+              <Info size={14} />
+              <span>Try demo code: {randomDemoCode}</span>
             </button>
           </div>
           

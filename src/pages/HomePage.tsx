@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import PlayerJoinForm from "@/components/PlayerJoinForm";
 import { Sparkles, Star, Zap } from "lucide-react";
+import BackgroundContainer from "@/components/BackgroundContainer";
 
 const HomePage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 animate-gradient-x">
+    <BackgroundContainer className="animate-gradient-x">
       <div className="container mx-auto px-4 py-8 md:py-16">
         <div className="flex justify-center mb-8 animate-float">
           <Logo size="lg" />
@@ -16,10 +17,10 @@ const HomePage: React.FC = () => {
         
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 gradient-heading animate-pulse-scale">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white animate-pulse-scale drop-shadow-lg">
               Interactive Science Quizzes for Grades 11-12
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">
               Join a quiz room or host your own science-based quizzes to enhance learning and assess knowledge.
             </p>
           </div>
@@ -33,8 +34,8 @@ const HomePage: React.FC = () => {
                 <PlayerJoinForm />
               </div>
               
-              <div className="text-center text-gray-500 text-sm">
-                Players don't need an account to join a quiz
+              <div className="text-center text-white/90 text-sm bg-black/30 p-2 rounded-lg backdrop-blur-sm">
+                Players don't need an account to join a quiz - just enter a game code!
               </div>
             </div>
             
@@ -61,7 +62,7 @@ const HomePage: React.FC = () => {
                     </Link>
                     
                     <Link to="/host-signup">
-                      <Button className="bg-white/20 hover:bg-white/30 text-indigo-700 border border-indigo-300 w-full">
+                      <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/20 w-full">
                         Create Host Account
                       </Button>
                     </Link>
@@ -69,7 +70,7 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
               
-              <div className="text-center text-gray-500 text-sm">
+              <div className="text-center text-white/90 text-sm bg-black/30 p-2 rounded-lg backdrop-blur-sm">
                 Hosts can create and save quizzes, track results, and more
               </div>
             </div>
@@ -77,45 +78,45 @@ const HomePage: React.FC = () => {
           
           <div className="mt-16">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-quiz-dark inline-flex items-center">
+              <h2 className="text-2xl font-bold text-white inline-flex items-center">
                 Science Stream Quiz Features
                 <Zap className="ml-2 text-yellow-500" size={24} />
               </h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-pink-500">
+              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-pink-500 bg-black/30 backdrop-blur-md text-white">
                 <div className="text-center mb-4">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-red-500 text-white text-xl font-bold attractive-glow">
                     1
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-center mb-2">Specialized Content</h3>
-                <p className="text-gray-600 text-center">
+                <p className="text-gray-200 text-center">
                   Quizzes specifically for 11th and 12th grade science stream subjects
                 </p>
               </div>
               
-              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-blue-500">
+              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-blue-500 bg-black/30 backdrop-blur-md text-white">
                 <div className="text-center mb-4">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white text-xl font-bold attractive-glow">
                     2
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-center mb-2">Real-time Competition</h3>
-                <p className="text-gray-600 text-center">
+                <p className="text-gray-200 text-center">
                   Engage students in competitive real-time quizzes with live leaderboards
                 </p>
               </div>
               
-              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-green-500">
+              <div className="quiz-card p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-green-500 bg-black/30 backdrop-blur-md text-white">
                 <div className="text-center mb-4">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white text-xl font-bold attractive-glow">
                     3
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-center mb-2">Customizable Scoring</h3>
-                <p className="text-gray-600 text-center">
+                <p className="text-gray-200 text-center">
                   Choose between standard and negative marking to suit different testing styles
                 </p>
               </div>
@@ -123,7 +124,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </BackgroundContainer>
   );
 };
 

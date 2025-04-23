@@ -1,7 +1,6 @@
 
 import React, { useEffect } from "react";
 import HomePage from "./HomePage";
-import BackgroundContainer from "@/components/BackgroundContainer";
 
 const Index = () => {
   // Monitor system dark mode preference
@@ -17,8 +16,8 @@ const Index = () => {
       }
     };
     
-    // Initial setup
-    applyTheme(mediaQuery.matches);
+    // Initial setup - force dark mode for better color experience
+    document.documentElement.classList.add("dark");
     
     // Listen for changes
     const listener = (event: MediaQueryListEvent) => applyTheme(event.matches);
@@ -27,11 +26,7 @@ const Index = () => {
     return () => mediaQuery.removeEventListener('change', listener);
   }, []);
   
-  return (
-    <BackgroundContainer>
-      <HomePage />
-    </BackgroundContainer>
-  );
+  return <HomePage />;
 };
 
 export default Index;
