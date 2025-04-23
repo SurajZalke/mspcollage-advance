@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -7,12 +6,12 @@ import BackgroundContainer from "@/components/BackgroundContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Play, Settings, Users } from "lucide-react";
+import CreatorAttribution from "@/components/CreatorAttribution";
 
 const HomePage: React.FC = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // If user is logged in, redirect to dashboard
   const handleHostClick = () => {
     if (currentUser) {
       navigate("/host-dashboard");
@@ -147,6 +146,7 @@ const HomePage: React.FC = () => {
           </div>
         </footer>
       </div>
+      <CreatorAttribution />
     </BackgroundContainer>
   );
 };

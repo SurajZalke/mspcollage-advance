@@ -1,9 +1,9 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
 import HostLoginForm from "@/components/HostLoginForm";
 import BackgroundContainer from "@/components/BackgroundContainer";
+import CreatorAttribution from "@/components/CreatorAttribution";
 
 const HostLoginPage: React.FC = () => {
   return (
@@ -21,6 +21,7 @@ const HostLoginPage: React.FC = () => {
       <footer className="container mx-auto p-4 text-center text-white text-sm">
         <p>&copy; {new Date().getFullYear()} Science Stream Quiz Arena</p>
       </footer>
+      <CreatorAttribution />
     </BackgroundContainer>
   );
 };

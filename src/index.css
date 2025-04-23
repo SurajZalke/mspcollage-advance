@@ -153,3 +153,25 @@
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out forwards;
 }
+
+@keyframes float3d {
+  0% {
+    transform: translateY(0) scale(1) rotateZ(-2deg);
+    filter: drop-shadow(0 0 4px #b09cff88) brightness(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.03) rotateZ(2deg);
+    filter: drop-shadow(0 4px 24px #ff94e890) brightness(1.09);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotateZ(-2deg);
+    filter: drop-shadow(0 0 4px #b09cff88) brightness(1);
+  }
+}
+
+.attribution-3d {
+  animation: float3d 2.8s cubic-bezier(.75,0,.27,1) infinite;
+  perspective: 320px;
+  backface-visibility: hidden;
+  will-change: transform, filter;
+}
