@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { GameRoom, Player, Quiz, Question } from "../types";
 import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
@@ -34,7 +33,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
 
-  // Set current question based on game state
   useEffect(() => {
     if (activeGame && currentQuiz && activeGame.status === "active") {
       const questionIndex = activeGame.currentQuestionIndex;
@@ -48,10 +46,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeGame, currentQuiz]);
 
-  // Create a new game as host
   const createGame = (quizId: string): GameRoom => {
-    // In a real app, this would be stored in a database
-    // For now, we're using mock data
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
       const quiz = sampleQuizzes.find(q => q.id === quizId);
       if (quiz) {
@@ -63,7 +58,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newGame: GameRoom = {
       id: `game_${Math.random().toString(36).substr(2, 9)}`,
       code: gameCode,
-      hostId: "currentUserId", // Would be set from auth context in real app
+      hostId: "currentUserId",
       quizId,
       players: [],
       status: "waiting",
@@ -75,15 +70,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newGame;
   };
 
-  // Join an existing game as player
   const joinGame = (code: string, nickname: string): boolean => {
-    // In a real app, this would validate the code against active games
     if (!code || !nickname) return false;
     
-    // For demo, we'll create a mock game if joining as player
-    if (!activeGame && !isHost) {
+    if (!activeGame) {
       import('../utils/gameUtils').then(({ sampleQuizzes }) => {
-        // Just use the first sample quiz for demo
         setCurrentQuiz(sampleQuizzes[0]);
       });
 
@@ -108,12 +99,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setActiveGame(newGame);
       return true;
+    } else {
+      const newPlayer: Player = {
+        id: generatePlayerId(),
+        nickname,
+        score: 0,
+        answers: []
+      };
+      
+      setCurrentPlayer(newPlayer);
+      
+      setActiveGame(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          players: [...prev.players, newPlayer]
+        };
+      });
+      
+      return true;
     }
-    
-    return false;
   };
 
-  // Start the active game
   const startGame = () => {
     if (activeGame) {
       setActiveGame({
@@ -125,7 +132,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // End the active game
   const endGame = () => {
     if (activeGame) {
       setActiveGame({
@@ -136,14 +142,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Submit an answer for the current question
   const submitAnswer = (questionId: string, optionId: string) => {
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;
     
     const isCorrect = optionId === currentQuestion.correctOption;
-    const timeToAnswer = 10; // Would be calculated based on question timer
-    
-    // Calculate score
+    const timeToAnswer = 10;
+
     let scoreChange = 0;
     if (isCorrect) {
       scoreChange = currentQuestion.points;
@@ -166,7 +170,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setCurrentPlayer(updatedPlayer);
     
-    // Update player in game
     const updatedPlayers = activeGame.players.map(p => 
       p.id === currentPlayer.id ? updatedPlayer : p
     );
@@ -177,14 +180,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Move to the next question
   const nextQuestion = () => {
     if (!activeGame || !currentQuiz) return;
     
     const nextIndex = activeGame.currentQuestionIndex + 1;
     
     if (nextIndex >= currentQuiz.questions.length) {
-      // End game if all questions have been answered
       endGame();
     } else {
       setActiveGame({
