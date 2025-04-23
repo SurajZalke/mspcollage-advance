@@ -6,7 +6,7 @@ import Logo from "@/components/Logo";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import { Button } from "@/components/ui/button";
 import BackgroundContainer from "@/components/BackgroundContainer";
-import { AlertCircle, Award, Clock, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { AlertCircle, Award, Clock, Wifi, WifiOff, RefreshCw, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const PlayerGameRoomPage: React.FC = () => {

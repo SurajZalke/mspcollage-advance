@@ -9,12 +9,16 @@ interface QuestionDisplayProps {
   question: Question;
   onAnswer: (questionId: string, optionId: string) => void;
   showTimer?: boolean;
+  isHostView?: boolean;
+  disableOptions?: boolean;
 }
 
 const QuestionDisplay: React.FC<QuestionDisplayProps> = ({ 
   question, 
   onAnswer,
-  showTimer = true
+  showTimer = true,
+  isHostView = false,
+  disableOptions = false
 }) => {
   const [timeLeft, setTimeLeft] = useState(question.timeLimit);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -44,7 +48,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   }, [question.id, question.timeLimit]);
   
   const handleSelectOption = (optionId: string) => {
-    if (isAnswered) return;
+    if (isAnswered || disableOptions) return;
     
     setSelectedOption(optionId);
     setIsAnswered(true);
@@ -59,7 +63,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   };
   
   return (
-    <Card className="quiz-card">
+    <Card className={`quiz-card ${isHostView ? "host-view" : ""}`}>
       <CardContent className="pt-6 space-y-6">
         {showTimer && (
           <div className="space-y-1">
@@ -97,7 +101,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     : "bg-white text-quiz-dark border border-gray-200 hover:bg-quiz-light"
                 }`}
                 onClick={() => handleSelectOption(option.id)}
-                disabled={isAnswered}
+                disabled={isAnswered || disableOptions || isHostView}
               >
                 <div className="mr-3 bg-gray-100 text-quiz-dark rounded-full w-6 h-6 flex items-center justify-center font-medium">
                   {option.id.toUpperCase()}
