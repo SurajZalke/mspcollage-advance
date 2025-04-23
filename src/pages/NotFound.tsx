@@ -1,24 +1,28 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
 
-const NotFound = () => {
-  const location = useLocation();
+import React from "react";
+import { Link } from "react-router-dom";
+import Logo from "@/components/Logo";
+import { Button } from "@/components/ui/button";
 
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
-
+const NotFound: React.FC = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex flex-col justify-center items-center p-4">
+      <div className="mb-8">
+        <Logo size="lg" />
+      </div>
+      
+      <div className="max-w-md w-full quiz-card text-center p-8">
+        <h1 className="text-6xl font-bold text-quiz-primary mb-4">404</h1>
+        <h2 className="text-2xl font-bold text-quiz-dark mb-4">Page Not Found</h2>
+        <p className="text-gray-600 mb-8">
+          The page you're looking for doesn't exist or has been moved.
+        </p>
+        
+        <Link to="/">
+          <Button className="quiz-btn-primary">
+            Back to Home
+          </Button>
+        </Link>
       </div>
     </div>
   );
