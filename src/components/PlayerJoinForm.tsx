@@ -7,7 +7,7 @@ import { useGame } from "@/contexts/GameContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { use3DTilt } from "@/utils/animationUtils";
-import { AlertCircle, Check, Info, Loader } from "lucide-react";
+import { AlertCircle, Check, Info, Loader, LogIn } from "lucide-react";
 
 const PlayerJoinForm: React.FC = () => {
   const [gameCode, setGameCode] = useState("");
@@ -16,7 +16,7 @@ const PlayerJoinForm: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isValidCode, setIsValidCode] = useState<boolean | null>(null);
   const [isValidating, setIsValidating] = useState(false);
-  const { joinGame, validateGameCode } = useGame();
+  const { joinGame, validateGameCode, getAvailableGameCodes } = useGame();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
@@ -24,6 +24,11 @@ const PlayerJoinForm: React.FC = () => {
   // Demo codes for easy testing
   const demoCodes = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
   const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
+
+  // Debug available game codes
+  useEffect(() => {
+    console.log("Available game codes:", getAvailableGameCodes());
+  }, [getAvailableGameCodes]);
 
   useEffect(() => {
     // Reset validation state when user types
@@ -41,9 +46,16 @@ const PlayerJoinForm: React.FC = () => {
         const validationResult = validateGameCode(gameCode);
         setIsValidCode(validationResult.valid);
         if (!validationResult.valid) {
-          setErrorMessage(validationResult.message || "Invalid game code");
+          const message = validationResult.message || "Invalid game code";
+          setErrorMessage(message);
+          console.log(message); // Debug logging
         } else {
           setErrorMessage(null);
+          // Auto focus to nickname field when code is valid
+          const nicknameInput = document.getElementById('nickname-input');
+          if (nicknameInput) {
+            nicknameInput.focus();
+          }
         }
         setIsValidating(false);
       }, 500);
@@ -51,10 +63,14 @@ const PlayerJoinForm: React.FC = () => {
       return () => clearTimeout(timeoutId);
     } else if (gameCode.length > 0) {
       setIsValidCode(false);
+      if (gameCode.length < 6) {
+        setErrorMessage("Game code must be 6 characters");
+      }
     } else {
       setIsValidCode(null);
+      setErrorMessage(null);
     }
-  }, [gameCode, validateGameCode]);
+  }, [gameCode, validateGameCode, getAvailableGameCodes]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,13 +89,16 @@ const PlayerJoinForm: React.FC = () => {
       return;
     }
 
+    console.log(`Attempting to join game with code: ${gameCode}`);
+    console.log(`Available games before join:`, getAvailableGameCodes());
+
     try {      
       const result = joinGame(gameCode.toUpperCase(), nickname.trim());
       
       if (result.success) {
         toast({
           title: "Success!",
-          description: "You've joined the game!",
+          description: `You've joined the game as ${nickname}!`,
         });
         navigate("/game-room");
       } else {
@@ -151,6 +170,7 @@ const PlayerJoinForm: React.FC = () => {
                   setGameCode(value.toUpperCase());
                 }}
                 maxLength={6}
+                autoFocus
               />
               {isValidating ? (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-500">
@@ -165,6 +185,7 @@ const PlayerJoinForm: React.FC = () => {
             
             <div className="transform transition-all duration-300 hover:scale-105">
               <Input
+                id="nickname-input"
                 type="text"
                 placeholder="Your nickname"
                 className="quiz-input"
@@ -177,7 +198,7 @@ const PlayerJoinForm: React.FC = () => {
           
           <Button
             type="submit"
-            className="quiz-btn-primary w-full transform transition-all duration-300 hover:scale-105 animate-pulse-scale"
+            className="quiz-btn-primary w-full transform transition-all duration-300 hover:scale-105 animate-pulse-scale flex items-center gap-2"
             disabled={isJoining || isValidating}
           >
             {isJoining ? (
@@ -185,8 +206,18 @@ const PlayerJoinForm: React.FC = () => {
                 <Loader size={16} className="mr-2 animate-spin" />
                 Joining...
               </>
-            ) : "Join Game"}
+            ) : (
+              <>
+                <LogIn size={16} className="mr-2" />
+                Join Game
+              </>
+            )}
           </Button>
+          
+          {/* Debug info for available games - can be removed in production */}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-6">
+            <p className="text-center">Available demo codes: {demoCodes.join(", ")}</p>
+          </div>
         </form>
       </CardContent>
     </Card>

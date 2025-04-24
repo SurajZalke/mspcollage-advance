@@ -1,4 +1,3 @@
-
 // Note: Frontend-only implementation (works in ONE SESSION).
 // Multiplayer between host/player across tabs or devices will NOT sync in real time without backend like Supabase.
 // To truly connect host and player in real time, connect Lovable to Supabase via the Lovable Supabase integration!
@@ -31,6 +30,7 @@ interface GameContextType {
   submitAnswer: (questionId: string, optionId: string) => void;
   nextQuestion: () => void;
   refreshGameState: () => void;
+  getAvailableGameCodes: () => string[];
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -130,7 +130,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeGame, currentPlayer, isHost]);
 
-  // Validate game code function with improved error messages
+  // Get available game codes for debugging and UI display
+  const getAvailableGameCodes = useCallback(() => {
+    return Object.keys(activeGamesStore);
+  }, []);
+
+  // Improved validation with more explicit error messages
   const validateGameCode = useCallback((code: string): { valid: boolean; message?: string } => {
     if (!code) {
       return { valid: false, message: "Game code is required" };
@@ -141,10 +146,37 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     const upperCode = code.trim().toUpperCase();
+    
+    // Debug logging to see what's happening
+    console.log(`Validating game code: ${upperCode}`);
+    console.log(`Available games: ${Object.keys(activeGamesStore)}`);
+    
     const gameExists = !!activeGamesStore[upperCode];
     
+    // Extra check for TEST12 and other demo codes
+    const isDemoCode = TEST_GAME_CODES.includes(upperCode);
+    if (isDemoCode && !gameExists) {
+      console.log(`Demo code ${upperCode} should exist but wasn't found, recreating it`);
+      const index = TEST_GAME_CODES.indexOf(upperCode);
+      const testGame: GameRoom = {
+        id: `test_game_id_${index}`,
+        code: upperCode,
+        hostId: `test_host_id_${index}`,
+        quizId: "quiz1",
+        players: [],
+        status: "waiting",
+        currentQuestionIndex: -1
+      };
+      
+      activeGamesStore[upperCode] = testGame;
+      return { valid: true };
+    }
+    
     if (!gameExists) {
-      return { valid: false, message: `Game with code ${upperCode} not found. Please check and try again.` };
+      return { 
+        valid: false, 
+        message: `Game with code ${upperCode} not found. Please check and try again. Available codes: ${getAvailableGameCodes().join(", ")}` 
+      };
     }
     
     const game = activeGamesStore[upperCode];
@@ -157,9 +189,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     return { valid: true };
-  }, []);
+  }, [getAvailableGameCodes]);
 
-  // Create game with improved code generation
+  // Improved createGame function with additional validation
   const createGame = useCallback((quizId: string): GameRoom => {
     // Fetch and set the quiz for the host
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
@@ -217,7 +249,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newGame;
   }, [toast]);
 
-  // Enhanced joinGame function with more detailed validation and UI feedback
+  // Enhanced joinGame function with better error handling
   const joinGame = useCallback((code: string, nickname: string): { success: boolean; message?: string } => {
     if (!code) {
       return { success: false, message: "Please enter a game code" };
@@ -232,10 +264,30 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Validate game code first
     const validation = validateGameCode(upperCode);
     if (!validation.valid) {
-      return { success: false, message: validation.message };
+      // Try to ensure TEST codes are available
+      if (TEST_GAME_CODES.includes(upperCode)) {
+        console.log(`Demo code ${upperCode} wasn't found but should be available, recreating it`);
+        const index = TEST_GAME_CODES.indexOf(upperCode);
+        const testGame: GameRoom = {
+          id: `test_game_id_${index}`,
+          code: upperCode,
+          hostId: `test_host_id_${index}`,
+          quizId: "quiz1",
+          players: [],
+          status: "waiting",
+          currentQuestionIndex: -1
+        };
+        
+        activeGamesStore[upperCode] = testGame;
+      } else {
+        return { success: false, message: validation.message };
+      }
     }
     
     const gameToJoin = activeGamesStore[upperCode];
+    if (!gameToJoin) {
+      return { success: false, message: `Game with code ${upperCode} not found even after recreation attempt` };
+    }
 
     // Check if nickname is unique in this game
     if (gameToJoin.players.some(p => p.nickname.trim().toLowerCase() === nickname.trim().toLowerCase())) {
@@ -378,7 +430,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     endGame,
     submitAnswer,
     nextQuestion,
-    refreshGameState
+    refreshGameState,
+    getAvailableGameCodes
   };
 
   return (
