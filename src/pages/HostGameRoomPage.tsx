@@ -10,10 +10,10 @@ import GameCodeDisplay from "@/components/GameCodeDisplay";
 import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import BackgroundContainer from "@/components/BackgroundContainer";
+import CreatorAttribution from "@/components/CreatorAttribution";
 import { useToast } from "@/components/ui/use-toast";
 import { Player } from "@/types";
 import TrophyAnimation from "@/components/TrophyAnimation";
-import CreatorAttribution from "@/components/CreatorAttribution";
 import { Progress } from "@/components/ui/progress";
 
 const PlayerStates = () => {
@@ -119,82 +119,6 @@ const PlayerStates = () => {
     </div>
   );
 };
-
-const WaitingRoom = React.memo(({ 
-  players, 
-  onStartGame, 
-  cardRef, 
-  handleMouseMove, 
-  resetTilt 
-}: {
-  players: Player[];
-  onStartGame: () => void;
-  cardRef: React.RefObject<HTMLDivElement>;
-  handleMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
-  resetTilt: () => void;
-}) => {
-  return (
-    <div 
-      ref={cardRef}
-      className="quiz-card p-6 transition-all duration-300 transform hover:shadow-xl"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={resetTilt}
-    >
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-quiz-dark dark:text-white">
-            Waiting for Players
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300">
-            Share the game code with your students to let them join
-          </p>
-        </div>
-        <Button 
-          className="quiz-btn-primary text-lg px-8 py-6 h-auto mt-4 md:mt-0 animate-pulse-scale"
-          onClick={onStartGame}
-          disabled={players.length === 0}
-        >
-          Start Quiz
-        </Button>
-      </div>
-      
-      {players.length > 0 ? (
-        <div className="bg-white dark:bg-gray-800/50 rounded-lg border dark:border-gray-700 shadow-sm p-4 animate-fade-in">
-          <div className="flex items-center mb-4">
-            <Users className="text-quiz-primary mr-2" />
-            <h3 className="text-lg font-medium text-quiz-dark dark:text-white">
-              Joined Players ({players.length})
-            </h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {players.map((player, index) => (
-              <div 
-                key={player.id}
-                className="flex items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-md border dark:border-gray-600 transform hover:scale-105 transition-all duration-300"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="bg-quiz-light dark:bg-indigo-900/50 w-8 h-8 rounded-full flex items-center justify-center mr-2 animate-float">
-                  <UserRound size={16} className="text-quiz-primary" />
-                </div>
-                <span className="font-medium truncate dark:text-gray-200">{player.nickname}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center bg-gray-50 dark:bg-gray-800/30 p-8 rounded-lg border border-dashed dark:border-gray-700">
-          <Users size={48} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-          <p className="text-red-500 dark:text-red-400 font-medium">
-            No players have joined yet
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Share the game code so players can join
-          </p>
-        </div>
-      )}
-    </div>
-  );
-});
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -388,48 +312,32 @@ const HostGameRoomPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
-      <BackgroundContainer className="min-h-screen">
+    <BackgroundContainer>
+      <div className="min-h-screen flex flex-col">
         <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
           <div className="container mx-auto p-4 flex justify-between items-center">
-            <div className="flex flex-col">
-              <div className="text-sm font-bold text-white mb-1">MSP COLLAGE</div>
-              <div className="flex items-center gap-2">
-                <div className="quiz-gradient-bg rounded-lg p-2">
-                  <span className="font-bold text-white text-3xl">Q</span>
-                </div>
-                <div className="font-bold">
-                  <span className="text-quiz-primary">Quiz</span>
-                  <span className="text-quiz-dark">Game</span>
+            <Logo />
+            
+            {activeGame && (
+              <div className="flex items-center gap-4">
+                <div 
+                  className="flex items-center gap-1 cursor-pointer bg-black/20 px-2 py-1 rounded-md hover:bg-black/30 transition-colors" 
+                  onClick={handleManualRefresh}
+                >
+                  {connectionStatus === "connected" ? (
+                    <Wifi size={16} className="text-green-400" />
+                  ) : (
+                    <RefreshCw size={16} className="text-amber-400 animate-spin" />
+                  )}
+                  <span className="text-xs text-white">
+                    {connectionStatus === "connected" ? "Live" : "Updating..."}
+                  </span>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div 
-                className="flex items-center gap-1 cursor-pointer bg-black/20 px-2 py-1 rounded-md hover:bg-black/30 transition-colors" 
-                onClick={handleManualRefresh}
-              >
-                {connectionStatus === "connected" ? (
-                  <Wifi size={16} className="text-green-400" />
-                ) : (
-                  <RefreshCw size={16} className="text-amber-400 animate-spin" />
-                )}
-                <span className="text-xs text-white">
-                  {connectionStatus === "connected" ? "Live" : "Updating..."}
-                </span>
-              </div>
-              
-              <span className="font-medium text-white text-sm px-2 py-1 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-md">
-                {currentQuiz.title}
-              </span>
-              
-              <span className="text-sm text-white/80 bg-black/20 px-2 py-1 rounded-md">
-                Host: {currentUser.name}
-              </span>
-            </div>
+            )}
           </div>
         </header>
-        
+
         <main className="container mx-auto p-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -507,7 +415,6 @@ const HostGameRoomPage: React.FC = () => {
                 </div>
               )}
             </div>
-            
             <div className="space-y-6">
               {activeGame && (
                 <>
@@ -518,15 +425,19 @@ const HostGameRoomPage: React.FC = () => {
                     />
                   </div>
                   <div className="transform hover:scale-[1.02] transition-all duration-300">
-                    <LeaderboardDisplay players={activeGame.players} activeQuiz={currentQuiz} />
+                    <LeaderboardDisplay 
+                      players={activeGame.players} 
+                      activeQuiz={currentQuiz} 
+                    />
                   </div>
                 </>
               )}
             </div>
           </div>
         </main>
-      </BackgroundContainer>
-    </div>
+        <CreatorAttribution />
+      </div>
+    </BackgroundContainer>
   );
 };
 

@@ -38,9 +38,18 @@ const HostLoginForm: React.FC = () => {
     
     try {
       await login(email, password);
+      toast({
+        title: "Welcome back!",
+        description: "Successfully logged in",
+      });
       navigate("/host-dashboard");
     } catch (error: any) {
       setError(error.message);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again",
+      });
     } finally {
       setIsLoading(false);
     }

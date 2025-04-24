@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "../types";
 import { useToast } from "@/components/ui/use-toast";
@@ -54,7 +53,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<User> => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        // Check if user exists and password matches
         const lowerEmail = email.toLowerCase();
         const user = mockUserDB[lowerEmail];
         
@@ -67,20 +65,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           setCurrentUser(loggedInUser);
           localStorage.setItem("currentUser", JSON.stringify(loggedInUser));
-          resolve(loggedInUser);
           
+          resolve(loggedInUser);
           toast({
             title: "Login successful",
             description: `Welcome back, ${user.name}!`,
-            variant: "default"
           });
         } else {
           reject(new Error("Invalid email or password"));
-          toast({
-            title: "Login failed",
-            description: "Invalid email or password. Please try again.",
-            variant: "destructive"
-          });
         }
       }, 800);
     });
