@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Player } from "@/types";
 import TrophyAnimation from "@/components/TrophyAnimation";
 import { Progress } from "@/components/ui/progress";
+import WaitingRoom from "@/components/WaitingRoom";
 
 const PlayerStates = () => {
   const { activeGame, currentQuestion } = useGame();
