@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Player } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Users, RefreshCw, Clock, Copy, CheckCircle } from "lucide-react";
+import { Users, RefreshCw, Clock, Copy, CheckCircle, Share } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -109,6 +109,43 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
         )}
       </div>
       
+      {/* Prominent game code display for host */}
+      {isHost && gameCode && (
+        <Card className="mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 shadow-lg border-none">
+          <div className="text-center">
+            <h3 className="text-lg font-medium mb-2">Share this code with players</h3>
+            <div className="flex items-center justify-center gap-3">
+              <div className="text-3xl font-bold tracking-wider bg-white/20 px-6 py-2 rounded-md">
+                {gameCode}
+              </div>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="rounded-full bg-white/30 hover:bg-white/40 transition-colors"
+                onClick={copyCodeToClipboard}
+              >
+                {copied ? (
+                  <CheckCircle className="h-5 w-5" />
+                ) : (
+                  <Copy className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
+            <div className="flex justify-center gap-2 mt-3">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 transition-colors"
+                onClick={copyCodeToClipboard}
+              >
+                <Share className="h-4 w-4 mr-1" />
+                Share Code
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="bg-white dark:bg-gray-800/50 rounded-lg border dark:border-gray-700 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200">
@@ -170,7 +207,7 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
           </div>
         )}
 
-        {gameCode && (
+        {!isHost && gameCode && (
           <Card className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border-none overflow-hidden">
             <div className="text-sm text-center">
               <div className="flex items-center justify-center gap-2 mb-1">
