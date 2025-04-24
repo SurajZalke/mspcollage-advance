@@ -129,6 +129,7 @@ const HostGameRoomPage: React.FC = () => {
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -155,11 +156,12 @@ const HostGameRoomPage: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       refreshGameState();
+      setLastRefreshTime(Date.now());
       setConnectionStatus("connected");
     }, 300);
 
     const connectionCheck = setInterval(() => {
-      const simulateNetworkDelay = Math.random() > 0.9;
+      const simulateNetworkDelay = Math.random() > 0.95;
       if (simulateNetworkDelay) {
         setConnectionStatus("connecting");
         setTimeout(() => setConnectionStatus("connected"), 500);
@@ -349,6 +351,9 @@ const HostGameRoomPage: React.FC = () => {
                   cardRef={cardRef}
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
+                  gameCode={activeGame.code}
+                  isHost={true}
+                  onRefreshPlayers={handleManualRefresh}
                 />
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">

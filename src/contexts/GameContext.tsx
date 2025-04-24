@@ -1,4 +1,3 @@
-
 // Note: Frontend-only implementation (works in ONE SESSION).
 // Multiplayer between host/player across tabs or devices will NOT sync in real time without backend like Supabase.
 // To truly connect host and player in real time, connect Lovable to Supabase via the Lovable Supabase integration!
@@ -11,7 +10,7 @@ import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
 const activeGamesStore: { [key: string]: GameRoom } = {};
 
 // Poll interval in milliseconds - increased for more real-time responsiveness
-const POLL_INTERVAL = 300;
+const POLL_INTERVAL = 200; // More frequent for better real-time experience
 
 // Create some predefined test games
 const TEST_GAME_CODES = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
@@ -74,7 +73,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("Available games in store:", Object.keys(activeGamesStore));
   }, []);
 
-  // Polling interval for game state updates - more frequent for better real-time feeling
+  // Improved polling interval for game state updates - more frequent for better real-time feeling
   useEffect(() => {
     const interval = setInterval(() => {
       refreshGameState();
@@ -98,7 +97,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeGame, currentQuiz]);
 
-  // Function to refresh game state from the "server"
+  // Enhanced function to refresh game state from the "server"
   const refreshGameState = useCallback(() => {
     if (!activeGame) return;
 
@@ -185,6 +184,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newGame;
   }, []);
 
+  // Enhanced joinGame function with more detailed validation
   const joinGame = useCallback((code: string, nickname: string): { success: boolean; message?: string } => {
     if (!code) {
       return { success: false, message: "Please enter a game code" };

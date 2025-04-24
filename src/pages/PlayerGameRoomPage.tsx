@@ -1,17 +1,18 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
 import Logo from "@/components/Logo";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import { Button } from "@/components/ui/button";
 import BackgroundContainer from "@/components/BackgroundContainer";
-import { AlertCircle, Award, Clock, Wifi, WifiOff, RefreshCw, CheckCircle, UserRound, LogIn, ArrowLeft } from "lucide-react";
+import { AlertCircle, Award, Clock, Wifi, RefreshCw, CheckCircle, UserRound, LogIn, ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import confetti from 'canvas-confetti';
+import WaitingRoom from "@/components/WaitingRoom";
+import CreatorAttribution from "@/components/CreatorAttribution";
 
 const JoinGameForm = () => {
   const [gameCode, setGameCode] = useState("");
@@ -24,22 +25,18 @@ const JoinGameForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Demo codes for easy testing
   const demoCodes = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
   const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
 
   useEffect(() => {
-    // Reset validation state when user types
     if (gameCode.length > 0) {
       setIsValidCode(null);
       setErrorMessage(null);
     }
     
-    // Basic client-side validation for format
     if (gameCode.length === 6) {
       setIsValidating(true);
       
-      // Validate the game code with a small delay to simulate network request
       const timeoutId = setTimeout(() => {
         const validationResult = validateGameCode(gameCode);
         setIsValidCode(validationResult.valid);
@@ -148,7 +145,6 @@ const JoinGameForm = () => {
                 }`}
                 value={gameCode}
                 onChange={(e) => {
-                  // Allow only alphanumeric characters and limit to 6 chars
                   const value = e.target.value.replace(/[^A-Za-z0-9]/g, '').substring(0, 6);
                   setGameCode(value.toUpperCase());
                 }}
@@ -200,36 +196,48 @@ const JoinGameForm = () => {
   );
 };
 
-const GameWaiting = ({ nickname }: { nickname: string }) => {
+const GameWaiting = ({ nickname, code, players }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { refreshGameState } = useGame();
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const card = cardRef.current;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const rotateX = (y - centerY) / 20;
+    const rotateY = (centerX - x) / 20;
+    
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  };
+  
+  const resetTilt = () => {
+    if (!cardRef.current) return;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
+  };
+
   return (
-    <Card className="quiz-card p-6 text-center">
-      <CardContent className="space-y-6">
-        <div>
-          <UserRound size={48} className="mx-auto text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full" />
-          <h2 className="text-xl font-bold mt-2 dark:text-white">Welcome, {nickname}!</h2>
-          <p className="text-gray-600 dark:text-gray-300">You've successfully joined the game.</p>
-        </div>
-        
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
-          <h3 className="font-medium text-indigo-700 dark:text-indigo-300 mb-2">Waiting for the host to start the game</h3>
-          <div className="flex justify-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-        </div>
-        
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Please wait for the host to start the quiz. Don't close this window!
-        </div>
-      </CardContent>
-    </Card>
+    <WaitingRoom 
+      players={players}
+      onStartGame={() => {}}
+      cardRef={cardRef}
+      handleMouseMove={handleMouseMove}
+      resetTilt={resetTilt}
+      gameCode={code}
+      isHost={false}
+      onRefreshPlayers={refreshGameState}
+    />
   );
 };
 
 const GameResults = ({ player, onLeave }: { player: any; onLeave: () => void }) => {
   useEffect(() => {
-    // Trigger confetti when showing results
     confetti({
       particleCount: 200,
       spread: 160,
@@ -293,14 +301,12 @@ const PlayerGameRoomPage: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const { toast } = useToast();
   
-  // Enhanced polling for better real-time experience
   useEffect(() => {
     const interval = setInterval(() => {
       refreshGameState();
       setConnectionStatus("connected");
-    }, 500); // Poll every 500ms for more responsive updates
+    }, 300);
     
-    // Simulate occasional network hiccups for visual feedback
     const connectionCheck = setInterval(() => {
       const simulateNetworkDelay = Math.random() > 0.95;
       if (simulateNetworkDelay) {
@@ -343,7 +349,6 @@ const PlayerGameRoomPage: React.FC = () => {
     }, 600);
   };
 
-  // Check if player answered current question
   const hasAnsweredCurrentQuestion = () => {
     if (!currentPlayer || !currentQuestion) return false;
     return currentPlayer.answers.some(a => a.questionId === currentQuestion.id);
@@ -355,14 +360,17 @@ const PlayerGameRoomPage: React.FC = () => {
     }
     
     if (activeGame.status === "waiting") {
-      return <GameWaiting nickname={currentPlayer?.nickname || "Player"} />;
+      return <GameWaiting 
+        nickname={currentPlayer?.nickname || "Player"} 
+        code={activeGame.code}
+        players={activeGame.players}
+      />;
     }
     
     if (activeGame.status === "finished") {
       return <GameResults player={currentPlayer} onLeave={handleLeaveGame} />;
     }
     
-    // Game is active
     if (currentQuestion) {
       const disableOptions = hasAnsweredCurrentQuestion();
       
@@ -457,6 +465,7 @@ const PlayerGameRoomPage: React.FC = () => {
             {renderContent()}
           </div>
         </main>
+        <CreatorAttribution />
       </div>
     </BackgroundContainer>
   );
