@@ -43,10 +43,15 @@ const PlayerJoinForm: React.FC = () => {
       
       // Validate the game code with a small delay to simulate network request
       const timeoutId = setTimeout(() => {
+        // Get available codes for comparison
+        const availableCodes = getAvailableGameCodes();
+        console.log(`Validating code ${gameCode} against available codes:`, availableCodes);
+        
         const validationResult = validateGameCode(gameCode);
         setIsValidCode(validationResult.valid);
         if (!validationResult.valid) {
-          const message = validationResult.message || "Invalid game code";
+          // Enhanced error message with available codes
+          const message = validationResult.message || `Game with code ${gameCode} not found. Please check and try again. Available codes: ${availableCodes.join(', ')}`;
           setErrorMessage(message);
           console.log(message); // Debug logging
         } else {

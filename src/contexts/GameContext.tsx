@@ -16,6 +16,27 @@ const POLL_INTERVAL = 150; // More frequent for better real-time experience
 // Create some predefined test games
 const TEST_GAME_CODES = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
 
+// Make sure all test games exist
+const initTestGames = () => {
+  TEST_GAME_CODES.forEach((code, index) => {
+    if (!activeGamesStore[code]) {
+      activeGamesStore[code] = {
+        id: `test_game_id_${index}`,
+        code: code,
+        hostId: `test_host_id_${index}`,
+        quizId: "quiz1",
+        players: [],
+        status: "waiting",
+        currentQuestionIndex: -1
+      };
+    }
+  });
+  console.log("All demo games initialized:", Object.keys(activeGamesStore));
+};
+
+// Initialize test games immediately
+initTestGames();
+
 interface GameContextType {
   activeGame: GameRoom | null;
   currentPlayer: Player | null;
@@ -52,28 +73,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
   const { toast } = useToast();
 
-  // Initialize the test games
+  // Re-initialize test games on component mount to ensure they always exist
   useEffect(() => {
-    // Create test games if they don't exist
-    TEST_GAME_CODES.forEach((code, index) => {
-      if (!activeGamesStore[code]) {
-        const testGame: GameRoom = {
-          id: `test_game_id_${index}`,
-          code: code,
-          hostId: `test_host_id_${index}`,
-          quizId: "quiz1",
-          players: [],
-          status: "waiting",
-          currentQuestionIndex: -1
-        };
-        
-        activeGamesStore[code] = testGame;
-        console.log("Test game created with code:", code);
-      }
-    });
-    
-    // Log all available games for debugging
-    console.log("Available games in store:", Object.keys(activeGamesStore));
+    initTestGames();
   }, []);
 
   // Improved polling interval for game state updates - more frequent for better real-time feeling
@@ -132,6 +134,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Get available game codes for debugging and UI display
   const getAvailableGameCodes = useCallback(() => {
+    // Always make sure demo codes exist before returning
+    TEST_GAME_CODES.forEach((code) => {
+      if (!activeGamesStore[code]) {
+        initTestGames();
+        break;
+      }
+    });
     return Object.keys(activeGamesStore);
   }, []);
 
@@ -149,33 +158,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Debug logging to see what's happening
     console.log(`Validating game code: ${upperCode}`);
-    console.log(`Available games: ${Object.keys(activeGamesStore)}`);
+    
+    // Make sure demo codes exist
+    if (TEST_GAME_CODES.includes(upperCode) && !activeGamesStore[upperCode]) {
+      initTestGames();
+    }
+    
+    const availableCodes = Object.keys(activeGamesStore);
+    console.log(`Available games: ${availableCodes}`);
     
     const gameExists = !!activeGamesStore[upperCode];
-    
-    // Extra check for TEST12 and other demo codes
-    const isDemoCode = TEST_GAME_CODES.includes(upperCode);
-    if (isDemoCode && !gameExists) {
-      console.log(`Demo code ${upperCode} should exist but wasn't found, recreating it`);
-      const index = TEST_GAME_CODES.indexOf(upperCode);
-      const testGame: GameRoom = {
-        id: `test_game_id_${index}`,
-        code: upperCode,
-        hostId: `test_host_id_${index}`,
-        quizId: "quiz1",
-        players: [],
-        status: "waiting",
-        currentQuestionIndex: -1
-      };
-      
-      activeGamesStore[upperCode] = testGame;
-      return { valid: true };
-    }
     
     if (!gameExists) {
       return { 
         valid: false, 
-        message: `Game with code ${upperCode} not found. Please check and try again. Available codes: ${getAvailableGameCodes().join(", ")}` 
+        message: `Game with code ${upperCode} not found. Please check and try again. Available codes: ${TEST_GAME_CODES.join(", ")}` 
       };
     }
     
@@ -189,7 +186,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     return { valid: true };
-  }, [getAvailableGameCodes]);
+  }, []);
 
   // Improved createGame function with additional validation
   const createGame = useCallback((quizId: string): GameRoom => {
@@ -261,32 +258,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const upperCode = code.trim().toUpperCase();
     
+    // Make sure demo codes exist
+    if (TEST_GAME_CODES.includes(upperCode) && !activeGamesStore[upperCode]) {
+      initTestGames();
+    }
+    
     // Validate game code first
     const validation = validateGameCode(upperCode);
     if (!validation.valid) {
-      // Try to ensure TEST codes are available
-      if (TEST_GAME_CODES.includes(upperCode)) {
-        console.log(`Demo code ${upperCode} wasn't found but should be available, recreating it`);
-        const index = TEST_GAME_CODES.indexOf(upperCode);
-        const testGame: GameRoom = {
-          id: `test_game_id_${index}`,
-          code: upperCode,
-          hostId: `test_host_id_${index}`,
-          quizId: "quiz1",
-          players: [],
-          status: "waiting",
-          currentQuestionIndex: -1
-        };
-        
-        activeGamesStore[upperCode] = testGame;
-      } else {
-        return { success: false, message: validation.message };
-      }
+      return { success: false, message: validation.message };
     }
     
     const gameToJoin = activeGamesStore[upperCode];
     if (!gameToJoin) {
-      return { success: false, message: `Game with code ${upperCode} not found even after recreation attempt` };
+      return { success: false, message: `Game with code ${upperCode} not found. Please use one of these codes: ${TEST_GAME_CODES.join(", ")}` };
     }
 
     // Check if nickname is unique in this game
@@ -440,3 +425,5 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </GameContext.Provider>
   );
 };
+
+export default GameContext;
