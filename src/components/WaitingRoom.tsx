@@ -18,6 +18,7 @@ interface WaitingRoomProps {
   resetTilt: () => void;
   gameCode?: string;
   isHost: boolean;
+  nickname?: string; // Added nickname as an optional property
 }
 
 const WaitingRoom: React.FC<WaitingRoomProps> = ({
@@ -28,7 +29,8 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
   handleMouseMove,
   resetTilt,
   gameCode,
-  isHost
+  isHost,
+  nickname
 }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -88,6 +90,7 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
         <h2 className="text-xl font-bold text-quiz-dark dark:text-white flex items-center gap-2">
           <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           Waiting Room
+          {nickname && <span className="text-sm text-indigo-500 ml-2">({nickname})</span>}
         </h2>
         
         {isHost ? (
