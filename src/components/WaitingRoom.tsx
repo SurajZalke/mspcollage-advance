@@ -1,10 +1,13 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Player } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Users, RefreshCw } from "lucide-react";
+import { Users, RefreshCw, Clock, Copy, CheckCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 import CreatorAttribution from "./CreatorAttribution";
+import confetti from 'canvas-confetti';
 
 interface WaitingRoomProps {
   players: Player[];
@@ -27,6 +30,53 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
   gameCode,
   isHost
 }) => {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activePlayerCount, setActivePlayerCount] = useState(players.length);
+
+  // Animation for player count changes
+  useEffect(() => {
+    if (players.length > activePlayerCount) {
+      // New player joined, trigger confetti
+      confetti({
+        particleCount: 50,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      toast({
+        title: "New player joined!",
+        description: `${players[players.length - 1]?.nickname || 'Someone'} has entered the game`,
+      });
+    }
+    setActivePlayerCount(players.length);
+  }, [players.length, activePlayerCount, toast]);
+
+  const copyCodeToClipboard = () => {
+    if (!gameCode) return;
+    
+    navigator.clipboard.writeText(gameCode);
+    setCopied(true);
+    
+    toast({
+      title: "Game code copied!",
+      description: "The code has been copied to your clipboard",
+    });
+    
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRefreshClick = () => {
+    if (!onRefreshPlayers) return;
+    
+    setRefreshing(true);
+    onRefreshPlayers();
+    
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 600);
+  };
+
   return (
     <div 
       ref={cardRef}
@@ -46,6 +96,7 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
             onClick={onStartGame}
             disabled={players.length === 0}
           >
+            <Clock className="h-4 w-4 mr-2" />
             Start Quiz
           </Button>
         ) : (
@@ -65,8 +116,8 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
             <Button 
               variant="outline" 
               size="icon"
-              onClick={onRefreshPlayers}
-              className="h-8 w-8 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
+              onClick={handleRefreshClick}
+              className={`h-8 w-8 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors ${refreshing ? 'animate-spin' : ''}`}
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -87,40 +138,55 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
             </div>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {players.map((player, idx) => (
-                <TableRow 
-                  key={player.id}
-                  className="transform hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 hover:scale-[1.02] transition-all duration-300"
-                  style={{ animationDelay: `${idx * 0.1}s` }}
-                >
-                  <TableCell className="font-medium">{player.nickname}</TableCell>
-                  <TableCell>
-                    <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      Ready
-                    </span>
-                  </TableCell>
+          <div className="max-h-64 overflow-y-auto custom-scrollbar">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {players.map((player, idx) => (
+                  <TableRow 
+                    key={player.id}
+                    className="transform hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 hover:scale-[1.02] transition-all duration-300"
+                    style={{ animationDelay: `${idx * 0.1}s` }}
+                  >
+                    <TableCell className="font-medium">{player.nickname}</TableCell>
+                    <TableCell>
+                      <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        Ready
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
 
-        {isHost && gameCode && (
-          <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-            <p className="text-sm text-center">
-              <span className="text-gray-500 dark:text-gray-400">Share this code with players:</span>
-              <span className="block text-lg font-bold text-indigo-600 dark:text-indigo-400 tracking-wider mt-1">{gameCode}</span>
-            </p>
-          </div>
+        {gameCode && (
+          <Card className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border-none overflow-hidden">
+            <div className="text-sm text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-gray-500 dark:text-gray-400">Share this code with players:</span>
+              </div>
+              <div 
+                className="flex items-center justify-center gap-2 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-800/30 p-2 rounded-lg transition-colors" 
+                onClick={copyCodeToClipboard}
+              >
+                <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">{gameCode}</span>
+                {copied ? (
+                  <CheckCircle size={16} className="text-green-500" />
+                ) : (
+                  <Copy size={16} className="text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors" />
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">(Click to copy)</p>
+            </div>
+          </Card>
         )}
       </div>
       <CreatorAttribution />

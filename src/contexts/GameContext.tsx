@@ -1,3 +1,4 @@
+
 // Note: Frontend-only implementation (works in ONE SESSION).
 // Multiplayer between host/player across tabs or devices will NOT sync in real time without backend like Supabase.
 // To truly connect host and player in real time, connect Lovable to Supabase via the Lovable Supabase integration!
@@ -5,12 +6,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { GameRoom, Player, Quiz, Question } from "../types";
 import { generateGameCode, generatePlayerId } from "../utils/gameUtils";
+import { useToast } from "@/components/ui/use-toast";
 
 // Simulate a server-side store for active games
 const activeGamesStore: { [key: string]: GameRoom } = {};
 
 // Poll interval in milliseconds - increased for more real-time responsiveness
-const POLL_INTERVAL = 200; // More frequent for better real-time experience
+const POLL_INTERVAL = 150; // More frequent for better real-time experience
 
 // Create some predefined test games
 const TEST_GAME_CODES = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
@@ -48,6 +50,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
+  const { toast } = useToast();
 
   // Initialize the test games
   useEffect(() => {
@@ -127,40 +130,64 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeGame, currentPlayer, isHost]);
 
-  // Validate game code function
+  // Validate game code function with improved error messages
   const validateGameCode = useCallback((code: string): { valid: boolean; message?: string } => {
-    if (!code || code.length !== 6) {
-      return { valid: false, message: "Game code must be 6 characters" };
+    if (!code) {
+      return { valid: false, message: "Game code is required" };
+    }
+    
+    if (code.length !== 6) {
+      return { valid: false, message: "Game code must be exactly 6 characters" };
     }
     
     const upperCode = code.trim().toUpperCase();
     const gameExists = !!activeGamesStore[upperCode];
     
     if (!gameExists) {
-      return { valid: false, message: `Game with code ${upperCode} not found` };
+      return { valid: false, message: `Game with code ${upperCode} not found. Please check and try again.` };
     }
     
     const game = activeGamesStore[upperCode];
     if (game.status === "finished") {
-      return { valid: false, message: "This game has already ended" };
+      return { valid: false, message: "This game has already ended. Please join another game." };
+    }
+    
+    if (game.status === "active") {
+      return { valid: false, message: "This game is already in progress. Please join another game." };
     }
     
     return { valid: true };
   }, []);
 
+  // Create game with improved code generation
   const createGame = useCallback((quizId: string): GameRoom => {
     // Fetch and set the quiz for the host
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
       const quiz = sampleQuizzes.find(q => q.id === quizId);
       if (quiz) {
         setCurrentQuiz(quiz);
+        toast({
+          title: "Quiz loaded",
+          description: `"${quiz.title}" is ready to play`,
+        });
       }
     });
 
     // Create a unique game code that doesn't exist yet
     let gameCode;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
     do {
       gameCode = generateGameCode();
+      attempts++;
+      
+      // Emergency brake to avoid infinite loop
+      if (attempts >= maxAttempts) {
+        // Use timestamp as fallback to ensure uniqueness
+        gameCode = `G${Math.floor(Date.now() % 1000000).toString().padStart(5, '0')}`;
+        break;
+      }
     } while (activeGamesStore[gameCode]);
 
     const newGame: GameRoom = {
@@ -181,10 +208,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setActiveGame(newGame);
     setIsHost(true);
+    
+    toast({
+      title: "Game created!",
+      description: `Share code ${gameCode} with your players`,
+    });
+    
     return newGame;
-  }, []);
+  }, [toast]);
 
-  // Enhanced joinGame function with more detailed validation
+  // Enhanced joinGame function with more detailed validation and UI feedback
   const joinGame = useCallback((code: string, nickname: string): { success: boolean; message?: string } => {
     if (!code) {
       return { success: false, message: "Please enter a game code" };
@@ -266,7 +299,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeGame]);
 
-  // Submit an answer to a question
+  // Submit answer with improved feedback and scoring
   const submitAnswer = useCallback((questionId: string, optionId: string) => {
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;
 

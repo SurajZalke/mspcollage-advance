@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGame } from "@/contexts/GameContext";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserRound, Users, Wifi, RefreshCw } from "lucide-react";
+import { UserRound, Users, Wifi, RefreshCw, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import GameCodeDisplay from "@/components/GameCodeDisplay";
 import LeaderboardDisplay from "@/components/LeaderboardDisplay";
@@ -123,15 +124,16 @@ const PlayerStates = () => {
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState, createGame } = useGame();
+  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState } = useGame();
   const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
+  const [quizLoading, setQuizLoading] = useState(true);
+  const [pollingActive, setPollingActive] = useState(true);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     
     const card = cardRef.current;
@@ -146,20 +148,28 @@ const HostGameRoomPage: React.FC = () => {
     const rotateY = (centerX - x) / 20;
     
     card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-  };
+  }, []);
   
-  const resetTilt = () => {
+  const resetTilt = useCallback(() => {
     if (!cardRef.current) return;
     cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
-  };
+  }, []);
 
+  // Enhanced polling with error handling
   useEffect(() => {
+    if (!pollingActive) return;
+    
     const interval = setInterval(() => {
-      refreshGameState();
-      setLastRefreshTime(Date.now());
-      setConnectionStatus("connected");
-    }, 300);
-
+      try {
+        refreshGameState();
+        setConnectionStatus("connected");
+      } catch (error) {
+        console.error("Error refreshing game state:", error);
+        setConnectionStatus("connecting");
+      }
+    }, 200); // More frequent for better real-time feeling
+    
+    // Simulate occasional network hiccups for UI feedback
     const connectionCheck = setInterval(() => {
       const simulateNetworkDelay = Math.random() > 0.95;
       if (simulateNetworkDelay) {
@@ -172,8 +182,9 @@ const HostGameRoomPage: React.FC = () => {
       clearInterval(interval);
       clearInterval(connectionCheck);
     };
-  }, [refreshGameState]);
+  }, [refreshGameState, pollingActive]);
 
+  // Debug logging
   useEffect(() => {
     console.log("HostGameRoomPage rendered with currentUser:", currentUser);
     console.log("HostGameRoomPage rendered with activeGame:", activeGame);
@@ -190,12 +201,53 @@ const HostGameRoomPage: React.FC = () => {
     }
   }, [currentUser, activeGame, isHost, navigate, toast]);
 
+  // Quiz loading simulation with improved error handling
   useEffect(() => {
-    return () => {
-      console.log("HostGameRoomPage unmounting");
-    };
-  }, []);
+    if (!currentQuiz && activeGame?.quizId) {
+      setQuizLoading(true);
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress > 95) progress = 95; // Cap at 95% until quiz is actually loaded
+        setLoadingProgress(progress);
+      }, 200);
 
+      // Attempt to load quiz data with timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Quiz loading timed out")), 10000)
+      );
+      
+      const quizPromise = import('@/utils/gameUtils').then(({ sampleQuizzes }) => {
+        const foundQuiz = sampleQuizzes.find(q => q.id === activeGame.quizId);
+        return foundQuiz;
+      });
+      
+      // Race between quiz loading and timeout
+      Promise.race([quizPromise, timeoutPromise])
+        .then(() => {
+          clearInterval(progressInterval);
+          setLoadingProgress(100);
+          setTimeout(() => {
+            setQuizLoading(false);
+          }, 500); // Short delay to show 100% before hiding loader
+        })
+        .catch(error => {
+          console.error("Error loading quiz:", error);
+          clearInterval(progressInterval);
+          toast({
+            title: "Error loading quiz",
+            description: "Please try refreshing the page",
+            variant: "destructive"
+          });
+        });
+
+      return () => clearInterval(progressInterval);
+    } else {
+      setQuizLoading(false);
+    }
+  }, [activeGame, currentQuiz, toast]);
+
+  // Authentication and navigation logic
   useEffect(() => {
     if (!currentUser) {
       console.log("No user found, redirecting to login");
@@ -270,35 +322,16 @@ const HostGameRoomPage: React.FC = () => {
             onClick={() => navigate("/host-dashboard")}
             className="quiz-btn-primary"
           >
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Go to Dashboard
           </Button>
+          <CreatorAttribution />
         </div>
       </div>
     );
   }
 
-  useEffect(() => {
-    if (!currentQuiz && activeGame?.quizId) {
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress > 100) progress = 100;
-        setLoadingProgress(progress);
-      }, 300);
-
-      import('@/utils/gameUtils').then(({ sampleQuizzes }) => {
-        const foundQuiz = sampleQuizzes.find(q => q.id === activeGame.quizId);
-        if (foundQuiz) {
-          clearInterval(progressInterval);
-          setLoadingProgress(100);
-        }
-      });
-
-      return () => clearInterval(progressInterval);
-    }
-  }, [activeGame, currentQuiz]);
-
-  if (!currentQuiz) {
+  if (quizLoading || !currentQuiz) {
     return (
       <BackgroundContainer className="flex items-center justify-center min-h-screen">
         <div className="text-center p-8 bg-black/20 backdrop-blur-md rounded-lg w-full max-w-md">
