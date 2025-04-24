@@ -16,6 +16,7 @@ import HostSignupPage from "./pages/HostSignupPage";
 import HostDashboardPage from "./pages/HostDashboardPage";
 import HostGameRoomPage from "./pages/HostGameRoomPage";
 import PlayerGameRoomPage from "./pages/PlayerGameRoomPage";
+import JoinGamePage from "./pages/JoinGamePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => {
                   </ProtectedRoute>
                 } />
                 <Route path="/game-room" element={<PlayerGameRoomPage />} />
+                <Route path="/join" element={<JoinGamePage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

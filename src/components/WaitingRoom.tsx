@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from "react";
 import { Player } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Users, RefreshCw, Clock, Copy, CheckCircle, Share } from "lucide-react";
+import { Users, RefreshCw, Clock, Copy, CheckCircle, Share, QrCode } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import CreatorAttribution from "./CreatorAttribution";
 import confetti from 'canvas-confetti';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface WaitingRoomProps {
   players: Player[];
@@ -18,7 +19,7 @@ interface WaitingRoomProps {
   resetTilt: () => void;
   gameCode?: string;
   isHost: boolean;
-  nickname?: string; // Added nickname as an optional property
+  nickname?: string;
 }
 
 const WaitingRoom: React.FC<WaitingRoomProps> = ({
@@ -36,6 +37,7 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [activePlayerCount, setActivePlayerCount] = useState(players.length);
+  const [showQR, setShowQR] = useState(false);
 
   // Animation for player count changes
   useEffect(() => {
@@ -79,6 +81,10 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
     }, 600);
   };
 
+  // Generate QR code URL using a free service
+  const qrCodeUrl = gameCode ? 
+    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/join?code=${gameCode}` : '';
+
   return (
     <div 
       ref={cardRef}
@@ -109,14 +115,29 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
         )}
       </div>
       
-      {/* Prominent game code display for host */}
+      {/* Prominent game code display with animation for host */}
       {isHost && gameCode && (
-        <Card className="mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 shadow-lg border-none">
-          <div className="text-center">
-            <h3 className="text-lg font-medium mb-2">Share this code with players</h3>
-            <div className="flex items-center justify-center gap-3">
+        <Card className="mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 shadow-lg border-none overflow-hidden">
+          <div className="text-center relative">
+            <div className="absolute top-0 left-0 w-full h-full">
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl animate-pulse"></div>
+            </div>
+            <h3 className="text-lg font-medium mb-2 relative z-10">Share this code with players</h3>
+            <div className="flex items-center justify-center gap-3 relative z-10">
               <div className="text-3xl font-bold tracking-wider bg-white/20 px-6 py-2 rounded-md">
-                {gameCode}
+                {gameCode.split('').map((char, idx) => (
+                  <span 
+                    key={idx} 
+                    className="inline-block"
+                    style={{ 
+                      animationDelay: `${idx * 0.15}s`,
+                      animation: 'pulse 2s infinite'
+                    }}
+                  >
+                    {char}
+                  </span>
+                ))}
               </div>
               <Button
                 variant="secondary"
@@ -131,7 +152,7 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
                 )}
               </Button>
             </div>
-            <div className="flex justify-center gap-2 mt-3">
+            <div className="flex justify-center gap-2 mt-3 relative z-10">
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -140,6 +161,15 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
               >
                 <Share className="h-4 w-4 mr-1" />
                 Share Code
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 transition-colors"
+                onClick={() => setShowQR(true)}
+              >
+                <QrCode className="h-4 w-4 mr-1" />
+                Show QR
               </Button>
             </div>
           </div>
@@ -224,11 +254,46 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
                   <Copy size={16} className="text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors" />
                 )}
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">(Click to copy)</p>
+              <div className="flex justify-center mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs h-7"
+                  onClick={() => setShowQR(true)}
+                >
+                  <QrCode className="h-3 w-3 mr-1" />
+                  Show QR Code
+                </Button>
+              </div>
             </div>
           </Card>
         )}
       </div>
+
+      {/* QR Code Dialog */}
+      <Dialog open={showQR} onOpenChange={setShowQR}>
+        <DialogContent className="sm:max-w-md text-center">
+          <DialogHeader>
+            <DialogTitle>Scan to Join the Game</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 flex flex-col items-center gap-4">
+            <div className="bg-white p-2 rounded-lg shadow-inner">
+              <img 
+                src={qrCodeUrl} 
+                alt="QR Code to join game" 
+                className="w-64 h-64 mx-auto animate-fade-in" 
+              />
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Scan this QR code with your phone camera to join the game
+            </p>
+            <p className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400">
+              {gameCode}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       <CreatorAttribution />
     </div>
   );

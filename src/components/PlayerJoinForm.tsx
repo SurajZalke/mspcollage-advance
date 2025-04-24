@@ -9,8 +9,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { use3DTilt } from "@/utils/animationUtils";
 import { AlertCircle, Check, Info, Loader, LogIn } from "lucide-react";
 
-const PlayerJoinForm: React.FC = () => {
-  const [gameCode, setGameCode] = useState("");
+interface PlayerJoinFormProps {
+  initialGameCode?: string | null;
+}
+
+const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null }) => {
+  const [gameCode, setGameCode] = useState(initialGameCode || "");
   const [nickname, setNickname] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -30,30 +34,27 @@ const PlayerJoinForm: React.FC = () => {
     console.log("Available game codes:", getAvailableGameCodes());
   }, [getAvailableGameCodes]);
 
+  // Handle initial game code
   useEffect(() => {
-    // Reset validation state when user types
-    if (gameCode.length > 0) {
-      setIsValidCode(null);
-      setErrorMessage(null);
+    if (initialGameCode) {
+      setGameCode(initialGameCode);
+      validateCode(initialGameCode);
     }
-    
-    // Basic client-side validation for format
-    if (gameCode.length === 6) {
+  }, [initialGameCode]);
+
+  // Validate game code
+  const validateCode = (code: string) => {
+    if (code.length === 6) {
       setIsValidating(true);
       
-      // Validate the game code with a small delay to simulate network request
-      const timeoutId = setTimeout(() => {
-        // Get available codes for comparison
+      setTimeout(() => {
         const availableCodes = getAvailableGameCodes();
-        console.log(`Validating code ${gameCode} against available codes:`, availableCodes);
+        console.log(`Validating code ${code} against available codes:`, availableCodes);
         
-        const validationResult = validateGameCode(gameCode);
+        const validationResult = validateGameCode(code);
         setIsValidCode(validationResult.valid);
         if (!validationResult.valid) {
-          // Enhanced error message with available codes
-          const message = validationResult.message || `Game with code ${gameCode} not found. Please check and try again. Available codes: ${availableCodes.join(', ')}`;
-          setErrorMessage(message);
-          console.log(message); // Debug logging
+          setErrorMessage(validationResult.message || "Invalid game code");
         } else {
           setErrorMessage(null);
           // Auto focus to nickname field when code is valid
@@ -63,9 +64,20 @@ const PlayerJoinForm: React.FC = () => {
           }
         }
         setIsValidating(false);
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
+      }, 400);
+    }
+  };
+
+  useEffect(() => {
+    // Reset validation state when user types
+    if (gameCode.length > 0) {
+      setIsValidCode(null);
+      setErrorMessage(null);
+    }
+    
+    // Basic client-side validation for format
+    if (gameCode.length === 6) {
+      validateCode(gameCode);
     } else if (gameCode.length > 0) {
       setIsValidCode(false);
       if (gameCode.length < 6) {
@@ -94,15 +106,14 @@ const PlayerJoinForm: React.FC = () => {
       return;
     }
 
-    console.log(`Attempting to join game with code: ${gameCode}`);
-    console.log(`Available games before join:`, getAvailableGameCodes());
-
+    console.log(`Attempting to join game with code: ${gameCode.toUpperCase()}`);
+    
     try {      
       const result = joinGame(gameCode.toUpperCase(), nickname.trim());
       
       if (result.success) {
         toast({
-          title: "Success!",
+          title: "Successfully joined!",
           description: `You've joined the game as ${nickname}!`,
         });
         navigate("/game-room");
@@ -175,7 +186,7 @@ const PlayerJoinForm: React.FC = () => {
                   setGameCode(value.toUpperCase());
                 }}
                 maxLength={6}
-                autoFocus
+                autoFocus={!initialGameCode}
               />
               {isValidating ? (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-500">
@@ -219,7 +230,7 @@ const PlayerJoinForm: React.FC = () => {
             )}
           </Button>
           
-          {/* Debug info for available games - can be removed in production */}
+          {/* Debug info for available games */}
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-6">
             <p className="text-center">Available demo codes: {demoCodes.join(", ")}</p>
           </div>
