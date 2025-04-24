@@ -1,3 +1,4 @@
+
 // Note: Frontend-only implementation (works in ONE SESSION).
 // Multiplayer between host/player across tabs or devices will NOT sync in real time without backend like Supabase.
 // To truly connect host and player in real time, connect Lovable to Supabase via the Lovable Supabase integration!
@@ -135,12 +136,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Get available game codes for debugging and UI display
   const getAvailableGameCodes = useCallback(() => {
     // Always make sure demo codes exist before returning
-    TEST_GAME_CODES.forEach((code) => {
-      if (!activeGamesStore[code]) {
-        initTestGames();
-        break;
-      }
-    });
+    // Fixed: Don't use break in forEach, check if any code is missing
+    const anyMissingCode = TEST_GAME_CODES.some(code => !activeGamesStore[code]);
+    if (anyMissingCode) {
+      initTestGames();
+    }
+    
     return Object.keys(activeGamesStore);
   }, []);
 
