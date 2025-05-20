@@ -38,8 +38,8 @@ const JoinGameForm = () => {
     if (gameCode.length === 6) {
       setIsValidating(true);
       
-      const timeoutId = setTimeout(() => {
-        const validationResult = validateGameCode(gameCode);
+      const timeoutId = setTimeout(async () => {
+        const validationResult = await validateGameCode(gameCode);
         setIsValidCode(validationResult.valid);
         if (!validationResult.valid) {
           setErrorMessage(validationResult.message || "Invalid game code");
@@ -87,7 +87,7 @@ const JoinGameForm = () => {
     }
 
     try {      
-      const result = joinGame(gameCode.toUpperCase(), nickname.trim());
+      const result = await joinGame(gameCode.toUpperCase(), nickname.trim());
       
       if (result.success) {
         confetti({

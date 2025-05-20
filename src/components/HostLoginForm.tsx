@@ -29,21 +29,31 @@ const HostLoginForm: React.FC = () => {
     e.preventDefault();
     setError(null);
     
+    console.log("HostLoginForm: handleLogin called."); // Added log
+
     if (!email || !password) {
       setError("Please enter both email and password");
+      console.log("HostLoginForm: Login attempt failed: Email or password missing"); // Added log
       return;
     }
 
     setIsLoading(true);
+    console.log("HostLoginForm: setIsLoading(true)"); // Added log
+    console.log("HostLoginForm: Login attempt started for email:", email); // Added log
     
     try {
-      await login(email, password);
+      console.log("HostLoginForm: Calling login function from AuthContext..."); // Added log
+      const user = await login(email, password);
+      console.log("HostLoginForm: login function returned."); // Added log
+      console.log("HostLoginForm: Login successful for user:", user); // Added log
       toast({
         title: "Welcome back!",
         description: "Successfully logged in",
       });
+      console.log("HostLoginForm: Navigating to /host-dashboard."); // Added log
       navigate("/host-dashboard");
     } catch (error: any) {
+      console.error("HostLoginForm: Login failed:", error.message); // Added log
       setError(error.message);
       toast({
         variant: "destructive",
@@ -52,6 +62,8 @@ const HostLoginForm: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+      console.log("HostLoginForm: setIsLoading(false)"); // Added log
+      console.log("HostLoginForm: Login process finished."); // Added log
     }
   };
 

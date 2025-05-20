@@ -1,54 +1,59 @@
 
 import { useCallback } from 'react';
-import { activeGamesStore, TEST_GAME_CODES, initTestGames } from '@/store/gameStore';
+import { supabase } from '@/lib/supabaseClient';
+import { GameRoom } from '@/types';
+import { TEST_GAME_CODES } from '@/store/gameStore';
 
 export const useGameValidation = () => {
-  const validateGameCode = useCallback((code: string): { valid: boolean; message?: string } => {
+  const validateGameCode = useCallback(async (code: string): Promise<{ valid: boolean; message?: string }> => {
     if (!code) {
-      return { valid: false, message: "Game code is required" };
+      return Promise.resolve({ valid: false, message: "Game code is required" });
     }
     
     if (code.length !== 6) {
-      return { valid: false, message: "Game code must be exactly 6 characters" };
+      return Promise.resolve({ valid: false, message: "Game code must be exactly 6 characters" });
     }
     
     const upperCode = code.trim().toUpperCase();
     console.log(`Validating game code: ${upperCode}`);
     
-    if (TEST_GAME_CODES.includes(upperCode) && !activeGamesStore[upperCode]) {
-      initTestGames();
-    }
-    
-    const availableCodes = Object.keys(activeGamesStore);
-    console.log(`Available games: ${availableCodes}`);
-    
-    const gameExists = !!activeGamesStore[upperCode];
-    
-    if (!gameExists) {
-      return { 
+    const { data: gameData, error } = await supabase
+      .from('games')
+      .select('status')
+      .eq('code', upperCode)
+      .single();
+
+    if (error || !gameData) {
+      return Promise.resolve({ 
         valid: false, 
         message: `Game with code ${upperCode} not found. Please check and try again. Available codes: ${TEST_GAME_CODES.join(", ")}` 
-      };
+      });
     }
     
-    const game = activeGamesStore[upperCode];
+    const game = gameData as GameRoom; // Cast data to GameRoom type
     if (game.status === "finished") {
-      return { valid: false, message: "This game has already ended. Please join another game." };
+      return Promise.resolve({ valid: false, message: "This game has already ended. Please join another game." });
     }
     
     if (game.status === "active") {
-      return { valid: false, message: "This game is already in progress. Please join another game." };
+      return Promise.resolve({ valid: false, message: "This game is already in progress. Please join another game." });
     }
     
-    return { valid: true };
+    return Promise.resolve({ valid: true });
   }, []);
 
-  const getAvailableGameCodes = useCallback(() => {
-    const anyMissingCode = TEST_GAME_CODES.some(code => !activeGamesStore[code]);
-    if (anyMissingCode) {
-      initTestGames();
+  // This function is likely not needed anymore if validation is done via Supabase
+  // Keeping it for now but it might be removed later.
+  const getAvailableGameCodes = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('games')
+      .select('code');
+
+    if (error) {
+      console.error('Error fetching available game codes:', error);
+      return [];
     }
-    return Object.keys(activeGamesStore);
+    return data ? data.map(game => game.code) : [];
   }, []);
 
   return {

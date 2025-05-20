@@ -18,6 +18,7 @@ import HostGameRoomPage from "./pages/HostGameRoomPage";
 import PlayerGameRoomPage from "./pages/PlayerGameRoomPage";
 import JoinGamePage from "./pages/JoinGamePage";
 import NotFound from "./pages/NotFound";
+import ProfileSetup from "./components/ProfileSetup";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/host-login" element={<HostLoginPage />} />
                 <Route path="/host-signup" element={<HostSignupPage />} />
+                <Route path="/profile-setup" element={<ProfileSetup />} />
                 <Route path="/host-dashboard" element={
                   <ProtectedRoute>
                     <HostDashboardPage />

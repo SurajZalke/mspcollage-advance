@@ -4,6 +4,7 @@ import { GameRoom, Player, Quiz, Question } from '@/types';
 import { activeGamesStore } from '@/store/gameStore';
 import { generateGameCode, generatePlayerId } from '@/utils/gameUtils';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabaseClient';
 
 export const useGameState = () => {
   const [activeGame, setActiveGame] = useState<GameRoom | null>(null);
@@ -13,7 +14,7 @@ export const useGameState = () => {
   const [isHost, setIsHost] = useState<boolean>(false);
   const { toast } = useToast();
 
-  const createGame = useCallback((quizId: string): GameRoom => {
+  const createGame = useCallback(async (quizId: string): Promise<GameRoom> => {
     // Load quiz data
     import('../utils/gameUtils').then(({ sampleQuizzes }) => {
       const quiz = sampleQuizzes.find(q => q.id === quizId);
@@ -50,16 +51,33 @@ export const useGameState = () => {
       currentQuestionIndex: -1
     };
 
-    activeGamesStore[gameCode] = newGame;
-    setActiveGame(newGame);
+    // Insert the new game into Supabase
+    const { data, error } = await supabase
+      .from('games')
+      .insert([newGame])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating game in Supabase:', error);
+      toast({
+        title: "Error creating game",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw new Error('Failed to create game');
+    }
+
+    // Set active game and host status from the data returned by Supabase
+    setActiveGame(data);
     setIsHost(true);
-    
+
     toast({
       title: "Game created!",
       description: `Share code ${gameCode} with your players`,
     });
-    
-    return newGame;
+
+    return data;
   }, [toast]);
 
   return {

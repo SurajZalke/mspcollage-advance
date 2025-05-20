@@ -14,6 +14,8 @@ import QuestionDisplay from "@/components/QuestionDisplay";
 import GameCodeDisplay from "@/components/GameCodeDisplay";
 import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 import TrophyAnimation from "@/components/TrophyAnimation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -96,8 +98,11 @@ const HostGameRoomPage: React.FC = () => {
                   onStartGame={startGame}
                   gameCode={activeGame.code}
                   isHost={true}
-                  onRefreshPlayers={handleManualRefresh}
-                />
+                  onRefreshPlayers={handleManualRefresh} cardRef={undefined} handleMouseMove={function (e: React.MouseEvent<HTMLDivElement>): void {
+                    throw new Error("Function not implemented.");
+                  } } resetTilt={function (): void {
+                    throw new Error("Function not implemented.");
+                  } }                />
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
@@ -105,10 +110,11 @@ const HostGameRoomPage: React.FC = () => {
                       Question {activeGame.currentQuestionIndex + 1} of {currentQuiz?.questions.length}
                     </h2>
                     <GameControls 
-                      onEndGame={endGame}
-                      onNextQuestion={nextQuestion}
-                      showNext={true}
-                    />
+                        onEndGame={endGame}
+                        onNextQuestion={nextQuestion}
+                        showNext={true} onStartGame={function (): void {
+                          throw new Error("Function not implemented.");
+                        } }                    />
                   </div>
                   
                   {currentQuestion && (

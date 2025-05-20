@@ -12,9 +12,11 @@ import { Quiz, ScienceSubject } from "@/types";
 import { scienceSubjects, sampleQuizzes } from "@/utils/gameUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { Filter, Search, BookOpen, Users, Play, Award, Plus } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BackgroundContainer from "@/components/BackgroundContainer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import CreateQuizForm from "@/components/CreateQuizForm";
+import ProfileSetup from "@/components/ProfileSetup";
 
 const HostDashboardPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -97,11 +99,25 @@ const HostDashboardPage: React.FC = () => {
         <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
           <div className="container mx-auto p-4 flex justify-between items-center">
             <Logo />
-            
+
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600 dark:text-white">
-                Welcome, <span className="font-medium">{currentUser.name}</span>
-              </span>
+              {/* Profile Edit Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" className="flex items-center space-x-2 dark:text-white dark:hover:bg-gray-800">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={currentUser.user_metadata?.avatar_url || ''} />
+                      <AvatarFallback>{currentUser.user_metadata?.name?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-gray-600 dark:text-white">
+                      Welcome, <span className="font-medium">{currentUser.user_metadata?.name || 'Host'}</span>
+                    </span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px] flex items-center justify-center">
+                  <ProfileSetup />
+                </DialogContent>
+              </Dialog>
               <Button variant="outline" onClick={handleLogout} className="dark:text-white dark:hover:bg-gray-800">
                 Sign Out
               </Button>
@@ -110,121 +126,119 @@ const HostDashboardPage: React.FC = () => {
         </header>
         
         <main className="container mx-auto p-4 py-8 flex-1">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-quiz-dark dark:text-white">Host Dashboard</h1>
-            <p className="text-gray-600 dark:text-gray-300">Manage your quizzes and game sessions</p>
-          </div>
-          
-          <Tabs defaultValue="my-quizzes" className="mb-8">
-            <TabsList className="mb-6 bg-gray-100/70 dark:bg-gray-800/70 backdrop-blur-md">
-              <TabsTrigger value="my-quizzes" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
-                <BookOpen className="w-4 h-4 mr-2" />
-                My Quizzes
-              </TabsTrigger>
-              <TabsTrigger value="create-quiz" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
-                <Play className="w-4 h-4 mr-2" />
-                Create Quiz
-              </TabsTrigger>
-              <TabsTrigger value="game-history" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
-                <Users className="w-4 h-4 mr-2" />
-                Game History
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="my-quizzes">
-              <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-center relative">
-                  <Search className="absolute left-3 text-gray-400" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Search quizzes..."
-                    className="pl-10 w-full p-2 rounded-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                    <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
-                      <Filter className="w-4 h-4 mr-2 text-gray-500" />
-                      <SelectValue placeholder="Filter by Subject" />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:text-white dark:border-gray-700">
-                      <SelectItem value="all">All Subjects</SelectItem>
-                      {subjects.map(subject => (
-                        <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-                    <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
-                      <Award className="w-4 h-4 mr-2 text-gray-500" />
-                      <SelectValue placeholder="Filter by Grade" />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:text-white dark:border-gray-700">
-                      <SelectItem value="all">All Grades</SelectItem>
-                      <SelectItem value="11">Grade 11</SelectItem>
-                      <SelectItem value="12">Grade 12</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-quiz-dark dark:text-white">Host Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-300">Manage your quizzes and game sessions</p>
+        </div>
+
+        <Tabs defaultValue="my-quizzes" className="mb-8">
+          <TabsList className="mb-6 bg-gray-100/70 dark:bg-gray-800/70 backdrop-blur-md">
+            <TabsTrigger value="my-quizzes" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
+              <BookOpen className="w-4 h-4 mr-2" />
+              My Quizzes
+            </TabsTrigger>
+            <TabsTrigger value="create-quiz" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
+              <Play className="w-4 h-4 mr-2" />
+              Create Quiz
+            </TabsTrigger>
+            <TabsTrigger value="game-history" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
+              <Users className="w-4 h-4 mr-2" />
+              Game History
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="my-quizzes">
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center relative">
+                <Search className="absolute left-3 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search quizzes..."
+                  className="pl-10 w-full p-2 rounded-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredQuizzes.length > 0 ? (
-                  filteredQuizzes.map((quiz) => (
-                    <QuizCard 
-                      key={quiz.id} 
-                      quiz={quiz} 
-                      onStart={handleStartQuiz}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p className="text-gray-500 dark:text-gray-400">No quizzes found matching your filters.</p>
-                  </div>
-                )}
+
+              <div>
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
+                    <Filter className="w-4 h-4 mr-2 text-gray-500" />
+                    <SelectValue placeholder="Filter by Subject" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-gray-800 dark:text-white dark:border-gray-700">
+                    <SelectItem value="all">All Subjects</SelectItem>
+                    {subjects.map(subject => (
+                      <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="create-quiz">
-              <div className="quiz-card p-6 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
-                <div className="text-center">
-                  <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Create a New Quiz</h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
-                    Create custom quizzes for your students by selecting a subject, grade level, and adding your own questions.
-                    All your created quizzes will appear in your "My Quizzes" tab.
-                  </p>
-                  
-                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="quiz-btn-primary flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create New Quiz
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl p-0">
-                      <CreateQuizForm onClose={() => setCreateDialogOpen(false)} />
-                    </DialogContent>
-                  </Dialog>
+
+              <div>
+                <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+                  <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
+                    <Award className="w-4 h-4 mr-2 text-gray-500" />
+                    <SelectValue placeholder="Filter by Grade" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-gray-800 dark:text-white dark:border-gray-700">
+                    <SelectItem value="all">All Grades</SelectItem>
+                    <SelectItem value="11">Grade 11</SelectItem>
+                    <SelectItem value="12">Grade 12</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredQuizzes.length > 0 ? (
+                filteredQuizzes.map((quiz) => (
+                  <QuizCard
+                    key={quiz.id}
+                    quiz={quiz}
+                    onStart={handleStartQuiz} />
+                ))
+              ) : (
+                <div className="col-span-full text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <p className="text-gray-500 dark:text-gray-400">No quizzes found matching your filters.</p>
                 </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="game-history">
-              <div className="quiz-card p-6 text-center bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
-                <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Game History</h2>
-                <p className="text-gray-600 dark:text-gray-300">
-                  You haven't hosted any games yet. Start a quiz to see your game history.
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="create-quiz">
+            <div className="quiz-card p-6 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Create a New Quiz</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+                  Create custom quizzes for your students by selecting a subject, grade level, and adding your own questions.
+                  All your created quizzes will appear in your "My Quizzes" tab.
                 </p>
+
+                <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="quiz-btn-primary flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Quiz
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl p-0">
+                    <CreateQuizForm onClose={() => setCreateDialogOpen(false)} />
+                  </DialogContent>
+                </Dialog>
               </div>
-            </TabsContent>
-          </Tabs>
-        </main>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="game-history">
+            <div className="quiz-card p-6 text-center bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Game History</h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                You haven't hosted any games yet. Start a quiz to see your game history.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
       </div>
     </BackgroundContainer>
   );

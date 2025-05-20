@@ -50,7 +50,7 @@ const HostSignupForm: React.FC = () => {
     
     try {
       await signup(name, email, password);
-      navigate("/host-dashboard");
+      navigate("/profile-setup");
     } catch (error: any) {
       setError(error.message);
     } finally {

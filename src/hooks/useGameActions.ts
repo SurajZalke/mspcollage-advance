@@ -2,6 +2,7 @@
 import { useCallback } from 'react';
 import { GameRoom, Player, Quiz, Question } from '@/types';
 import { activeGamesStore, TEST_GAME_CODES, initTestGames } from '@/store/gameStore';
+import { supabase } from '@/lib/supabaseClient';
 
 export const useGameActions = (
   activeGame: GameRoom | null,
@@ -10,32 +11,50 @@ export const useGameActions = (
   currentQuestion: Question | null,
   currentQuiz: Quiz | null
 ) => {
-  const startGame = useCallback(() => {
-    if (activeGame) {
-      const updatedGame: GameRoom = {
-        ...activeGame,
-        status: "active" as "active",
-        currentQuestionIndex: 0,
-        startTime: new Date()
-      };
-      activeGamesStore[activeGame.code] = updatedGame;
-      setActiveGame(updatedGame);
+  const startGame = useCallback(async () => {
+    if (!activeGame) return;
+
+    const { data, error } = await supabase
+      .from('games')
+      .update({
+        status: "active",
+        current_question_index: 0,
+        start_time: new Date().toISOString()
+      })
+      .eq('id', activeGame.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error starting game in Supabase:', error);
+      // Handle error, maybe show a toast
+    } else if (data) {
+      setActiveGame(data);
     }
   }, [activeGame, setActiveGame]);
 
-  const endGame = useCallback(() => {
-    if (activeGame) {
-      const updatedGame: GameRoom = {
-        ...activeGame,
-        status: "finished" as "finished",
-        endTime: new Date()
-      };
-      activeGamesStore[activeGame.code] = updatedGame;
-      setActiveGame(updatedGame);
+  const endGame = useCallback(async () => {
+    if (!activeGame) return;
+
+    const { data, error } = await supabase
+      .from('games')
+      .update({
+        status: "finished",
+        end_time: new Date().toISOString()
+      })
+      .eq('id', activeGame.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error ending game in Supabase:', error);
+      // Handle error
+    } else if (data) {
+      setActiveGame(data);
     }
   }, [activeGame, setActiveGame]);
 
-  const submitAnswer = useCallback((questionId: string, optionId: string) => {
+  const submitAnswer = useCallback(async (questionId: string, optionId: string) => {
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;
 
     const isCorrect = optionId === currentQuestion.correctOption;
@@ -56,29 +75,29 @@ export const useGameActions = (
       timeToAnswer
     };
 
-    const updatedPlayer = {
-      ...currentPlayer,
-      score: currentPlayer.score + scoreChange,
-      answers: [...currentPlayer.answers, newAnswer]
-    };
+    // Update player's score and answers in Supabase
+    const { data: updatedPlayerData, error: playerUpdateError } = await supabase
+      .from('game_players')
+      .update({
+        score: currentPlayer.score + scoreChange,
+        answers: [...currentPlayer.answers, newAnswer] // Assuming 'answers' is a JSONB column
+      })
+      .eq('player_id', currentPlayer.id)
+      .eq('game_id', activeGame.id)
+      .select()
+      .single();
 
-    const gameToUpdate = activeGamesStore[activeGame.code];
-    if (gameToUpdate) {
-      const updatedPlayers = gameToUpdate.players.map(p =>
-        p.id === currentPlayer.id ? updatedPlayer : p
-      );
-
-      const updatedGame: GameRoom = {
-        ...gameToUpdate,
-        players: updatedPlayers
-      };
-
-      activeGamesStore[activeGame.code] = updatedGame;
-      setActiveGame(updatedGame);
+    if (playerUpdateError) {
+      console.error('Error updating player score/answers in Supabase:', playerUpdateError);
+      // Handle error
+    } else if (updatedPlayerData) {
+      // The refreshGameState in GameContext will handle updating the local state
+      // based on the real-time subscription.
+      // No need to call setActiveGame or setCurrentPlayer here directly.
     }
-  }, [activeGame, currentPlayer, currentQuestion, currentQuiz, setActiveGame]);
+  }, [activeGame, currentPlayer, currentQuestion, currentQuiz]);
 
-  const nextQuestion = useCallback(() => {
+  const nextQuestion = useCallback(async () => {
     if (!activeGame || !currentQuiz) return;
 
     const nextIndex = activeGame.currentQuestionIndex + 1;
@@ -86,15 +105,24 @@ export const useGameActions = (
     if (nextIndex >= currentQuiz.questions.length) {
       endGame();
     } else {
-      const updatedGame: GameRoom = {
-        ...activeGame,
-        currentQuestionIndex: nextIndex
-      };
+      // Update the current question index in Supabase
+      const { data, error } = await supabase
+        .from('games')
+        .update({ current_question_index: nextIndex })
+        .eq('id', activeGame.id)
+        .select()
+        .single();
 
-      activeGamesStore[activeGame.code] = updatedGame;
-      setActiveGame(updatedGame);
+      if (error) {
+        console.error('Error updating question index in Supabase:', error);
+        // Handle error
+      } else if (data) {
+        // The refreshGameState in GameContext will handle updating the local state
+        // based on the real-time subscription.
+        // No need to call setActiveGame here directly.
+      }
     }
-  }, [activeGame, currentQuiz, endGame, setActiveGame]);
+  }, [activeGame, currentQuiz, endGame]);
 
   return {
     startGame,

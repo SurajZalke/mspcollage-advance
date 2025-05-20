@@ -6,6 +6,7 @@ export interface User {
 }
 
 export interface Player {
+  player_id: string;
   id: string;
   nickname: string;
   score: number;

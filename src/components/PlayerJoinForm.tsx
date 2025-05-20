@@ -47,11 +47,11 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
     if (code.length === 6) {
       setIsValidating(true);
       
-      setTimeout(() => {
+      setTimeout(async () => {
         const availableCodes = getAvailableGameCodes();
         console.log(`Validating code ${code} against available codes:`, availableCodes);
         
-        const validationResult = validateGameCode(code);
+        const validationResult = await validateGameCode(code);
         setIsValidCode(validationResult.valid);
         if (!validationResult.valid) {
           setErrorMessage(validationResult.message || "Invalid game code");
@@ -109,7 +109,7 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
     console.log(`Attempting to join game with code: ${gameCode.toUpperCase()}`);
     
     try {      
-      const result = joinGame(gameCode.toUpperCase(), nickname.trim());
+      const result = await joinGame(gameCode.toUpperCase(), nickname.trim());
       
       if (result.success) {
         toast({

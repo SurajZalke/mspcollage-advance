@@ -21,7 +21,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleJoinClick = () => {
-    navigate("/game-room");
+    navigate("/join");
   };
 
   return (
