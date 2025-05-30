@@ -3,6 +3,14 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  user_metadata?: {
+     id?: string;
+     name?: string;
+     avatar_url?: string;
+     bio?: string;
+     email?: string;
+     createdAt?: any; // Using 'any' for serverTimestamp type
+   };
 }
 
 export interface Player {
@@ -50,6 +58,8 @@ export interface QuestionOption {
 }
 
 export interface GameRoom {
+  quiz_id: boolean;
+  host_id: string;
   id: string;
   code: string;
   hostId: string;

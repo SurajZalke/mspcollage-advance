@@ -1,8 +1,8 @@
 
 import { useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/firebaseConfig';
+import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
 import { GameRoom } from '@/types';
-import { TEST_GAME_CODES } from '@/store/gameStore';
 
 export const useGameValidation = () => {
   const validateGameCode = useCallback(async (code: string): Promise<{ valid: boolean; message?: string }> => {
@@ -17,20 +17,17 @@ export const useGameValidation = () => {
     const upperCode = code.trim().toUpperCase();
     console.log(`Validating game code: ${upperCode}`);
     
-    const { data: gameData, error } = await supabase
-      .from('games')
-      .select('status')
-      .eq('code', upperCode)
-      .single();
+    const gameRef = ref(db, 'games/' + upperCode);
+    const gameSnapshot = await get(gameRef);
 
-    if (error || !gameData) {
+    if (!gameSnapshot.exists()) {
       return Promise.resolve({ 
         valid: false, 
-        message: `Game with code ${upperCode} not found. Please check and try again. Available codes: ${TEST_GAME_CODES.join(", ")}` 
+        message: `Game with code ${upperCode} not found. Please check and try again.` 
       });
     }
     
-    const game = gameData as GameRoom; // Cast data to GameRoom type
+    const game = gameSnapshot.val() as GameRoom; // Cast data to GameRoom type
     if (game.status === "finished") {
       return Promise.resolve({ valid: false, message: "This game has already ended. Please join another game." });
     }
@@ -42,18 +39,18 @@ export const useGameValidation = () => {
     return Promise.resolve({ valid: true });
   }, []);
 
-  // This function is likely not needed anymore if validation is done via Supabase
+  
   // Keeping it for now but it might be removed later.
   const getAvailableGameCodes = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('games')
-      .select('code');
-
-    if (error) {
-      console.error('Error fetching available game codes:', error);
-      return [];
+    const gamesRef = ref(db, 'games');
+    const snapshot = await get(gamesRef);
+    const codes: string[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((childSnapshot) => {
+        codes.push(childSnapshot.key as string); // Assuming the key is the game code
+      });
     }
-    return data ? data.map(game => game.code) : [];
+    return codes;
   }, []);
 
   return {

@@ -134,7 +134,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       description,
       subject,
       grade,
-      createdBy: currentUser?.id || "",
+      createdBy: currentUser?.user_metadata?.id || "",
       topic: subject,
       questions,
       hasNegativeMarking: false,

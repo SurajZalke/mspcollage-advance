@@ -1,8 +1,8 @@
 
 import { useCallback } from 'react';
 import { GameRoom, Player, Quiz, Question } from '@/types';
-import { activeGamesStore, TEST_GAME_CODES, initTestGames } from '@/store/gameStore';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/firebaseConfig';
+import { ref, update, get as getDatabaseData } from 'firebase/database';
 
 export const useGameActions = (
   activeGame: GameRoom | null,
@@ -14,43 +14,32 @@ export const useGameActions = (
   const startGame = useCallback(async () => {
     if (!activeGame) return;
 
-    const { data, error } = await supabase
-      .from('games')
-      .update({
-        status: "active",
-        current_question_index: 0,
-        start_time: new Date().toISOString()
-      })
-      .eq('id', activeGame.id)
-      .select()
-      .single();
+    const gameRef = ref(db, `games/${activeGame.code}`);
+     try {
+       await update(gameRef, {
+         status: 'active',
+         currentQuestionIndex: 0,
+       });
 
-    if (error) {
-      console.error('Error starting game in Supabase:', error);
-      // Handle error, maybe show a toast
-    } else if (data) {
-      setActiveGame(data);
+      // No direct state update here, GameContext's onSnapshot will handle it
+    } catch (error: any) {
+      console.error('Error starting game in Realtime Database:', error);
     }
   }, [activeGame, setActiveGame]);
 
   const endGame = useCallback(async () => {
     if (!activeGame) return;
 
-    const { data, error } = await supabase
-      .from('games')
-      .update({
-        status: "finished",
-        end_time: new Date().toISOString()
-      })
-      .eq('id', activeGame.id)
-      .select()
-      .single();
+    const gameRef = ref(db, `games/${activeGame.code}`);
+    const quizRef = ref(db, `quizzes/${currentQuiz.id}`);
+     try {
+       await update(gameRef, {
+         status: 'ended',
+       });
 
-    if (error) {
-      console.error('Error ending game in Supabase:', error);
-      // Handle error
-    } else if (data) {
-      setActiveGame(data);
+      // No direct state update here, GameContext's onSnapshot will handle it
+    } catch (error: any) {
+      console.error('Error ending game in Realtime Database:', error);
     }
   }, [activeGame, setActiveGame]);
 
@@ -75,25 +64,25 @@ export const useGameActions = (
       timeToAnswer
     };
 
-    // Update player's score and answers in Supabase
-    const { data: updatedPlayerData, error: playerUpdateError } = await supabase
-      .from('game_players')
-      .update({
-        score: currentPlayer.score + scoreChange,
-        answers: [...currentPlayer.answers, newAnswer] // Assuming 'answers' is a JSONB column
-      })
-      .eq('player_id', currentPlayer.id)
-      .eq('game_id', activeGame.id)
-      .select()
-      .single();
+    // Update player's score and answers in Realtime Database
+    const playerRef = ref(db, `games/${activeGame.code}/players/${currentPlayer.player_id}`);
+     try {
+       // Fetch current player data to get existing answers
+       const snapshot = await getDatabaseData(playerRef);
+       const playerData = snapshot.val();
 
-    if (playerUpdateError) {
-      console.error('Error updating player score/answers in Supabase:', playerUpdateError);
-      // Handle error
-    } else if (updatedPlayerData) {
+       // Append the new answer to the existing answers array
+       const updatedAnswers = playerData.answers ? [...playerData.answers, { questionId, optionId }] : [{ questionId, optionId }];
+
+       await update(playerRef, {
+         score: currentPlayer.score + scoreChange,
+         answers: updatedAnswers,
+       });
+
       // The refreshGameState in GameContext will handle updating the local state
       // based on the real-time subscription.
-      // No need to call setActiveGame or setCurrentPlayer here directly.
+    } catch (playerUpdateError: any) {
+      console.error('Error updating player score/answers in Realtime Database:', playerUpdateError);
     }
   }, [activeGame, currentPlayer, currentQuestion, currentQuiz]);
 
@@ -105,21 +94,17 @@ export const useGameActions = (
     if (nextIndex >= currentQuiz.questions.length) {
       endGame();
     } else {
-      // Update the current question index in Supabase
-      const { data, error } = await supabase
-        .from('games')
-        .update({ current_question_index: nextIndex })
-        .eq('id', activeGame.id)
-        .select()
-        .single();
+      // Update the current question index in Firestore
+      const gameRef = ref(db, `games/${activeGame.code}`);
+     try {
+       await update(gameRef, {
+         currentQuestionIndex: activeGame.currentQuestionIndex + 1,
+       });
 
-      if (error) {
-        console.error('Error updating question index in Supabase:', error);
-        // Handle error
-      } else if (data) {
         // The refreshGameState in GameContext will handle updating the local state
         // based on the real-time subscription.
-        // No need to call setActiveGame here directly.
+      } catch (error: any) {
+        console.error('Error updating question index in Firestore:', error);
       }
     }
   }, [activeGame, currentQuiz, endGame]);
