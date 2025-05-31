@@ -17,8 +17,14 @@ export const useGameValidation = () => {
     const upperCode = code.trim().toUpperCase();
     console.log(`Validating game code: ${upperCode}`);
     
-    const gameRef = ref(db, 'games/' + upperCode);
-    const gameSnapshot = await get(gameRef);
+    const gamesRef = ref(db, 'games');
+    const gameQuery = query(gamesRef, orderByChild('code'), equalTo(upperCode));
+    const gameSnapshot = await get(gameQuery);
+
+    console.log(`Snapshot exists: ${gameSnapshot.exists()}`);
+    if (gameSnapshot.exists()) {
+      console.log('Snapshot value:', gameSnapshot.val());
+    }
 
     if (!gameSnapshot.exists()) {
       return Promise.resolve({ 
@@ -27,13 +33,29 @@ export const useGameValidation = () => {
       });
     }
     
-    const game = gameSnapshot.val() as GameRoom; // Cast data to GameRoom type
+    let game: GameRoom | null = null;
+    gameSnapshot.forEach((childSnapshot) => {
+      game = childSnapshot.val() as GameRoom;
+      console.log('Found game in snapshot:', game);
+      return true; // Stop iterating after the first match
+    });
+
+    if (!game) {
+      return Promise.resolve({
+        valid: false,
+        message: `Game with code ${upperCode} not found. Please check and try again.`
+      });
+    }
     if (game.status === "finished") {
       return Promise.resolve({ valid: false, message: "This game has already ended. Please join another game." });
     }
     
     if (game.status === "active") {
       return Promise.resolve({ valid: false, message: "This game is already in progress. Please join another game." });
+    }
+    
+    if (game.status === "waiting") {
+      return Promise.resolve({ valid: true });
     }
     
     return Promise.resolve({ valid: true });

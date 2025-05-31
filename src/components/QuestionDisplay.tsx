@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 
 interface QuestionDisplayProps {
   question: Question;
-  onAnswer: (questionId: string, optionId: string) => void;
+  onAnswer?: (questionId: string, optionId: string) => void; // Made optional
   showTimer?: boolean;
   isHostView?: boolean;
   disableOptions?: boolean;
@@ -56,7 +56,9 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     
     setSelectedOption(optionId);
     setIsAnswered(true);
-    onAnswer(question.id, optionId);
+    if (onAnswer) {
+      onAnswer(question.id, optionId);
+    }
   };
   
   const getProgressColor = () => {
@@ -102,7 +104,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 className={`p-4 h-auto text-left flex justify-start items-center transition-all ${
                   selectedOption === option.id
                     ? "bg-quiz-primary text-white"
-                    : "bg-white text-quiz-dark border border-gray-200 hover:bg-quiz-light"
+                    : "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
                 }`}
                 onClick={() => handleSelectOption(option.id)}
                 disabled={isAnswered || disableOptions || isHostView}

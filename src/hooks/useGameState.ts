@@ -4,7 +4,7 @@ import { GameRoom, Player, Quiz, Question } from '@/types';
 import { generateGameCode } from '@/utils/gameUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { db, auth } from '@/lib/firebaseConfig';
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
+import { ref, set, push, get } from 'firebase/database';
 
 export const useGameState = () => {
   const [activeGame, setActiveGame] = useState<GameRoom | null>(null);
@@ -14,77 +14,110 @@ export const useGameState = () => {
   const [isHost, setIsHost] = useState<boolean>(false);
   const { toast } = useToast();
 
-  const createGame = useCallback(async (quizId: string): Promise<GameRoom> => {
-    // Load quiz data
-    import('../utils/gameUtils').then(({ sampleQuizzes }) => {
-      const quiz = sampleQuizzes.find(q => q.id === quizId);
-      if (quiz) {
-        setCurrentQuiz(quiz);
-        toast({
-          title: "Quiz loaded",
-          description: `"${quiz.title}" is ready to play`,
-        });
-      }
-    });
-
-    // Generate unique game code
-    let gameCode = generateGameCode();
-    // In a real application, you'd check against existing game codes in your DB
-    // For simplicity, we'll assume uniqueness or handle conflicts on insert
-
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    const newGame: GameRoom = {
-      id: gameCode, // Using code as ID for simplicity in Firestore
-      code: gameCode,
-      hostId: user.uid,
-      quizId,
-      players: [], // Players will be stored in a subcollection
-      status: "waiting",
-      currentQuestionIndex: -1
-    };
-
+  const createGame = useCallback(async (quiz: Quiz): Promise<{ success: boolean; message?: string }> => {
     try {
-      await setDoc(doc(db, 'games', gameCode), newGame);
-
-      // Add host as a player in a subcollection
-      const playerRef = doc(collection(db, 'games', gameCode, 'players'), user.uid);
-      await setDoc(playerRef, {
-        player_id: user.uid,
-        nickname: user.displayName || 'Host',
-        score: 0,
-      });
-
-      // Fetch the created game data including the host player
-      const createdGameSnap = await getDoc(doc(db, 'games', gameCode));
-      if (!createdGameSnap.exists()) {
-        throw new Error('Failed to retrieve created game data.');
+      const user = auth.currentUser;
+      if (!user) {
+        return {
+          success: false,
+          message: 'You must be logged in to create a game.',
+        };
       }
-      const createdGameData = createdGameSnap.data() as GameRoom;
-      // Manually add the host player to the fetched game data for immediate state update
-      createdGameData.players = [{ player_id: user.uid, nickname: user.displayName || 'Host', score: 0 }];
 
-      setActiveGame(createdGameData);
-      setCurrentPlayer(createdGameData.players[0]);
+      // The quiz object is now passed directly, no need to find it from local storage.
+
+      if (!quiz) {
+        return {
+          success: false,
+          message: 'Quiz not found.',
+        };
+      }
+
+      // Generate unique game code
+      const gamesRef = ref(db, 'games');
+      const code = generateGameCode();
+      
+      // Check if code already exists
+      const existingGamesSnapshot = await get(gamesRef);
+      if (existingGamesSnapshot.exists()) {
+        const games = existingGamesSnapshot.val();
+        const codeExists = Object.values(games).some((game: any) => game.code === code);
+        if (codeExists) {
+          return {
+            success: false,
+            message: 'Failed to generate unique game code. Please try again.',
+          };
+        }
+      }
+
+      // Create a new game room in Realtime Database
+      const newGameRef = push(gamesRef); // This generates a unique ID
+      const gameId = newGameRef.key;
+
+      if (!gameId) {
+        return {
+          success: false,
+          message: 'Failed to generate game ID.',
+        };
+      }
+
+      const gameData = {
+        id: gameId,
+        code,
+        quiz: {
+          ...quiz,
+          questions: quiz.questions.map(question => ({
+            ...question,
+            imageUrl: question.imageUrl || '', // Ensure imageUrl is a string
+          })),
+        },
+        hostId: user.uid,
+        status: 'waiting',
+        currentQuestionIndex: -1,
+        players: {
+          [user.uid]: {
+            id: user.uid,
+            player_id: user.uid,
+            nickname: user.displayName || 'Host',
+            score: 0,
+            answers: []
+          },
+        },
+        startTime: null,
+        endTime: null,
+        scores: {},
+        answers: {}
+      };
+
+      // Save the game data
+      await set(newGameRef, gameData);
+
+      // Update local state
+      setActiveGame({
+        ...gameData,
+        players: Object.values(gameData.players)
+      } as GameRoom);
+      setCurrentPlayer(gameData.players[0]);
       setIsHost(true);
+      setCurrentQuiz(quiz);
 
       toast({
-        title: "Game created!",
-        description: `Share code ${gameCode} with your players`,
+        title: 'Game Created!',
+        description: `Share code ${code} with your players`,
       });
 
-      return createdGameData;
-    } catch (error: any) {
-      console.error('Error creating game in Firestore:', error);
+      return { success: true };
+    } catch (error) {
+      console.error('Error creating game:', error);
       toast({
-        title: "Error creating game",
-        description: error.message,
-        variant: "destructive"
+        title: 'Error',
+        description: `Failed to create game: ${error.message || 'Unknown error'}. Please try again.`,
+        variant: 'destructive'
       });
-      throw new Error('Failed to create game');
+      return {
+        success: false,
+        message: 'Failed to create game. Please try again.',
+      };
     }
   }, [toast]);
 

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Player } from "@/types";
 
 interface PlayerStatesProps {
@@ -11,11 +12,13 @@ interface PlayerStatesProps {
 }
 
 const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId }) => {
+
+
   const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
 
   const playersAnswered = currentQuestionId ? 
-    players.filter(p => p.answers.some(a => a.questionId === currentQuestionId)).length : 0;
+    players.filter(p => Array.isArray(p.answers) && p.answers.some(a => a.questionId === currentQuestionId)).length : 0;
 
   const toggleResults = () => {
     setShowResults(!showResults);
@@ -56,15 +59,21 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId 
           <TableBody>
             {players.map((player, idx) => {
               const answer = currentQuestionId ? 
-                player.answers.find(a => a.questionId === currentQuestionId) : null;
+                (Array.isArray(player.answers) ? player.answers.find(a => a.questionId === currentQuestionId) : null) : null;
               return (
                 <TableRow 
                   key={player.id}
                   className="transform hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 hover:scale-[1.02] transition-all duration-300"
                   style={{ animationDelay: `${idx * 0.1}s` }}
                 >
-                  <TableCell className="font-medium">{player.nickname}</TableCell>
-                  <TableCell>
+                  <TableCell key={`${player.id}-nickname`} className="font-medium flex items-center gap-2">
+                    <Avatar className="w-7 h-7 border-2 border-indigo-400">
+                      <AvatarImage src={player.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${player.nickname}`} />
+                      <AvatarFallback>{typeof player.nickname === 'string' && player.nickname.length > 0 ? player.nickname.charAt(0).toUpperCase() : ''}</AvatarFallback>
+                    </Avatar>
+                    {player.nickname}
+                  </TableCell>
+                  <TableCell key={`${player.id}-status`}>
                     {answer ? (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -77,10 +86,10 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId 
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell key={`${player.id}-time`}>
                     {answer ? `${answer.timeToAnswer}s` : "-"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell key={`${player.id}-correct`}>
                     {showResults ? (
                       answer ? (
                         answer.correct ? (

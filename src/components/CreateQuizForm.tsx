@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ref as dbRef, push as dbPush, set as dbSet } from "firebase/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { scienceSubjects } from "@/utils/gameUtils";
 import { Plus, Minus } from "lucide-react";
+import { db } from "@/lib/firebaseConfig";
 
 interface QuizOption {
   id: string;
@@ -92,8 +94,19 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    if (!currentUser?.uid) {
+      setIsSubmitting(false);
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to create a quiz.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (!title || !subject || !grade || !description) {
       toast({
@@ -128,33 +141,46 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     
     setIsSubmitting(true);
     
-    const newQuiz = {
-      id: `quiz_${Date.now()}`,
-      title,
-      description,
-      subject,
-      grade,
-      createdBy: currentUser?.user_metadata?.id || "",
-      topic: subject,
-      questions,
-      hasNegativeMarking: false,
-      negativeMarkingValue: 0,
-      createdAt: new Date(),
-    };
-    
-    const savedQuizzes = JSON.parse(localStorage.getItem("customQuizzes") || "[]");
-    savedQuizzes.push(newQuiz);
-    localStorage.setItem("customQuizzes", JSON.stringify(savedQuizzes));
-    
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const quizzesRef = dbRef(db, 'quizzes');
+      const newQuizRef = dbPush(quizzesRef);
+      
+      const newQuiz = {
+        id: newQuizRef.key,
+        title,
+        description,
+        subject,
+        grade,
+        topic: "", // Optional field
+        questions,
+        createdBy: currentUser?.uid || "",
+        createdAt: new Date().toISOString(),
+        totalQuestions: questions.length,
+        totalPoints: questions.reduce((sum, q) => sum + q.points, 0),
+        hasNegativeMarking: false, // Optional field
+        negativeMarkingValue: 0 // Optional field
+      };
+
+      const quizRef = dbRef(db, `quizzes/${newQuizRef.key}`);
+      await dbSet(quizRef, newQuiz);
+
       toast({
-        title: "Quiz Created",
-        description: `Your quiz "${title}" has been created successfully!`,
+        title: "Success",
+        description: "Quiz created successfully!",
         variant: "default"
       });
+
       onClose();
-    }, 1000);
+    } catch (error) {
+      console.error("Error saving quiz:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save quiz. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -347,3 +373,11 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 export default CreateQuizForm;
+function ref(db: any, arg1: string) {
+  throw new Error("Function not implemented.");
+}
+
+function push(quizzesRef: any) {
+  throw new Error("Function not implemented.");
+}
+

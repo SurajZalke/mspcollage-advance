@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from "@/lib/firebaseConfig";
 import { User, onAuthStateChanged, AuthError, Auth, updateProfile as updateProfileFirebase, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { ref, get, set, onValue, update, serverTimestamp } from "firebase/database";
@@ -67,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...user,
             user_metadata: snapshot.val()
           } as User & { user_metadata?: { name?: string; avatar_url?: string; bio?: string } });
+          setLoading(false);
         } else {
             console.warn(`onAuthStateChanged: Profile data not found for user ${user.uid}. Creating a new profile.`);
             // Profile does not exist, create it in Realtime Database
@@ -85,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...user,
                 user_metadata: newProfileData
               } as User & { user_metadata?: { name?: string; avatar_url?: string; bio?: string } });
+              setLoading(false);
             } catch (createError) { // Added catch block
               console.error('onAuthStateChanged: Error creating profile:', createError); // Added log
               // Decide how to handle creation error - maybe set currentUser to null or show a toast
@@ -131,7 +133,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('onAuthStateChanged: user is null');
           setCurrentUser(null);
         }
-        console.log('onAuthStateChanged: setLoading(false), currentUser:', currentUser, 'loading:', loading); // Added log
         setLoading(false);
       });
 
@@ -144,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   const isLoggedIn = () => {
+    console.log('isLoggedIn:', currentUser !== null); // Added log
     return currentUser !== null;
   };
 
@@ -277,3 +279,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+

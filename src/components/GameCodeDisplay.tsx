@@ -19,22 +19,57 @@ const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) 
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
-  const copyCodeToClipboard = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    
-    // Trigger confetti effect
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-    
-    toast({
-      title: "Copied!",
-      description: "Game code copied to clipboard",
-    });
-    setTimeout(() => setCopied(false), 2000);
+  const copyCodeToClipboard = async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        throw new Error("Clipboard API not available or not in a secure context.");
+      }
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      
+      // Enhanced confetti effect
+      const duration = 1000;
+      const end = Date.now() + duration;
+      
+      const frame = () => {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.65 },
+          colors: ['#9333ea', '#6366f1', '#4f46e5']
+        });
+        
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.65 },
+          colors: ['#9333ea', '#6366f1', '#4f46e5']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      
+      frame();
+      
+      toast({
+        title: "Copied!",
+        description: "Game code copied to clipboard",
+        duration: 2000,
+      });
+      
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy game code:", err);
+      toast({
+        title: "Error",
+        description: `Failed to copy game code: ${(err as Error).message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   // Generate QR code URL using a free service

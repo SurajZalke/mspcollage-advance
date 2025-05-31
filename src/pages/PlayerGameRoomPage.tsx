@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
 import Logo from "@/components/Logo";
 import QuestionDisplay from "@/components/QuestionDisplay";
@@ -13,217 +13,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import confetti from 'canvas-confetti';
 import WaitingRoom from "@/components/WaitingRoom";
 import CreatorAttribution from "@/components/CreatorAttribution";
-
-const JoinGameForm = () => {
-  const [gameCode, setGameCode] = useState("");
-  const [nickname, setNickname] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isValidCode, setIsValidCode] = useState<boolean | null>(null);
-  const [isValidating, setIsValidating] = useState(false);
-  const { joinGame, validateGameCode } = useGame();
-  const { toast } = useToast();
-  const formRef = useRef<HTMLDivElement>(null);
-
-  const demoCodes = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
-  const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
-
-  // Enhanced validation with debounce
-  useEffect(() => {
-    if (gameCode.length > 0) {
-      setIsValidCode(null);
-      setErrorMessage(null);
-    }
-    
-    if (gameCode.length === 6) {
-      setIsValidating(true);
-      
-      const timeoutId = setTimeout(async () => {
-        const validationResult = await validateGameCode(gameCode);
-        setIsValidCode(validationResult.valid);
-        if (!validationResult.valid) {
-          setErrorMessage(validationResult.message || "Invalid game code");
-        } else {
-          setErrorMessage(null);
-          // Auto focus to nickname field when code is valid
-          const nicknameInput = document.getElementById('nickname-input');
-          if (nicknameInput) {
-            nicknameInput.focus();
-          }
-        }
-        setIsValidating(false);
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
-    } else if (gameCode.length > 0) {
-      setIsValidCode(false);
-    } else {
-      setIsValidCode(null);
-    }
-  }, [gameCode, validateGameCode]);
-
-  // Add animation effect when form loads
-  useEffect(() => {
-    if (formRef.current) {
-      formRef.current.classList.add('animate-fade-in');
-    }
-  }, []);
-
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsJoining(true);
-    setErrorMessage(null);
-
-    if (!gameCode) {
-      setErrorMessage("Please enter a game code");
-      setIsJoining(false);
-      return;
-    }
-
-    if (!nickname) {
-      setErrorMessage("Please enter a nickname");
-      setIsJoining(false);
-      return;
-    }
-
-    try {      
-      const result = await joinGame(gameCode.toUpperCase(), nickname.trim());
-      
-      if (result.success) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-        
-        toast({
-          title: "Successfully joined!",
-          description: `Welcome to the game, ${nickname}!`,
-        });
-      } else {
-        throw new Error(result.message || "Failed to join game");
-      }
-    } catch (error: any) {
-      setErrorMessage(error.message);
-      toast({
-        variant: "destructive",
-        title: "Error joining game",
-        description: error.message,
-      });
-      setIsJoining(false);
-    }
-  };
-
-  const handleDemoCode = () => {
-    setGameCode(randomDemoCode);
-    toast({
-      title: "Demo code applied!",
-      description: `Using code: ${randomDemoCode}`,
-      variant: "default"
-    });
-  };
-
-  return (
-    <div ref={formRef} className="transition-all duration-500 ease-in-out">
-      <Card className="quiz-card shadow-lg w-full max-w-md mx-auto transition-all duration-300 hover:shadow-xl glass-dark border-2 border-indigo-300/30">
-        <CardContent className="pt-6">
-          <form onSubmit={handleJoin} className="space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-xl font-bold text-quiz-dark dark:text-white">Join a Quiz Game</h2>
-              <p className="text-gray-500 dark:text-gray-300 text-sm">Enter the game code and your nickname to join</p>
-              <button 
-                type="button" 
-                onClick={handleDemoCode}
-                className="text-amber-500 text-sm animate-pulse hover:text-amber-600 focus:outline-none underline flex items-center gap-1"
-              >
-                <Clock size={14} />
-                <span>Try demo code: {randomDemoCode}</span>
-              </button>
-            </div>
-            
-            {errorMessage && (
-              <div className="bg-destructive/15 border border-destructive/30 text-destructive dark:text-red-300 rounded-md px-3 py-2 flex items-center gap-2 animate-fade-in">
-                <AlertCircle size={16} className="shrink-0" />
-                <p className="text-sm">{errorMessage}</p>
-              </div>
-            )}
-            
-            <div className="space-y-4">
-              <div className="relative">
-                <Input
-                  type="text"
-                  id="game-code-input"
-                  placeholder="GAME CODE"
-                  className={`quiz-input text-center text-2xl font-bold tracking-widest uppercase ${
-                    isValidCode === true ? 'border-green-500 focus:ring-green-500' : 
-                    isValidCode === false ? 'border-red-500 focus:ring-red-500' : ''
-                  }`}
-                  value={gameCode}
-                  onChange={(e) => {
-                    // Allow only alphanumeric characters and limit to 6 chars
-                    const value = e.target.value.replace(/[^A-Za-z0-9]/g, '').substring(0, 6);
-                    setGameCode(value.toUpperCase());
-                  }}
-                  maxLength={6}
-                  autoFocus
-                />
-                {isValidating ? (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-500">
-                    <RefreshCw size={20} className="animate-spin" />
-                  </div>
-                ) : isValidCode === true ? (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
-                    <CheckCircle size={20} />
-                  </div>
-                ) : null}
-              </div>
-              
-              <div className="transform transition-all duration-300 hover:scale-105">
-                <Input
-                  id="nickname-input"
-                  type="text"
-                  placeholder="Your nickname"
-                  className="quiz-input"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  maxLength={20}
-                />
-              </div>
-            </div>
-            
-            <Button
-              type="submit"
-              className="quiz-btn-primary w-full transform transition-all duration-300 hover:scale-105 animate-pulse-scale flex items-center gap-2"
-              disabled={isJoining || isValidating}
-            >
-              {isJoining ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin" />
-                  Joining...
-                </>
-              ) : (
-                <>
-                  <LogIn size={16} />
-                  Join Game
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 
 const PlayerGameRoomPage: React.FC = () => {
-  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState } = useGame();
+  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame } = useGame();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const [timeLeft, setTimeLeft] = useState(0);
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const [pollingActive, setPollingActive] = useState(true);
-  
+
+  // Effect to handle initial game state loading from URL params
+  useEffect(() => {
+    const gameIdFromUrl = searchParams.get("gameId");
+    const playerIdFromUrl = searchParams.get("playerId");
+
+    if (gameIdFromUrl && !activeGame) {
+      // If there's a gameId in the URL but no active game in context,
+      // attempt to re-join or refresh the game state.
+      // Pass playerIdFromUrl to refreshGameState to help identify the player.
+      refreshGameState(gameIdFromUrl, playerIdFromUrl);
+    }
+  }, [activeGame, searchParams, refreshGameState]);
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     
@@ -275,18 +89,22 @@ const PlayerGameRoomPage: React.FC = () => {
     };
   }, [refreshGameState, pollingActive]);
   
+  const [gameStartedToastShown, setGameStartedToastShown] = useState(false);
+
   // Handle game status transitions
   useEffect(() => {
-    if (activeGame?.status === "active" && currentQuestion) {
+    if (activeGame?.status === "active" && currentQuestion && !gameStartedToastShown) {
       // Game just started
       toast({
         title: "Game started!",
         description: "The quiz has begun",
       });
+      setGameStartedToastShown(true);
     }
-  }, [activeGame?.status, currentQuestion, toast]);
+  }, [activeGame?.status, currentQuestion, toast, gameStartedToastShown]);
   
   const handleAnswerSubmit = (questionId: string, optionId: string) => {
+
     submitAnswer(questionId, optionId);
     
     // Confetti effect on answer submission
@@ -324,18 +142,35 @@ const PlayerGameRoomPage: React.FC = () => {
 
   const hasAnsweredCurrentQuestion = () => {
     if (!currentPlayer || !currentQuestion) return false;
-    return currentPlayer.answers.some(a => a.questionId === currentQuestion.id);
+    const answers = Array.isArray(currentPlayer.answers) ? currentPlayer.answers : [];
+    return answers.some(a => a.questionId === currentQuestion.id);
   };
   
   const renderContent = () => {
-    if (!activeGame) {
-      return <JoinGameForm />;
+    const gameIdFromUrl = searchParams.get("gameId");
+
+    if (!gameIdFromUrl) {
+      navigate("/join");
+      return null; // Redirecting, so nothing to render here
     }
-    
+
+    if (!activeGame) {
+      return (
+        <div className="text-center space-y-4">
+          <p className="dark:text-gray-300">Loading game or game not found...</p>
+          <div className="flex justify-center space-x-2 mt-2">
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          </div>
+        </div>
+      );
+    }
+
     if (activeGame.status === "waiting") {
       return (
-        <WaitingRoom 
-          nickname={currentPlayer?.nickname || "Player"} 
+        <WaitingRoom
+          nickname={currentPlayer?.nickname || "Player"}
           players={activeGame.players}
           onStartGame={() => {}}
           cardRef={cardRef}
@@ -347,7 +182,7 @@ const PlayerGameRoomPage: React.FC = () => {
         />
       );
     }
-    
+
     if (activeGame.status === "finished") {
       return (
         <Card className="quiz-card p-6 transform hover:scale-[1.02] transition-all duration-300">
@@ -361,12 +196,12 @@ const PlayerGameRoomPage: React.FC = () => {
                 Thanks for playing, {currentPlayer?.nickname || "Player"}!
               </p>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
               <div className="text-center mb-4">
                 <h3 className="text-lg font-semibold dark:text-white">Your Results</h3>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
                   <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
@@ -374,7 +209,7 @@ const PlayerGameRoomPage: React.FC = () => {
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">Total Score</div>
                 </div>
-                
+
                 <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {currentPlayer?.answers.filter(a => a.correct).length || 0} / {currentPlayer?.answers.length || 0}
@@ -383,10 +218,10 @@ const PlayerGameRoomPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-center">
-              <Button 
-                onClick={handleLeaveGame} 
+              <Button
+                onClick={handleLeaveGame}
                 className="quiz-btn-primary"
               >
                 <ArrowLeft size={16} className="mr-2" />
@@ -397,10 +232,10 @@ const PlayerGameRoomPage: React.FC = () => {
         </Card>
       );
     }
-    
+
     if (currentQuestion) {
       const disableOptions = hasAnsweredCurrentQuestion();
-      
+
       return (
         <div className="space-y-5">
           <div className="flex justify-between items-center">
@@ -412,21 +247,21 @@ const PlayerGameRoomPage: React.FC = () => {
               <span className="dark:text-gray-300">{connectionStatus === "connected" ? "Connected" : "Connecting..."}</span>
             </div>
           </div>
-          
+
           <div
             ref={cardRef}
             onMouseMove={handleMouseMove}
             onMouseLeave={resetTilt}
             className="transition-all duration-300"
           >
-            <QuestionDisplay 
-              question={currentQuestion} 
+            <QuestionDisplay
+              question={currentQuestion}
               onAnswer={handleAnswerSubmit}
               disableOptions={disableOptions}
               showTimer={true}
             />
           </div>
-          
+
           {hasAnsweredCurrentQuestion() && (
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow text-center">
               <p className="text-gray-700 dark:text-gray-300">
@@ -439,23 +274,26 @@ const PlayerGameRoomPage: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {currentPlayer && (
-            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow">
-              <div className="flex items-center gap-2">
-                <UserRound size={16} className="text-indigo-500" />
-                <span className="font-medium dark:text-white">{currentPlayer.nickname}</span>
+            <div className="flex items-center justify-between bg-gray-800/50 dark:bg-gray-900/50 p-4 rounded-lg shadow-lg">
+              <div className="flex items-center space-x-3">
+                <Avatar className="w-8 h-8 border-2 border-indigo-400">
+                  <AvatarImage src={currentPlayer?.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${currentPlayer?.nickname}`} />
+                  <AvatarFallback>{typeof currentPlayer?.nickname === 'string' && currentPlayer.nickname.length > 0 ? currentPlayer.nickname.charAt(0).toUpperCase() : ''}</AvatarFallback>
+                </Avatar>
+                <p className="font-bold text-lg text-white">{currentPlayer?.nickname}</p>
               </div>
-              
-              <div className="bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1 rounded-full">
-                <span className="font-medium text-indigo-700 dark:text-indigo-300">Score: {currentPlayer.score}</span>
+              <div className="flex items-center space-x-2">
+                <p className="text-white text-lg">Score:</p>
+                <p className="font-bold text-xl text-quiz-primary">{currentPlayer?.score}</p>
               </div>
             </div>
           )}
         </div>
       );
     }
-    
+
     return (
       <div className="text-center space-y-4">
         <p className="dark:text-gray-300">Waiting for host to select the next question...</p>
@@ -463,10 +301,10 @@ const PlayerGameRoomPage: React.FC = () => {
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
   
   return (
     <BackgroundContainer>
@@ -507,3 +345,4 @@ const PlayerGameRoomPage: React.FC = () => {
 };
 
 export default PlayerGameRoomPage;
+

@@ -26,14 +26,17 @@
       "enabled": true,
       "port": 8008
     },
-    "singleProjectMode": true
+    "singleProjectMode": true,
+    "storage": {
+      "port": 9199
+    }
   },
   "dataconnect": {
     "source": "dataconnect"
   },
   "firestore": {
     "database": "(default)",
-    "location": "nam5",
+    "location": "asia-south1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
@@ -49,6 +52,28 @@
     {
       "source": "mspcollage-advance",
       "codebase": "mspcollage-advance",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    },
+    {
+      "source": "msocollage-advance",
+      "codebase": "msocollage-advance",
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    },
+    {
+      "source": "mspcollage-advance1",
+      "codebase": "mspcollage-advance1",
       "ignore": [
         "node_modules",
         ".git",

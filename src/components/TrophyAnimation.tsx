@@ -30,8 +30,14 @@ const TrophyAnimation: React.FC<TrophyAnimationProps> = ({ winners }) => {
           className={`flex flex-col items-center ${winnerStyles[idx] || ""} border-2 rounded-lg p-3 bg-white dark:bg-gray-800`}
           style={{ zIndex: 3 - idx }}
         >
-          <div>{icons[idx] || <Medal size={24} className="text-gray-400" />}</div>
-          <span className="text-xl font-bold mt-2 text-quiz-primary drop-shadow-lg">{player.nickname}</span>
+          <div className="flex items-center justify-center gap-2">
+            {player.avatar ? (
+              <img src={player.avatar} alt="Player Avatar" className="w-8 h-8 rounded-full" />
+            ) : (
+              <img src={`https://api.dicebear.com/7.x/fun-emoji/svg?seed=${player.nickname}`} alt="Player Avatar" className="w-8 h-8 rounded-full" />
+            )}
+            <span className="text-xl font-bold text-quiz-primary drop-shadow-lg">{player.nickname}</span>
+          </div>
           <span className="text-sm text-gray-600">Score: {player.score}</span>
           <div className="mt-1 text-xs text-gray-400 font-semibold">{["1st", "2nd", "3rd"][idx]}</div>
         </div>

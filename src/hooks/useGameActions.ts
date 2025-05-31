@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { GameRoom, Player, Quiz, Question } from '@/types';
 import { db } from '@/lib/firebaseConfig';
-import { ref, update, get as getDatabaseData } from 'firebase/database';
+import { ref, update, get as getDatabaseData, set } from 'firebase/database';
 
 export const useGameActions = (
   activeGame: GameRoom | null,
@@ -14,7 +14,7 @@ export const useGameActions = (
   const startGame = useCallback(async () => {
     if (!activeGame) return;
 
-    const gameRef = ref(db, `games/${activeGame.code}`);
+    const gameRef = ref(db, `games/${activeGame.id}`);
      try {
        await update(gameRef, {
          status: 'active',
@@ -30,7 +30,7 @@ export const useGameActions = (
   const endGame = useCallback(async () => {
     if (!activeGame) return;
 
-    const gameRef = ref(db, `games/${activeGame.code}`);
+    const gameRef = ref(db, `games/${activeGame.id}`);
     const quizRef = ref(db, `quizzes/${currentQuiz.id}`);
      try {
        await update(gameRef, {
@@ -65,19 +65,22 @@ export const useGameActions = (
     };
 
     // Update player's score and answers in Realtime Database
-    const playerRef = ref(db, `games/${activeGame.code}/players/${currentPlayer.player_id}`);
-     try {
-       // Fetch current player data to get existing answers
-       const snapshot = await getDatabaseData(playerRef);
-       const playerData = snapshot.val();
+    const playerAnswersRef = ref(db, `games/${activeGame.id}/players/${currentPlayer.player_id}/answers`);
+    const playerRef = ref(db, `games/${activeGame.id}/players/${currentPlayer.player_id}`);
 
-       // Append the new answer to the existing answers array
-       const updatedAnswers = playerData.answers ? [...playerData.answers, { questionId, optionId }] : [{ questionId, optionId }];
+    try {
+      // Fetch current player data to get existing answers
+      const snapshot = await getDatabaseData(playerAnswersRef);
+      const existingAnswers = snapshot.val();
+
+      // Append the new answer to the existing answers array
+      const updatedAnswers = existingAnswers ? [...existingAnswers, newAnswer] : [newAnswer];
+
 
        await update(playerRef, {
          score: currentPlayer.score + scoreChange,
-         answers: updatedAnswers,
        });
+       await set(playerAnswersRef, updatedAnswers);
 
       // The refreshGameState in GameContext will handle updating the local state
       // based on the real-time subscription.
@@ -95,7 +98,7 @@ export const useGameActions = (
       endGame();
     } else {
       // Update the current question index in Firestore
-      const gameRef = ref(db, `games/${activeGame.code}`);
+      const gameRef = ref(db, `games/${activeGame.id}`);
      try {
        await update(gameRef, {
          currentQuestionIndex: activeGame.currentQuestionIndex + 1,

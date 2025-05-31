@@ -3,13 +3,15 @@ import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Quiz } from "@/types";
+import { Trash2, Play } from "lucide-react";
 
 interface QuizCardProps {
   quiz: Quiz;
   onStart: (quizId: string) => void;
+  onDelete?: (quizId: string) => void;
 }
 
-const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart }) => {
+const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
   return (
     <Card className="quiz-card transition-all duration-300 hover:shadow-xl">
       <CardContent className="p-6">
@@ -34,12 +36,25 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart }) => {
               </span>
             )}
           </div>
-          <Button 
-            className="quiz-btn-primary"
-            onClick={() => onStart(quiz.id)}
-          >
-            Start Quiz
-          </Button>
+          <div className="flex gap-2">
+            {onDelete && (
+              <Button
+                variant="destructive"
+                className="dark:bg-red-600 dark:hover:bg-red-700 flex items-center gap-2"
+                onClick={() => onDelete(quiz.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
+            <Button 
+              className="quiz-btn-primary flex items-center gap-2"
+              onClick={() => onStart(quiz.id)}
+            >
+              <Play className="h-4 w-4" />
+              Start Quiz
+            </Button>
+          </div>
         </div>
       </CardFooter>
     </Card>

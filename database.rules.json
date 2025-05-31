@@ -1,6 +1,45 @@
-{
-  "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
-  }
-}
+{ 
+   "rules": { 
+     "users": { 
+       "$uid": { 
+         ".read": "auth != null && auth.uid === $uid", 
+         ".write": "auth != null && auth.uid === $uid" 
+       } 
+     }, 
+     "profiles": { 
+       "$uid": { 
+         ".read": "auth != null && auth.uid === $uid", 
+         ".write": "auth != null && auth.uid === $uid" 
+       } 
+     }, 
+     "games": { 
+       ".read": true, 
+       ".indexOn": ["code"], 
+       ".write": "auth != null", 
+       "$gameId": { 
+         ".read": true, 
+         ".write": "auth != null || (newData.hasChild('players') && auth == null)", 
+         "players": { 
+           "$playerId": {
+             ".read": true,
+             ".write": "auth != null || (!data.exists() && newData.exists())" 
+           } 
+         } 
+       } 
+     }, 
+     "quizzes": { 
+       ".read": true, 
+       ".write": "auth != null", 
+       "$quizId": { 
+         ".read": true, 
+         ".write": "auth != null && (data.child('createdBy').val() === auth.uid || newData.child('createdBy').val() === auth.uid)" 
+       } 
+     }, 
+     "quizDrafts": { 
+       "$uid": { 
+         ".read": "auth != null && auth.uid === $uid", 
+         ".write": "auth != null && auth.uid === $uid" 
+       } 
+     } 
+   } 
+ }

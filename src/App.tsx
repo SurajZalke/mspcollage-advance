@@ -18,6 +18,7 @@ import HostGameRoomPage from "./pages/HostGameRoomPage";
 import PlayerGameRoomPage from "./pages/PlayerGameRoomPage";
 import JoinGamePage from "./pages/JoinGamePage";
 import NotFound from "./pages/NotFound";
+import PlayerSetupPage from "./pages/PlayerSetupPage";
 import ProfileSetup from "./components/ProfileSetup";
 
 const queryClient = new QueryClient();
@@ -31,11 +32,11 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <GameProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <GameProvider>
+              <Toaster />
+              <Sonner />
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/host-login" element={<HostLoginPage />} />
@@ -53,14 +54,14 @@ const App = () => {
                 } />
                 <Route path="/game-room" element={<PlayerGameRoomPage />} />
                 <Route path="/join" element={<JoinGamePage />} />
+                <Route path="/player-setup" element={<PlayerSetupPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </GameProvider>
-        </AuthProvider>
+            </GameProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
 };
-
 export default App;

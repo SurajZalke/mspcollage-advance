@@ -8,6 +8,7 @@ import { initTestGames, activeGamesStore } from "@/store/gameStore";
 import { db, auth } from "@/lib/firebaseConfig";
 import { ref, get, set, update, onValue, push } from "firebase/database";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from 'react-router-dom';
 
 interface GameContextType {
   activeGame: GameRoom | null;
@@ -15,14 +16,17 @@ interface GameContextType {
   currentQuiz: Quiz | null;
   currentQuestion: Question | null;
   isHost: boolean;
-  createGame: (quizId: string) => Promise<GameRoom>;
-  joinGame: (code: string, nickname: string) => Promise<{ success: boolean; message?: string }>;
+  createGame: (quiz: Quiz) => Promise<{ success: boolean; message?: string }>;
+  joinGame: (code: string, nickname: string) => Promise<{
+    gameId: string | null;
+    playerId: string | null; success: boolean; message?: string 
+}>;
   validateGameCode: (code: string) => Promise<{ valid: boolean; message?: string }>;
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   submitAnswer: (questionId: string, optionId: string) => Promise<void>;
   nextQuestion: () => Promise<void>;
-  refreshGameState: () => Promise<void>;
+  refreshGameState: (gameId?: string, playerId?: string) => Promise<void>;
   getAvailableGameCodes: () => Promise<string[]>;
 }
 
@@ -38,6 +42,7 @@ export const useGame = () => {
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [gameSubscription, setGameSubscription] = useState<any>(null);
   const {
     activeGame,
@@ -74,11 +79,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Subscribe to game changes using Realtime Database
-      const gameRef = ref(db, `games/${activeGame.code}`);
+      const gamesRef = ref(db, 'games');
+      const gameRef = ref(db, `games/${activeGame.id}`);
       const unsubscribe = onValue(gameRef, async (snapshot) => {
+        console.log('onValue listener triggered for game:', activeGame.id);
         if (snapshot.exists()) {
-          console.log('Real-time update received:', snapshot.val());
+          console.log('Game snapshot exists, calling refreshGameState.');
           await refreshGameState();
+
         } else {
           console.log('Game document no longer exists, clearing state.');
           setActiveGame(null);
@@ -105,33 +113,45 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        gameSubscription(); // Call the stored unsubscribe function
        setGameSubscription(null);
     }
-  }, [activeGame?.code]); // Depend on activeGame.code to re-subscribe when game changes
+  }, [activeGame?.id]); // Depend on activeGame.id to re-subscribe when game changes
 
   // Update current question on game/quiz changes and game status
   useEffect(() => {
+
+
     if (activeGame && currentQuiz && activeGame.status === "active") {
       const questionIndex = activeGame.currentQuestionIndex;
+      console.log('currentQuestionIndex:', questionIndex);
+
       if (questionIndex >= 0 && questionIndex < currentQuiz.questions.length) {
         setCurrentQuestion(currentQuiz.questions[questionIndex]);
+        console.log('Setting currentQuestion to:', currentQuiz.questions[questionIndex]);
       } else {
-        // Game is active but no more questions, maybe end game or show results
+        console.log('currentQuestionIndex out of bounds or no more questions. Setting currentQuestion to null.');
         setCurrentQuestion(null);
+        // Game is active but no more questions, maybe end game or show results
         // Consider adding logic here to transition to a results state or end the game
       }
     } else {
+      console.log('Game not active or currentQuiz is null. Setting currentQuestion to null.');
       setCurrentQuestion(null);
     }
   }, [activeGame, currentQuiz]); // Depend on activeGame and currentQuiz
 
-  const refreshGameState = async () => {
-    if (!activeGame?.code) return; // Ensure activeGame and its code exist
+  const refreshGameState = async (gameIdFromParam?: string, playerIdFromParam?: string) => {
+    const targetGameId = gameIdFromParam || activeGame?.id;
+    if (!targetGameId) {
+      console.log('refreshGameState: No targetGameId, returning.');
+      return; // Ensure a game ID exists to refresh
+    }
 
     try {
-      const gameRef = ref(db, 'games/' + activeGame.code);
+      console.log('refreshGameState: Attempting to fetch game data for ID:', targetGameId);
+      const gameRef = ref(db, 'games/' + targetGameId);
       const gameSnapshot = await get(gameRef);
 
       if (!gameSnapshot.exists()) {
-        console.log('Game data is null during refresh, clearing state.');
+        console.log('refreshGameState: Game data is null during refresh, clearing state.');
         setActiveGame(null);
         setCurrentPlayer(null);
         setCurrentQuiz(null);
@@ -145,75 +165,55 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const gameData = gameSnapshot.val() as GameRoom;
+      console.log('refreshGameState: Fetched gameData:', gameData);
 
-
-
-      if (!gameData) { // Explicitly check for null/undefined data
-         console.log('Game data is null during refresh, clearing state.');
-         setActiveGame(null);
-         setCurrentPlayer(null);
-         setCurrentQuiz(null);
-         setCurrentQuestion(null);
-         setIsHost(false);
-         toast({
-           title: "Game Update",
-           description: "The game state could not be refreshed or the game has ended.",
-         });
-         // Optionally navigate user away if game is gone
-         // navigate('/'); // Uncomment if you want to redirect users when game disappears
-         return; // Stop execution if no game data
+      // Ensure gameData.players is an array
+      // Ensure gameData.players is an array, converting from object if necessary
+      if (gameData.players && typeof gameData.players === 'object' && !Array.isArray(gameData.players)) {
+        gameData.players = Object.values(gameData.players);
+      } else if (!gameData.players) {
+        gameData.players = [];
       }
 
       // If we reach here, gameData is valid
       setActiveGame(gameData);
+      console.log('refreshGameState: activeGame state updated to:', gameData);
 
-      // Fetch quiz data if not host and quiz_id is available, or if currentQuiz is null
-      // This ensures quiz data is loaded on initial join/refresh even for host if not already loaded
-      if (gameData.quiz_id && (!currentQuiz || currentQuiz.id !== gameData.quiz_id?.toString())) {
-        const quizRef = ref(db, 'quizzes/' + gameData.quiz_id.toString());
-        const quizSnapshot = await get(quizRef);
+      // Set the quiz from gameData
 
-        if (quizSnapshot.exists()) {
-          setCurrentQuiz(quizSnapshot.val() as Quiz);
-        } else {
-           console.error('Error fetching quiz data during refresh: Quiz document not found');
-           // Continue without quiz data, game state might be incomplete
-        }
+      if (gameData.quiz) {
+        setCurrentQuiz(gameData.quiz);
+        console.log('refreshGameState: currentQuiz state updated to:', gameData.quiz);
       }
 
-      // Update current player data if they exist in the updated game data
-      const authenticatedUser = auth.currentUser;
-      if (authenticatedUser) {
-        const userId = authenticatedUser.uid;
-        const updatedPlayerData = gameData.players.find((p: Player) => p.player_id === userId); // Use player_id from game_players table
+      // Determine the current player's ID based on authentication status or existing player state
+      const currentUserId = playerIdFromParam || auth.currentUser?.uid || currentPlayer?.player_id;
+
+      if (currentUserId) {
+        const updatedPlayerData = (gameData.players || []).find((p: Player) => p.player_id === currentUserId);
         if (updatedPlayerData) {
           setCurrentPlayer(updatedPlayerData);
-          // Also update isHost based on the fetched game data
-          setIsHost(gameData.host_id === userId); // Use host_id from games table
+          setIsHost(gameData.hostId === currentUserId);
         } else {
-           // Current player not found in the game, maybe they were removed or game ended?
-           console.warn('Authenticated user not found in refreshed game data players list.');
-           // Clear player state if they are no longer in the game
-           setCurrentPlayer(null);
-           setIsHost(false);
-          }
-      } else if (currentPlayer) {
-         // If no authenticated user but currentPlayer state exists, clear it
-         console.warn('No authenticated user found, clearing currentPlayer state.');
-         setCurrentPlayer(null);
-         setIsHost(false);
+          console.warn(`Player with ID ${currentUserId} not found in refreshed game data players list.`);
+          setCurrentPlayer(null);
+          setIsHost(false);
+        }
+      } else {
+        // No current user (authenticated or guest) found, clear player state
+        setCurrentPlayer(null);
+        setIsHost(false);
       }
     } catch (error: any) {
       console.error('An unexpected error occurred during game state refresh:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while refreshing game state.",
-        variant: "destructive"
+        description: "Failed to refresh game state.",
       });
     }
   };
 
-  const joinGame = async (code: string, nickname: string): Promise<{ success: boolean; message?: string }> => {
+  const joinGame = async (code: string, nickname: string): Promise<{ success: boolean; message?: string, gameId?: string, playerId?: string }> => {
     try {
       if (!code || !nickname) {
         return {
@@ -230,11 +230,30 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Check if game exists in database
-      const gameRef = ref(db, 'games/' + upperCode);
-      const gameSnapshot = await get(gameRef);
-
+      const gamesRef = ref(db, 'games');
+      const gameSnapshot = await get(gamesRef);
+      
       if (!gameSnapshot.exists()) {
-
+        return {
+          success: false,
+          message: 'No games found.'
+        };
+      }
+      
+      let gameRef;
+      let gameData;
+      
+      // Find the game with matching code
+      const games = gameSnapshot.val();
+      for (const key in games) {
+        if (games[key].code === upperCode) {
+          gameRef = ref(db, `games/${key}`);
+          gameData = games[key];
+          break;
+        }
+      }
+      
+      if (!gameRef || !gameData) {
         return {
           success: false,
           message: 'Game not found or has expired. Please check the code and try again.',
@@ -242,7 +261,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Check if nickname is taken
-      if (gameSnapshot.val()?.players.some((p: Player) =>
+      if (gameData.players && Object.values(gameData.players || {}).some((p: Player) =>
         p.nickname.trim().toLowerCase() === nickname.trim().toLowerCase()
       )) {
         return {
@@ -251,60 +270,56 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
-      // Check if user is authenticated and get user ID
+      // Get user ID (if authenticated) or generate a temporary one for unauthenticated users
       const user = auth.currentUser;
-      if (!user) {
-        return {
-          success: false,
-          message: 'You must be logged in to join a game.',
+      const playerId = user ? user.uid : `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      console.log("Firebase Auth User or Generated Player ID:", playerId);
+
+      // Check if the user is already a player in this game
+      if (gameData.players && Object.values(gameData.players || {}).some((p: Player) => p.player_id === playerId)) {
+        // If player already exists, just set the current player and game state
+        setActiveGame(gameData);
+        const existingPlayer = Object.values(gameData.players).find((p: Player) => p.player_id === playerId);
+        setCurrentPlayer(existingPlayer as Player || null);
+        setIsHost(gameData.hostId === playerId);
+        setCurrentQuiz(gameData.quiz);
+
+        toast({
+          title: "Joined Game",
+          description: `Welcome back to game ${upperCode}!`,
+        });
+        return { success: true, gameId: gameData.id, playerId: playerId };
+      }
+
+        // If player does not exist, add them to the game
+        const newPlayer: Player = {
+          id: playerId,
+          player_id: playerId,
+          nickname: nickname,
+          score: 0,
+
+          answers: []
         };
-      }
+        if (!gameData.players) {
+          gameData.players = {};
+        }
+        gameData.players[newPlayer.player_id] = newPlayer;
+        await update(gameRef, { players: gameData.players });
 
-      // Check if the user is already a player in this game using player_id
-      // Fetch players subcollection to check for existing player
-      const playersRef = ref(db, 'games/' + upperCode + '/players');
-      const existingPlayerSnapshot = await get(playersRef);
+        // Set current player and game in context
+        setCurrentPlayer(newPlayer);
+        setActiveGame(gameData);
 
-      if (existingPlayerSnapshot.exists()) {
-         // If player already exists, just set the current player and game state
-         // refreshGameState will handle setting activeGame, currentPlayer, isHost, and currentQuiz
-         await refreshGameState();
-         toast({
-           title: "Joined Game",
-           description: `Welcome back to game ${upperCode}!`,
-         });
-         return { success: true };
-      }
-
-      const newPlayerRef = ref(db, 'games/' + upperCode + '/players/' + user.uid);
-      await set(newPlayerRef, {
-        player_id: user.uid, // Use Firebase user UID for the player
-        nickname: nickname.trim(),
-        score: 0,
-      });
-
-      // Note: The gameData object fetched earlier won't include the new player immediately.
-      // refreshGameState will be called after joining, which will fetch the updated game data.
-
-
-
-      // setIsHost(false); // refreshGameState will handle setting isHost
-
-      // Refresh state to get the latest game data including the newly added player
-      await refreshGameState();
-
-      toast({
-        title: "Joined Game",
-        description: `Successfully joined game ${upperCode}!`,
-      });
-
-      return { success: true };
+        // Redirect to player setup page
+        return { success: true, gameId: gameData.id, playerId: playerId };
     } catch (error: any) {
-      console.error('An unexpected error occurred during game join:', error);
-      return {
-        success: false,
-        message: 'An unexpected error occurred. Please try again later.',
-      };
+      console.error("Error in joinGame:", error);
+      toast({
+        title: "Error",
+        description: `An unexpected error occurred: ${error.message}. Please try again later.`,
+        variant: "destructive",
+      });
+      return { success: false, gameId: null, playerId: null, message: `An unexpected error occurred: ${error.message}` };
     }
   };
 
@@ -326,27 +341,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <GameContext.Provider value={value}>
+    <GameContext.Provider value={value as GameContextType}>
       {children}
     </GameContext.Provider>
   );
 };
-
-// Removed unused styles
-// const avatarContainerStyle = {
-//   display: 'flex',
-//   justifyContent: 'center',
-//   alignItems: 'center',
-//   gap: '10px',
-// };
-
-// const profileModalStyle = {
-//   display: 'flex',
-//   flexDirection: 'column',
-//   alignItems: 'center',
-//   justifyContent: 'center',
-//   padding: '20px',
-// };
 
 export default GameContext;
 

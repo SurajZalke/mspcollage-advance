@@ -14,11 +14,12 @@ export interface User {
 }
 
 export interface Player {
+  id: any;
   player_id: string;
-  id: string;
   nickname: string;
   score: number;
   answers: PlayerAnswer[];
+  avatar?: string;
 }
 
 export interface PlayerAnswer {
@@ -33,13 +34,15 @@ export interface Quiz {
   title: string;
   description: string;
   subject: string;
-  grade: "11" | "12";
-  topic: string;
+  grade: string;
+  topic?: string;
   createdBy: string;
-  createdAt: Date;
+  createdAt: string;
   questions: Question[];
-  hasNegativeMarking: boolean;
-  negativeMarkingValue: number; // percentage of question's points
+  totalQuestions: number;
+  totalPoints: number;
+  hasNegativeMarking?: boolean;
+  negativeMarkingValue?: number;
 }
 
 export interface Question {
@@ -58,17 +61,15 @@ export interface QuestionOption {
 }
 
 export interface GameRoom {
-  quiz_id: boolean;
-  host_id: string;
   id: string;
   code: string;
+  quiz: Quiz;
   hostId: string;
-  quizId: string;
   players: Player[];
   status: "waiting" | "active" | "finished";
   currentQuestionIndex: number;
-  startTime?: Date;
-  endTime?: Date;
+  startTime: Date | null;
+  endTime: Date | null;
 }
 
 export interface ScienceSubject {

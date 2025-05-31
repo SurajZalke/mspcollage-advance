@@ -11,18 +11,24 @@ import { useGame } from "@/contexts/GameContext";
 import { Quiz, ScienceSubject } from "@/types";
 import { scienceSubjects, sampleQuizzes } from "@/utils/gameUtils";
 import { useToast } from "@/components/ui/use-toast";
-import { Filter, Search, BookOpen, Users, Play, Award, Plus } from "lucide-react";
+import { Filter, Search, BookOpen, Users, Play, Award, Plus, Home, LogOut, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BackgroundContainer from "@/components/BackgroundContainer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import CreateQuizForm from "@/components/CreateQuizForm";
 import ProfileSetup from "@/components/ProfileSetup";
+import { ref, get, remove } from "firebase/database";
+import { db } from "@/lib/firebaseConfig";
 
 const HostDashboardPage: React.FC = () => {
-  const { currentUser, logout } = useAuth();
-  const { createGame } = useGame();
+  const { currentUser, logout, loading } = useAuth();
+  const { createGame, startGame } = useGame();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  console.log('HostDashboardPage: currentUser', currentUser);
+  console.log('HostDashboardPage: loading', loading);
+
   const [subjects, setSubjects] = useState<ScienceSubject[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
@@ -36,39 +42,202 @@ const HostDashboardPage: React.FC = () => {
     // Load subjects
     setSubjects(scienceSubjects);
     
-    // Load quizzes (combine sample quizzes with custom quizzes)
-    const combinedQuizzes = [...sampleQuizzes];
-    
-    // Load custom quizzes from localStorage if they exist
-    const customQuizzes = JSON.parse(localStorage.getItem("customQuizzes") || "[]");
-    combinedQuizzes.push(...customQuizzes);
-    
-    // If the user is logged in, filter to only show their quizzes and public quizzes
-    if (currentUser) {
-      const filteredQuizzes = combinedQuizzes.filter(quiz => 
-        !quiz.createdBy || quiz.createdBy === currentUser.id
-      );
-      setQuizzes(filteredQuizzes);
-    } else {
-      setQuizzes(sampleQuizzes); // Only show sample quizzes if not logged in
-    }
-  }, [currentUser, createDialogOpen]); // Re-run when dialog closes to refresh quizzes
+    const loadQuizzes = async () => {
+      try {
+        if (!currentUser?.uid) {
+          if (!loading) {
+setQuizzes(sampleQuizzes.map(quiz => ({
+  ...quiz,
+  createdAt: typeof quiz.createdAt === 'string' ? quiz.createdAt : quiz.createdAt.toISOString(),
+  totalQuestions: quiz.questions?.length || 0,
+  totalPoints: quiz.questions?.reduce((sum, q) => sum + (q.points || 0), 0) || 0
+})));
+            navigate("/host-login");
+            toast({
+              title: "Access Denied",
+              description: "Please log in to view your quizzes.",
+              variant: "destructive"
+            });
+          }
+          return;
+        }
+
+        // Reference to the quizzes in Firebase
+        const quizzesRef = ref(db, 'quizzes');
+        const snapshot = await get(quizzesRef);
+        
+        const combinedQuizzes = [...sampleQuizzes];
+        
+        if (snapshot.exists()) {
+          const firebaseData = snapshot.val() || {};
+          const firebaseQuizzes = Object.entries(firebaseData).map(([key, quiz]: [string, any]): Quiz => {
+            const questions = Array.isArray(quiz.questions) ? quiz.questions.map((q: any) => ({
+              id: q.id || key + '_q' + Math.random().toString(36).substr(2, 9),
+              text: q.text || '',
+              options: Array.isArray(q.options) ? q.options.map((opt: any) => ({
+                id: opt.id || key + '_opt' + Math.random().toString(36).substr(2, 9),
+                text: opt.text || ''
+              })) : [],
+              correctOption: q.correctOption || '',
+              points: typeof q.points === 'number' && !isNaN(q.points) ? q.points : 1,
+              timeLimit: typeof q.timeLimit === 'number' && !isNaN(q.timeLimit) ? q.timeLimit : 30,
+              imageUrl: typeof q.imageUrl === 'string' ? q.imageUrl : undefined
+            })) : [];
+
+            const totalQuestions = questions.length;
+            const totalPoints = questions.reduce((sum, q) => sum + (typeof q.points === 'number' ? q.points : 0), 0);
+
+            return {
+              id: quiz.id || key,
+              title: typeof quiz.title === 'string' ? quiz.title : '',
+              description: typeof quiz.description === 'string' ? quiz.description : '',
+              subject: typeof quiz.subject === 'string' ? quiz.subject : '',
+              grade: typeof quiz.grade === 'string' ? quiz.grade : '11',
+              topic: typeof quiz.topic === 'string' ? quiz.topic : undefined,
+              createdBy: typeof quiz.createdBy === 'string' ? quiz.createdBy : '',
+              createdAt: typeof quiz.createdAt === 'string' ? quiz.createdAt : new Date().toISOString(),
+              questions,
+              totalQuestions,
+              totalPoints,
+              hasNegativeMarking: typeof quiz.hasNegativeMarking === 'boolean' ? quiz.hasNegativeMarking : undefined,
+              negativeMarkingValue: typeof quiz.negativeMarkingValue === 'number' ? quiz.negativeMarkingValue : undefined
+            };
+          });
+          
+          const userQuizzes = firebaseQuizzes.filter(quiz => 
+            quiz.createdBy === currentUser.uid
+          );
+          userQuizzes.forEach(quiz => {
+            if (quiz.grade === "11" || quiz.grade === "12") {
+              if (quiz.grade === "11") {
+                combinedQuizzes.push({
+                  ...quiz,
+                  grade: "11",
+                  topic: quiz.topic || '',
+                  hasNegativeMarking: quiz.hasNegativeMarking || false,
+                  negativeMarkingValue: quiz.negativeMarkingValue || 0,
+                  createdAt: new Date(quiz.createdAt)
+                });
+              } else if (quiz.grade === "12") {
+                combinedQuizzes.push({
+                  ...quiz,
+                  grade: "12",
+                  topic: quiz.topic || '',
+                  hasNegativeMarking: quiz.hasNegativeMarking || false,
+                  negativeMarkingValue: quiz.negativeMarkingValue || 0,
+                  createdAt: new Date(quiz.createdAt)
+                });
+              }
+            }
+          });
+        }
+        
+        setQuizzes(combinedQuizzes.map(quiz => ({
+          ...quiz,
+          createdAt: typeof quiz.createdAt === 'string' ? quiz.createdAt : quiz.createdAt.toISOString(),
+          totalQuestions: quiz.questions?.length || 0,
+          totalPoints: quiz.questions?.reduce((sum, q) => sum + (q.points || 0), 0) || 0
+        })));
+      } catch (error) {
+        console.error("Error loading quizzes:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load quizzes. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    loadQuizzes();
+  }, [currentUser?.uid, createDialogOpen, loading, navigate, toast, db]); // Re-run when auth state changes
 
   // Filter quizzes based on selected filters
   const filteredQuizzes = quizzes.filter(quiz => {
-    // Filter by search query
-    const matchesSearch = !searchQuery || 
-      quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      quiz.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Filter by subject
-    const matchesSubject = selectedSubject === "all" || quiz.subject.toLowerCase() === selectedSubject.toLowerCase();
-    
-    // Filter by grade
-    const matchesGrade = selectedGrade === "all" || quiz.grade === selectedGrade;
-    
-    return matchesSearch && matchesSubject && matchesGrade;
-  });
+    try {
+      // Filter by search query
+      const matchesSearch = !searchQuery || 
+        quiz.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        quiz.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Filter by subject
+      const matchesSubject = selectedSubject === "all" || 
+        (quiz.subject && quiz.subject.toLowerCase() === selectedSubject.toLowerCase());
+      
+      // Filter by grade
+      const matchesGrade = selectedGrade === "all" || 
+        (quiz.grade && quiz.grade === selectedGrade);
+      
+      return matchesSearch && matchesSubject && matchesGrade;
+    } catch (error) {
+      console.error("Error filtering quiz:", error, quiz);
+      return false;
+    }
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const handleDeleteQuiz = async (quizId: string) => {
+    try {
+      if (!currentUser?.uid) return;
+
+      // Reference to the specific quiz in Firebase
+      const quizRef = ref(db, `quizzes/${quizId}`);
+      
+      // Delete the quiz from Firebase
+      await remove(quizRef);
+      
+      // Update local state
+      const updatedQuizzes = quizzes.filter(quiz => quiz.id !== quizId);
+      setQuizzes(updatedQuizzes);
+      
+      toast({
+        title: "Quiz Deleted",
+        description: "The quiz has been successfully deleted.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error("Error deleting quiz:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete quiz. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleClearGameData = async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      // Clear game history from local storage
+      localStorage.removeItem("gameHistory");
+
+      // Delete all games created by the current user from Firebase
+      const gamesRef = ref(db, 'games');
+      const gamesSnapshot = await get(gamesRef);
+      if (gamesSnapshot.exists()) {
+        const gamesData = gamesSnapshot.val();
+        for (const gameId in gamesData) {
+          if (gamesData[gameId].hostId === currentUser.uid) {
+            await remove(ref(db, `games/${gameId}`));
+          }
+        }
+      }
+
+
+
+      toast({
+        title: "All User Data Cleared",
+        description: "All your hosted games  have been cleared successfully.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error("Error clearing game data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to clear game data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleStartQuiz = (quizId: string) => {
     const quiz = quizzes.find(q => q.id === quizId);
@@ -81,7 +250,7 @@ const HostDashboardPage: React.FC = () => {
         variant: "default"
       });
       
-      const gameRoom = createGame(quizId);
+      const gameRoom = createGame(quiz);
       navigate("/host-game-room");
     }
   };
@@ -91,14 +260,36 @@ const HostDashboardPage: React.FC = () => {
     navigate("/");
   };
 
-  if (!currentUser) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    // If not loading and no current user, redirect to login or show a message
+    navigate("/host-login"); // Redirect to login page
+    return null; // Or return a message like "Please log in to view the dashboard."
+  }
 
   return (
     <BackgroundContainer>
       <div className="min-h-screen flex flex-col">
         <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
           <div className="container mx-auto p-4 flex justify-between items-center">
-            <Logo />
+            <div className="flex items-center space-x-4">
+              <Logo />
+              <Button
+                variant="ghost"
+                className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2"
+                onClick={() => navigate("/")}
+              >
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+            </div>
 
             <div className="flex items-center space-x-4">
               {/* Profile Edit Button */}
@@ -118,7 +309,12 @@ const HostDashboardPage: React.FC = () => {
                   <ProfileSetup />
                 </DialogContent>
               </Dialog>
-              <Button variant="outline" onClick={handleLogout} className="dark:text-white dark:hover:bg-gray-800">
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
                 Sign Out
               </Button>
             </div>
@@ -195,7 +391,8 @@ const HostDashboardPage: React.FC = () => {
                   <QuizCard
                     key={quiz.id}
                     quiz={quiz}
-                    onStart={handleStartQuiz} />
+                    onStart={handleStartQuiz}
+                    onDelete={quiz.createdBy === currentUser.uid ? handleDeleteQuiz : undefined} />
                 ))
               ) : (
                 <div className="col-span-full text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -230,6 +427,16 @@ const HostDashboardPage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="game-history">
+            <div className="mb-4">
+              <Button
+                variant="destructive"
+                onClick={handleClearGameData}
+                className="dark:bg-red-600 dark:hover:bg-red-700 flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear Game History
+              </Button>
+            </div>
             <div className="quiz-card p-6 text-center bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
               <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Game History</h2>
               <p className="text-gray-600 dark:text-gray-300">

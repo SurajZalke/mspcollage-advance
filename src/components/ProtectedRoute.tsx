@@ -22,7 +22,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Wait for auth state to load
   if (loading) {
-    return null; // Or render a loading spinner
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
   }
 
   // Check if user is logged in
@@ -35,8 +39,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={redirectTo} replace />;
   }
 
-  // Check if profile is complete (e.g., nickname is set)
-  const isProfileComplete = currentUser?.user_metadata?.name && currentUser?.user_metadata?.avatar_url;
+  // Check if profile is complete (only name is required)
+  const isProfileComplete = currentUser?.user_metadata?.name;
 
   console.log('ProtectedRoute: isProfileComplete', isProfileComplete);
   console.log('ProtectedRoute: currentPathname', window.location.pathname);

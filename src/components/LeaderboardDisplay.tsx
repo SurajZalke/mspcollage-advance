@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Player, Quiz } from "@/types";
 
 // Add prop for quiz info, to display marking
@@ -41,30 +42,34 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players, active
           <div className="space-y-2">
             {sortedPlayers.map((player, index) => (
               <div 
-                key={player.id}
+                key={`${player.id}-${index}`}
                 className={`flex items-center justify-between p-3 rounded-lg ${
                   index === 0 
-                    ? "bg-yellow-50 border border-yellow-200 animate-winner"
+                    ? "bg-yellow-100 border border-yellow-200 animate-winner"
                     : index === 1 
-                    ? "bg-gray-50 border border-gray-200"
+                    ? "bg-slate-100 border border-slate-200"
                     : index === 2 
-                    ? "bg-amber-50 border border-amber-200"
-                    : "bg-white border border-gray-100"
-                }`}
+                    ? "bg-orange-100 border border-orange-200"
+                    : "bg-gray-50 border border-gray-100"
+                }`} 
               >
                 <div className="flex items-center space-x-3">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     index === 0 
-                      ? "bg-yellow-400 text-yellow-800" 
+                      ? "bg-yellow-400 text-gray-900" 
                       : index === 1 
-                      ? "bg-gray-400 text-gray-800"
+                      ? "bg-slate-400 text-slate-900"
                       : index === 2 
-                      ? "bg-amber-400 text-amber-800"
+                      ? "bg-orange-400 text-orange-900"
                       : "bg-gray-200 text-gray-700"
                   }`}>
                     {index + 1}
                   </div>
-                  <span className="font-medium">{player.nickname}</span>
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={player.avatar || ''} />
+                    <AvatarFallback>{typeof player.nickname === 'string' && player.nickname.length > 0 ? player.nickname.charAt(0).toUpperCase() : ''}</AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-gray-900 dark:text-black-100">{player.nickname}</span>
                 </div>
                 <span className="font-bold text-quiz-primary">{player.score}</span>
               </div>

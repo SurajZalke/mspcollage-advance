@@ -23,6 +23,7 @@ const HostGameRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const { toast } = useToast();
+  const cardRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -48,6 +49,28 @@ const HostGameRoomPage: React.FC = () => {
       });
     }, 600);
   };
+
+  const handleMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const card = cardRef.current;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const rotateX = (y - centerY) / 20;
+    const rotateY = (centerX - x) / 20;
+    
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  }, []);
+  
+  const resetTilt = React.useCallback(() => {
+    if (!cardRef.current) return;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
+  }, []);
 
   if (!currentUser) {
     return (
@@ -98,11 +121,11 @@ const HostGameRoomPage: React.FC = () => {
                   onStartGame={startGame}
                   gameCode={activeGame.code}
                   isHost={true}
-                  onRefreshPlayers={handleManualRefresh} cardRef={undefined} handleMouseMove={function (e: React.MouseEvent<HTMLDivElement>): void {
-                    throw new Error("Function not implemented.");
-                  } } resetTilt={function (): void {
-                    throw new Error("Function not implemented.");
-                  } }                />
+                  onRefreshPlayers={handleManualRefresh}
+                  cardRef={cardRef}
+                  handleMouseMove={handleMouseMove}
+                  resetTilt={resetTilt}
+                />
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
@@ -112,19 +135,16 @@ const HostGameRoomPage: React.FC = () => {
                     <GameControls 
                         onEndGame={endGame}
                         onNextQuestion={nextQuestion}
-                        showNext={true} onStartGame={function (): void {
-                          throw new Error("Function not implemented.");
-                        } }                    />
+                        showNext={true} onStartGame={startGame}                    />
                   </div>
                   
                   {currentQuestion && (
                     <QuestionDisplay 
-                      question={currentQuestion} 
-                      onAnswer={() => {}} 
-                      showTimer={false}
-                      isHostView={true}
-                      markingType={currentQuiz?.hasNegativeMarking ? "negative" : "simple"}
-                      negativeValue={currentQuiz?.negativeMarkingValue || 0}
+                        question={currentQuestion}
+                        showTimer={false}
+                        isHostView={true}
+                        markingType={currentQuiz?.hasNegativeMarking ? "negative" : "simple"}
+                        negativeValue={currentQuiz?.negativeMarkingValue || 0}
                     />
                   )}
                   
@@ -133,6 +153,7 @@ const HostGameRoomPage: React.FC = () => {
                       players={activeGame.players}
                       currentQuestionId={currentQuestion?.id}
                     />
+
                   )}
                 </div>
               ) : (

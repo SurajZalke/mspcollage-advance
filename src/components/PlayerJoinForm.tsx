@@ -7,7 +7,7 @@ import { useGame } from "@/contexts/GameContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { use3DTilt } from "@/utils/animationUtils";
-import { AlertCircle, Check, Info, Loader, LogIn } from "lucide-react";
+import { AlertCircle, Check, Loader, LogIn } from "lucide-react";
 
 interface PlayerJoinFormProps {
   initialGameCode?: string | null;
@@ -25,14 +25,7 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
   const { toast } = useToast();
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
 
-  // Demo codes for easy testing
-  const demoCodes = ["TEST12", "DEMO01", "PLAY22", "QUIZ99", "FUN123"];
-  const randomDemoCode = demoCodes[Math.floor(Math.random() * demoCodes.length)];
 
-  // Debug available game codes
-  useEffect(() => {
-    console.log("Available game codes:", getAvailableGameCodes());
-  }, [getAvailableGameCodes]);
 
   // Handle initial game code
   useEffect(() => {
@@ -43,14 +36,11 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
   }, [initialGameCode]);
 
   // Validate game code
-  const validateCode = (code: string) => {
+  const validateCode = async (code: string) => {
     if (code.length === 6) {
       setIsValidating(true);
       
-      setTimeout(async () => {
-        const availableCodes = getAvailableGameCodes();
-        console.log(`Validating code ${code} against available codes:`, availableCodes);
-        
+      try {
         const validationResult = await validateGameCode(code);
         setIsValidCode(validationResult.valid);
         if (!validationResult.valid) {
@@ -63,8 +53,12 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
             nicknameInput.focus();
           }
         }
+      } catch (error: any) {
+        setIsValidCode(false);
+        setErrorMessage(error.message || "Error validating game code");
+      } finally {
         setIsValidating(false);
-      }, 400);
+      }
     }
   };
 
@@ -106,17 +100,17 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
       return;
     }
 
-    console.log(`Attempting to join game with code: ${gameCode.toUpperCase()}`);
-    
     try {      
       const result = await joinGame(gameCode.toUpperCase(), nickname.trim());
       
       if (result.success) {
         toast({
           title: "Successfully joined!",
-          description: `You've joined the game as ${nickname}!`,
+          description: `You've joined the game as ${nickname}!`, 
         });
-        navigate("/game-room");
+        navigate("/player-setup", {
+          state: { gameId: result.gameId, playerId: result.playerId },
+        });
       } else {
         throw new Error(result.message || "Failed to join game");
       }
@@ -132,15 +126,6 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
     }
   };
 
-  const handleDemoCode = () => {
-    setGameCode(randomDemoCode);
-    toast({
-      title: "Demo code applied!",
-      description: `Using code: ${randomDemoCode}`,
-      variant: "default"
-    });
-  };
-
   return (
     <Card 
       ref={cardRef}
@@ -153,14 +138,7 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-quiz-dark dark:text-white">Join a Quiz Game</h2>
             <p className="text-gray-500 dark:text-gray-300 text-sm">Enter the game code and your nickname to join</p>
-            <button 
-              type="button" 
-              onClick={handleDemoCode}
-              className="text-amber-500 text-sm animate-pulse hover:text-amber-600 focus:outline-none underline flex items-center gap-1"
-            >
-              <Info size={14} />
-              <span>Try demo code: {randomDemoCode}</span>
-            </button>
+
           </div>
           
           {errorMessage && (
@@ -230,10 +208,7 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
             )}
           </Button>
           
-          {/* Debug info for available games */}
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-6">
-            <p className="text-center">Available demo codes: {demoCodes.join(", ")}</p>
-          </div>
+
         </form>
       </CardContent>
     </Card>

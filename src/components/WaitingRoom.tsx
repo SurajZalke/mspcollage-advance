@@ -4,6 +4,7 @@ import { Player } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Users, RefreshCw, Clock, Copy, CheckCircle, Share, QrCode } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import CreatorAttribution from "./CreatorAttribution";
@@ -56,18 +57,30 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
     setActivePlayerCount(players.length);
   }, [players.length, activePlayerCount, toast]);
 
-  const copyCodeToClipboard = () => {
+  const copyCodeToClipboard = async () => {
     if (!gameCode) return;
     
-    navigator.clipboard.writeText(gameCode);
-    setCopied(true);
-    
-    toast({
-      title: "Game code copied!",
-      description: "The code has been copied to your clipboard",
-    });
-    
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        throw new Error("Clipboard API not available or not in a secure context.");
+      }
+      await navigator.clipboard.writeText(gameCode);
+      setCopied(true);
+      
+      toast({
+        title: "Game code copied!",
+        description: "The code has been copied to your clipboard",
+      });
+      
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy game code:", err);
+      toast({
+        title: "Error",
+        description: `Failed to copy game code: ${(err as Error).message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleRefreshClick = () => {
@@ -219,11 +232,17 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
               <TableBody>
                 {players.map((player, idx) => (
                   <TableRow 
-                    key={player.id}
+                    key={idx}
                     className="transform hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 hover:scale-[1.02] transition-all duration-300"
                     style={{ animationDelay: `${idx * 0.1}s` }}
                   >
-                    <TableCell className="font-medium">{player.nickname}</TableCell>
+                    <TableCell className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={player.avatar || ''} />
+                      <AvatarFallback>{player.nickname.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    {player.nickname}
+                  </TableCell>
                     <TableCell>
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
