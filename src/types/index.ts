@@ -62,6 +62,7 @@ export interface QuestionOption {
 }
 
 export interface GameRoom {
+  winner: any;
   questionStartTime: number;
   showScores: boolean;
   id: string;

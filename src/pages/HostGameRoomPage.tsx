@@ -151,7 +151,10 @@ const HostGameRoomPage: React.FC = () => {
                       Question {activeGame.currentQuestionIndex + 1} of {currentQuiz?.questions.length}
                     </h2>
                     <GameControls 
-                        onEndGame={endGame}
+                        onEndGame={() => {
+                          console.log("HostGameRoomPage: Calling endGame function.");
+                          endGame();
+                        }}
                         onNextQuestion={() => {
                           nextQuestion();
                           setHasSubmittedAnswer(false);
@@ -208,8 +211,12 @@ const HostGameRoomPage: React.FC = () => {
                   </p>
                   {activeGame && (
                     <div className="mb-6">
-                      <TrophyAnimation winners={activeGame.players
-                        .sort((a,b)=>b.score-a.score).slice(0,3)} />
+                      <LeaderboardDisplay
+                        players={activeGame.players}
+                        activeQuiz={activeGame.quiz}
+                        showScores={true}
+                        hasHostSubmitted={true}
+                      />
                     </div>
                   )}
                   <Button 
@@ -230,13 +237,26 @@ const HostGameRoomPage: React.FC = () => {
                       playerCount={activeGame.players.length}
                     />
                   </div>
-                  <div className="transform hover:scale-[1.02] transition-all duration-300">
-                    <LeaderboardDisplay 
-                      players={activeGame.players} 
-                      activeQuiz={currentQuiz} 
-                      showScores={true}
-                    />
+                  <div className="flex items-center gap-2">
+                    <TrophyAnimation winners={[]} />
+                    <span className="text-xl font-bold text-quiz-dark dark:text-white">
+                      {activeGame.winner?.name}
+                    </span>
                   </div>
+                  <div className="transform hover:scale-[1.02] transition-all duration-300">
+                    <div className="quiz-card p-6 text-center">
+                      <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">
+                        Quiz Status
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4">
+                        {activeGame.status === "waiting"
+                          ? "Waiting for players to join"
+                          : activeGame.status === "active"
+                          ? "Quiz in progress"
+                          : "Quiz ended"}
+                      </p>
+                    </div>
+                </div>
                 </>
               )}
             </div>

@@ -31,17 +31,19 @@ export const useGameActions = (
     if (!activeGame) return;
 
     const gameRef = ref(db, `games/${activeGame.id}`);
-    const quizRef = ref(db, `quizzes/${currentQuiz.id}`);
-     try {
-       await update(gameRef, {
-         status: 'ended',
-       });
+    try {
+      // Ensure the latest activeGame state (including player scores) is saved
+      // before marking the game as ended.
+      await update(gameRef, {
+        ...activeGame,
+        status: 'finished',
+      });
 
       // No direct state update here, GameContext's onSnapshot will handle it
     } catch (error: any) {
       console.error('Error ending game in Realtime Database:', error);
     }
-  }, [activeGame, setActiveGame]);
+  }, [activeGame]);
 
   const submitAnswer = useCallback(async (questionId: string, optionId: string) => {
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;

@@ -23,22 +23,25 @@ const PlayerGameRoomPage: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const [timeLeft, setTimeLeft] = useState(0);
   const { toast } = useToast();
+  const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
 
   useEffect(() => {
     if (activeGame?.status === 'finished') {
-      toast({
-        title: "Game Ended",
-        description: "Thanks for playing! Check out the final leaderboard!"
-      });
-      
-      // Trigger confetti effect for game end celebration
+      // Trigger confetti animation
       confetti({
         particleCount: 100,
         spread: 70,
-        origin: { y: 0.6 }
+        origin: { y: 0.6 },
       });
+      // Set a timeout to clear confetti after some time
+      setTimeout(() => {
+        confetti.clear();
+      }, 5000);
+
+      // Set showLeaderboardAnimation to true to display the leaderboard
+      setShowLeaderboardAnimation(true);
     }
-  }, [activeGame?.status, toast]);
+  }, [activeGame?.status, activeGame]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [pollingActive, setPollingActive] = useState(true);
@@ -173,6 +176,7 @@ const PlayerGameRoomPage: React.FC = () => {
     }
 
     if (!activeGame) {
+      console.log("PlayerGameRoomPage: activeGame is null. Displaying loading state.");
       return (
         <div className="text-center space-y-4">
           <p className="dark:text-gray-300">Loading game or game not found...</p>
@@ -185,9 +189,14 @@ const PlayerGameRoomPage: React.FC = () => {
       );
     }
 
+    console.log("PlayerGameRoomPage: Current activeGame status:", activeGame.status);
+    console.log("PlayerGameRoomPage: activeGame.players:", activeGame.players);
+    console.log("PlayerGameRoomPage: activeGame.quiz:", activeGame.quiz);
+
     if (activeGame.status === "finished") {
+      console.log("PlayerGameRoomPage: Game status is 'finished'. Attempting to render leaderboard.");
       return (
-        <div className="space-y-6">
+        <div className={`space-y-6 transition-opacity duration-1000 ${showLeaderboardAnimation ? 'opacity-100' : 'opacity-0'}`}>
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-quiz-dark dark:text-white">
               Game Results
@@ -200,49 +209,18 @@ const PlayerGameRoomPage: React.FC = () => {
               Return Home
             </Button>
           </div>
-          
-          <Card className="quiz-card p-6 transform hover:scale-[1.02] transition-all duration-300">
-            <CardContent className="space-y-6">
-              <div className="text-center">
-                <div className="inline-block p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
-                  <Award size={48} className="text-amber-500" />
-                </div>
-                <h2 className="text-xl font-bold mt-3 dark:text-white">Game Completed!</h2>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  Thanks for playing, {currentPlayer?.nickname || "Player"}!
-                </p>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold dark:text-white">Your Results</h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                    <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                      {currentPlayer?.score || 0}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Total Score</div>
-                  </div>
-
-                  <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {currentPlayer?.answers?.filter(a => a.correct).length || 0} / {currentPlayer?.answers?.length || 0}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Correct Answers</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <LeaderboardDisplay
-            players={activeGame.players}
-            activeQuiz={activeGame.quiz}
-            showScores={activeGame.showScores}
-            hasHostSubmitted={activeGame.hostSubmitted}
-          />
+          {activeGame.players && activeGame.quiz ? (
+            <LeaderboardDisplay 
+              players={activeGame.players}
+              activeQuiz={activeGame.quiz}
+              showScores={true}
+              hasHostSubmitted={true}
+            />
+          ) : (
+            <div className="text-center text-red-500 py-8 text-lg">
+              Error: Player data or quiz data missing for leaderboard.
+            </div>
+          )}
         </div>
       );
     }
@@ -353,6 +331,5 @@ const PlayerGameRoomPage: React.FC = () => {
     </BackgroundContainer>
   );
 };
-
 export default PlayerGameRoomPage;
 
