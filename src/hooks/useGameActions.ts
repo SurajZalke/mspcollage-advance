@@ -76,11 +76,20 @@ export const useGameActions = (
       // Append the new answer to the existing answers array
       const updatedAnswers = existingAnswers ? [...existingAnswers, newAnswer] : [newAnswer];
 
+      // Update player score and status
+      await update(playerRef, {
+        score: currentPlayer.score + scoreChange,
+        status: 'answered'
+      });
+      await set(playerAnswersRef, updatedAnswers);
 
-       await update(playerRef, {
-         score: currentPlayer.score + scoreChange,
-       });
-       await set(playerAnswersRef, updatedAnswers);
+      // If the current player is the host, update hostSubmitted flag
+      if (currentPlayer.player_id === activeGame.hostId) {
+        const gameRef = ref(db, `games/${activeGame.id}`);
+        await update(gameRef, {
+          hostSubmitted: true
+        });
+      }
 
       // The refreshGameState in GameContext will handle updating the local state
       // based on the real-time subscription.
@@ -97,12 +106,22 @@ export const useGameActions = (
     if (nextIndex >= currentQuiz.questions.length) {
       endGame();
     } else {
-      // Update the current question index in Firestore
+      // Update the current question index and reset player statuses in Firestore
       const gameRef = ref(db, `games/${activeGame.id}`);
      try {
-       await update(gameRef, {
+       const updates: any = {
          currentQuestionIndex: activeGame.currentQuestionIndex + 1,
+         questionStartTime: Date.now(),
+         showScores: false,
+         hostSubmitted: false
+       };
+
+       // Reset all players' status to 'waiting'
+       activeGame.players.forEach((player) => {
+         updates[`players/${player.player_id}/status`] = 'waiting';
        });
+
+       await update(gameRef, updates);
 
         // The refreshGameState in GameContext will handle updating the local state
         // based on the real-time subscription.
@@ -112,10 +131,92 @@ export const useGameActions = (
     }
   }, [activeGame, currentQuiz, endGame]);
 
+  const setCorrectAnswer = useCallback(async (optionId: string, questionId: string | undefined) => {
+    if (!activeGame || !currentQuestion || !currentPlayer) return;
+
+    const timeToAnswer = Math.floor(Date.now() / 1000) - (activeGame.questionStartTime || Math.floor(Date.now() / 1000));
+    const isCorrect = optionId === currentQuestion.correctOption;
+
+    // Create host's answer object
+    const hostAnswer = {
+      questionId,
+      selectedOption: optionId,
+      correct: isCorrect,
+      timeToAnswer
+    };
+
+    // Update host's answers in the game
+    const hostAnswersRef = ref(db, `games/${activeGame.id}/players/${currentPlayer.player_id}/answers`);
+    const hostRef = ref(db, `games/${activeGame.id}/players/${currentPlayer.player_id}`);
+    const gameRef = ref(db, `games/${activeGame.id}`);
+
+    try {
+      // Get existing answers
+      const snapshot = await getDatabaseData(hostAnswersRef);
+      const existingAnswers = snapshot.val() || [];
+      const updatedAnswers = [...existingAnswers, hostAnswer];
+
+      // Find host in players array
+      const hostPlayer = activeGame.players.find(p => p.player_id === currentPlayer.player_id);
+      const currentHostScore = hostPlayer?.score || 0;
+
+      // Calculate host's score
+      let scoreChange = 0;
+      if (isCorrect) {
+        const timeBonus = Math.max(0, (currentQuestion.timeLimit - timeToAnswer) / currentQuestion.timeLimit);
+        scoreChange = currentQuestion.points + Math.floor(currentQuestion.points * timeBonus * 0.5);
+      }
+
+      // Update game state and host's data
+      await update(gameRef, {
+        [`questions.${currentQuestion.id}.correctOption`]: optionId,
+        showScores: true,
+        lastAnsweredQuestion: currentQuestion.id
+      });
+
+      await update(hostRef, {
+        score: currentHostScore + scoreChange,
+        answers: updatedAnswers,
+        status: 'answered'
+      });
+
+      // Calculate and update scores for all players
+      const players = activeGame.players;
+      for (const playerId in players) {
+        if (playerId === currentPlayer.player_id) continue; // Skip host
+
+        const player = players[playerId];
+        const playerAnswer = player.answers?.[activeGame.currentQuestionIndex];
+
+        if (playerAnswer) {
+          let playerScoreChange = 0;
+          const isPlayerCorrect = playerAnswer.selectedOption === optionId;
+
+          if (isPlayerCorrect) {
+            const timeBonus = Math.max(0, (currentQuestion.timeLimit - playerAnswer.timeToAnswer) / currentQuestion.timeLimit);
+            playerScoreChange = currentQuestion.points + Math.floor(currentQuestion.points * timeBonus * 0.5);
+          } else if (activeGame.quiz.hasNegativeMarking) {
+            playerScoreChange = -Math.floor(currentQuestion.points * activeGame.quiz.negativeMarkingValue / 100);
+          }
+
+          // Update player's score and answer correctness
+          const playerRef = ref(db, `games/${activeGame.id}/players/${playerId}`);
+          await update(playerRef, {
+            score: player.score + playerScoreChange,
+            [`answers.${activeGame.currentQuestionIndex}.correct`]: isPlayerCorrect
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error setting correct answer:', error);
+    }
+  }, [activeGame, currentQuestion, currentPlayer]);
+
   return {
     startGame,
     endGame,
     submitAnswer,
-    nextQuestion
+    nextQuestion,
+    setCorrectAnswer
   };
 };

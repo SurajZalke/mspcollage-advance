@@ -95,8 +95,9 @@ export const useGameState = () => {
       // Update local state
       setActiveGame({
         ...gameData,
-        players: Object.values(gameData.players)
-      } as GameRoom);
+        players: Object.values(gameData.players),
+        showScores: false // Add required showScores property
+      } as unknown as GameRoom);
       setCurrentPlayer(gameData.players[0]);
       setIsHost(true);
       setCurrentQuiz(quiz);

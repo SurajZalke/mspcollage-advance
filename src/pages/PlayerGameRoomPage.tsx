@@ -14,6 +14,7 @@ import confetti from 'canvas-confetti';
 import WaitingRoom from "@/components/WaitingRoom";
 import CreatorAttribution from "@/components/CreatorAttribution";
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
+import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 
 const PlayerGameRoomPage: React.FC = () => {
   const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame } = useGame();
@@ -22,6 +23,23 @@ const PlayerGameRoomPage: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const [timeLeft, setTimeLeft] = useState(0);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (activeGame?.status === 'finished') {
+      toast({
+        title: "Game Ended",
+        description: "Thanks for playing! Check out the final leaderboard!"
+      });
+      
+      // Trigger confetti effect for game end celebration
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  }, [activeGame?.status, toast]);
+
   const cardRef = useRef<HTMLDivElement>(null);
   const [pollingActive, setPollingActive] = useState(true);
 
@@ -167,6 +185,68 @@ const PlayerGameRoomPage: React.FC = () => {
       );
     }
 
+    if (activeGame.status === "finished") {
+      return (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-quiz-dark dark:text-white">
+              Game Results
+            </h2>
+            <Button 
+              onClick={() => navigate('/')} 
+              className="quiz-btn-primary"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Return Home
+            </Button>
+          </div>
+          
+          <Card className="quiz-card p-6 transform hover:scale-[1.02] transition-all duration-300">
+            <CardContent className="space-y-6">
+              <div className="text-center">
+                <div className="inline-block p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                  <Award size={48} className="text-amber-500" />
+                </div>
+                <h2 className="text-xl font-bold mt-3 dark:text-white">Game Completed!</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  Thanks for playing, {currentPlayer?.nickname || "Player"}!
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-semibold dark:text-white">Your Results</h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                      {currentPlayer?.score || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Total Score</div>
+                  </div>
+
+                  <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {currentPlayer?.answers?.filter(a => a.correct).length || 0} / {currentPlayer?.answers?.length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Correct Answers</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <LeaderboardDisplay
+            players={activeGame.players}
+            activeQuiz={activeGame.quiz}
+            showScores={activeGame.showScores}
+            hasHostSubmitted={activeGame.hostSubmitted}
+          />
+        </div>
+      );
+    }
+
     if (activeGame.status === "waiting") {
       return (
         <WaitingRoom
@@ -180,56 +260,6 @@ const PlayerGameRoomPage: React.FC = () => {
           isHost={false}
           onRefreshPlayers={handleManualRefresh}
         />
-      );
-    }
-
-    if (activeGame.status === "finished") {
-      return (
-        <Card className="quiz-card p-6 transform hover:scale-[1.02] transition-all duration-300">
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <div className="inline-block p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
-                <Award size={48} className="text-amber-500" />
-              </div>
-              <h2 className="text-xl font-bold mt-3 dark:text-white">Game Completed!</h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Thanks for playing, {currentPlayer?.nickname || "Player"}!
-              </p>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold dark:text-white">Your Results</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                    {currentPlayer?.score || 0}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">Total Score</div>
-                </div>
-
-                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {currentPlayer?.answers.filter(a => a.correct).length || 0} / {currentPlayer?.answers.length || 0}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">Correct Answers</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <Button
-                onClick={handleLeaveGame}
-                className="quiz-btn-primary"
-              >
-                <ArrowLeft size={16} className="mr-2" />
-                Leave Game
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       );
     }
 
@@ -276,19 +306,24 @@ const PlayerGameRoomPage: React.FC = () => {
           )}
 
           {currentPlayer && (
-            <div className="flex items-center justify-between bg-gray-800/50 dark:bg-gray-900/50 p-4 rounded-lg shadow-lg">
-              <div className="flex items-center space-x-3">
-                <Avatar className="w-8 h-8 border-2 border-indigo-400">
-                  <AvatarImage src={currentPlayer?.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${currentPlayer?.nickname}`} />
-                  <AvatarFallback>{typeof currentPlayer?.nickname === 'string' && currentPlayer.nickname.length > 0 ? currentPlayer.nickname.charAt(0).toUpperCase() : ''}</AvatarFallback>
-                </Avatar>
-                <p className="font-bold text-lg text-white">{currentPlayer?.nickname}</p>
+            <>
+              <div className="flex items-center justify-between bg-gray-800/50 dark:bg-gray-900/50 p-4 rounded-lg shadow-lg">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="w-8 h-8 border-2 border-indigo-400">
+                    <AvatarImage src={currentPlayer?.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${currentPlayer?.nickname}`} />
+                    <AvatarFallback>{typeof currentPlayer?.nickname === 'string' && currentPlayer.nickname.length > 0 ? currentPlayer.nickname.charAt(0).toUpperCase() : ''}</AvatarFallback>
+                  </Avatar>
+                  <p className="font-bold text-lg text-white">{currentPlayer?.nickname}</p>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <p className="text-white text-lg">Score:</p>
-                <p className="font-bold text-xl text-quiz-primary">{currentPlayer?.score}</p>
-              </div>
-            </div>
+              
+              <LeaderboardDisplay
+                players={activeGame.players}
+                activeQuiz={activeGame.quiz}
+                showScores={true}
+                hasHostSubmitted={activeGame.hostSubmitted}
+              />
+            </>
           )}
         </div>
       );
@@ -301,44 +336,19 @@ const PlayerGameRoomPage: React.FC = () => {
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-          </div>
         </div>
-      );
-    };
+      </div>
+    );
+  };
   
   return (
     <BackgroundContainer>
-      <div className="min-h-screen flex flex-col">
-        <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
-          <div className="container mx-auto p-4 flex justify-between items-center">
-            <Logo />
-            
-            {activeGame && (
-              <div className="flex items-center gap-4">
-                <div 
-                  className="flex items-center gap-1 cursor-pointer bg-black/20 px-2 py-1 rounded-md hover:bg-black/30 transition-colors" 
-                  onClick={handleManualRefresh}
-                >
-                  {connectionStatus === "connected" ? (
-                    <Wifi size={16} className="text-green-400" />
-                  ) : (
-                    <RefreshCw size={16} className="text-amber-400 animate-spin" />
-                  )}
-                  <span className="text-xs text-white">
-                    {connectionStatus === "connected" ? "Live" : "Updating..."}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </header>
+      <div className="min-h-screen flex flex-col items-center justify-start py-8 px-4 space-y-8">
+        <Logo />
         
-        <main className="container mx-auto p-4 py-8 flex-1 flex justify-center">
-          <div className="w-full max-w-2xl">
-            {renderContent()}
-          </div>
-        </main>
-        <CreatorAttribution />
+        <div className="w-full max-w-4xl space-y-6">
+          {renderContent()}
+        </div>
       </div>
     </BackgroundContainer>
   );

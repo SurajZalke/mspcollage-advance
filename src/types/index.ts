@@ -20,6 +20,7 @@ export interface Player {
   score: number;
   answers: PlayerAnswer[];
   avatar?: string;
+  status?: 'waiting' | 'answered';
 }
 
 export interface PlayerAnswer {
@@ -61,6 +62,8 @@ export interface QuestionOption {
 }
 
 export interface GameRoom {
+  questionStartTime: number;
+  showScores: boolean;
   id: string;
   code: string;
   quiz: Quiz;
@@ -70,6 +73,7 @@ export interface GameRoom {
   currentQuestionIndex: number;
   startTime: Date | null;
   endTime: Date | null;
+  hostSubmitted?: boolean;
 }
 
 export interface ScienceSubject {

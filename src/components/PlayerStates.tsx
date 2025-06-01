@@ -9,9 +9,10 @@ import { Player } from "@/types";
 interface PlayerStatesProps {
   players: Player[];
   currentQuestionId?: string;
+  hasHostSubmitted?: boolean;
 }
 
-const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId }) => {
+const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId, hasHostSubmitted }) => {
 
 
   const [showResults, setShowResults] = useState(false);
@@ -74,7 +75,7 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId 
                     {player.nickname}
                   </TableCell>
                   <TableCell key={`${player.id}-status`}>
-                    {answer ? (
+                    {player.status === 'answered' || answer ? (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                         Answered
@@ -90,7 +91,7 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId 
                     {answer ? `${answer.timeToAnswer}s` : "-"}
                   </TableCell>
                   <TableCell key={`${player.id}-correct`}>
-                    {showResults ? (
+                    {showResults && hasHostSubmitted ? (
                       answer ? (
                         answer.correct ? (
                           <span className="text-green-600 dark:text-green-400 font-bold animate-pulse-scale">✓</span>

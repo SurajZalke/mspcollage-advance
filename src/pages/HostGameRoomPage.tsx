@@ -19,9 +19,10 @@ import { ArrowLeft } from "lucide-react";
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState } = useGame();
+  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState, setCorrectAnswer, submitAnswer } = useGame();
   const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
+  const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState(false);
   const { toast } = useToast();
   const cardRef = React.useRef<HTMLDivElement>(null);
 
@@ -71,6 +72,23 @@ const HostGameRoomPage: React.FC = () => {
     if (!cardRef.current) return;
     cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
   }, []);
+
+  const handleHostSelect = async (answerId: string) => {
+    if (!currentQuestion) return;
+    
+    await setCorrectAnswer(answerId, currentQuestion.id);
+    setHasSubmittedAnswer(true);
+    
+    // Submit the answer for the host
+    if (activeGame?.hostId) {
+      await submitAnswer(currentQuestion.id, answerId);
+    }
+    
+    toast({
+      title: "Answer Selected",
+      description: "The correct answer has been recorded",
+    });
+  };
 
   if (!currentUser) {
     return (
@@ -134,26 +152,50 @@ const HostGameRoomPage: React.FC = () => {
                     </h2>
                     <GameControls 
                         onEndGame={endGame}
-                        onNextQuestion={nextQuestion}
-                        showNext={true} onStartGame={startGame}                    />
+                        onNextQuestion={() => {
+                          nextQuestion();
+                          setHasSubmittedAnswer(false);
+                        }}
+                        showNext={true} 
+                        onStartGame={startGame}
+                    />
                   </div>
                   
                   {currentQuestion && (
-                    <QuestionDisplay 
-                        question={currentQuestion}
-                        showTimer={false}
-                        isHostView={true}
-                        markingType={currentQuiz?.hasNegativeMarking ? "negative" : "simple"}
-                        negativeValue={currentQuiz?.negativeMarkingValue || 0}
+                    <QuestionDisplay
+                      question={currentQuestion}
+                      onHostSelect={handleHostSelect}
+                      isHostView={true}
                     />
                   )}
                   
-                  {activeGame && (
-                    <PlayerStates 
+                  {activeGame && activeGame.players && activeGame.players.length > 0 && (
+                    <PlayerStates
                       players={activeGame.players}
                       currentQuestionId={currentQuestion?.id}
+                      hasHostSubmitted={hasSubmittedAnswer}
                     />
-
+                  )}
+                  
+                  {activeGame?.status === "active" && activeGame.players && activeGame.players.length > 0 && (
+                    <LeaderboardDisplay
+                    players={activeGame.players}
+                    activeQuiz={activeGame.quiz}
+                    showScores={true}
+                    hasHostSubmitted={activeGame.hostSubmitted}
+                  />
+                  )}
+                  
+                  {currentQuestion && hasSubmittedAnswer && (
+                    <Button
+                      onClick={() => {
+                        nextQuestion();
+                        setHasSubmittedAnswer(false);
+                      }}
+                      className="quiz-btn-primary mt-4"
+                    >
+                      Next Question
+                    </Button>
                   )}
                 </div>
               ) : (
@@ -192,6 +234,7 @@ const HostGameRoomPage: React.FC = () => {
                     <LeaderboardDisplay 
                       players={activeGame.players} 
                       activeQuiz={currentQuiz} 
+                      showScores={true}
                     />
                   </div>
                 </>

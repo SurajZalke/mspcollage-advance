@@ -28,6 +28,7 @@ interface GameContextType {
   nextQuestion: () => Promise<void>;
   refreshGameState: (gameId?: string, playerId?: string) => Promise<void>;
   getAvailableGameCodes: () => Promise<string[]>;
+  setCorrectAnswer: (questionId: string, correctOption: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -62,7 +63,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     startGame,
     endGame,
     submitAnswer,
-    nextQuestion
+    nextQuestion,
+    setCorrectAnswer
   } = useGameActions(activeGame, setActiveGame, currentPlayer, currentQuestion, currentQuiz);
 
   const {
@@ -337,7 +339,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     submitAnswer,
     nextQuestion,
     refreshGameState,
-    getAvailableGameCodes
+    getAvailableGameCodes,
+    setCorrectAnswer
   };
 
   return (

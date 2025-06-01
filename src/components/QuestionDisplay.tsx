@@ -13,6 +13,7 @@ interface QuestionDisplayProps {
   disableOptions?: boolean;
   markingType?: string;
   negativeValue?: number;
+  onHostSelect?: (optionId: string) => void;
 }
 
 const QuestionDisplay: React.FC<QuestionDisplayProps> = ({ 
@@ -22,7 +23,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   isHostView = false,
   disableOptions = false,
   markingType,
-  negativeValue
+  negativeValue,
+  onHostSelect
 }) => {
   const [timeLeft, setTimeLeft] = useState(question.timeLimit);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -56,7 +58,10 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     
     setSelectedOption(optionId);
     setIsAnswered(true);
-    if (onAnswer) {
+    
+    if (isHostView && onHostSelect) {
+      onHostSelect(optionId);
+    } else if (onAnswer) {
       onAnswer(question.id, optionId);
     }
   };
@@ -107,7 +112,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     : "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
                 }`}
                 onClick={() => handleSelectOption(option.id)}
-                disabled={isAnswered || disableOptions || isHostView}
+                disabled={isAnswered || disableOptions || (isHostView && !onHostSelect)}
               >
                 <div className="mr-3 bg-gray-100 text-quiz-dark rounded-full w-6 h-6 flex items-center justify-center font-medium">
                   {option.id.toUpperCase()}

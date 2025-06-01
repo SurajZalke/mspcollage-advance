@@ -9,10 +9,17 @@ import { Player, Quiz } from "@/types";
 interface LeaderboardDisplayProps {
   players: Player[];
   activeQuiz?: Quiz;
+  showScores?: boolean;
+  hasHostSubmitted?: boolean;
 }
 
-const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players, activeQuiz }) => {
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players, activeQuiz, showScores = false, hasHostSubmitted = false }) => {
+  // Include host in the players list if they exist
+  const allPlayers = players.map(player => ({
+    ...player,
+    isHost: player.player_id === activeQuiz?.createdBy
+  }));
+  const sortedPlayers = [...allPlayers].sort((a, b) => b.score - a.score);
 
   // Show marking type summary
   const markingType = activeQuiz
@@ -69,9 +76,14 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({ players, active
                     <AvatarImage src={player.avatar || ''} />
                     <AvatarFallback>{typeof player.nickname === 'string' && player.nickname.length > 0 ? player.nickname.charAt(0).toUpperCase() : ''}</AvatarFallback>
                   </Avatar>
-                  <span className="font-medium text-gray-900 dark:text-black-100">{player.nickname}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 dark:text-black-100">{player.nickname}</span>
+                    {player.isHost && (
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Host</span>
+                    )}
+                  </div>
                 </div>
-                <span className="font-bold text-quiz-primary">{player.score}</span>
+                <span className="font-bold text-quiz-primary">{(showScores && hasHostSubmitted) ? player.score : '...'}</span>
               </div>
             ))}
           </div>
