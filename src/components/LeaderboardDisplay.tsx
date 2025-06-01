@@ -28,21 +28,21 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
         return (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" 
                className="w-6 h-6 text-yellow-500 animate-pulse">
-            <path d="M11.25 1.5V8.25H9.375C8.339 8.25 7.5 9.089 7.5 10.125V11.25c0 .621.504 1.125 1.125 1.125h.375v1.5H7.5c-.621 0-1.125.504-1.125 1.125V18a1.125 1.125 0 001.125 1.125h9a1.125 1.125 0 001.125-1.125v-3c0-.621-.504-1.125-1.125-1.125H15v-1.5h.375c.621 0 1.125-.504 1.125-1.125V10.125C16.5 9.089 15.661 8.25 14.625 8.25H12.75V1.5h-1.5zM9.375 9.75h5.25c.207 0 .375.168.375.375v.75H9V10.125c0-.207.168-.375.375-.375zm1.125 3h3v1.5h-3v-1.5z" />
+            <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
           </svg>
         );
       case 1:
         return (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" 
                className="w-6 h-6 text-gray-400">
-            <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
+            <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
           </svg>
         );
       case 2:
         return (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" 
                className="w-6 h-6 text-amber-500">
-            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 001.06 0l3-3a.75.75 0 10-1.06-1.06l-1.72 1.72V8.25a.75.75 0 00-1.5 0v5.69l-1.72-1.72a.75.75 0 00-1.06 1.06l3 3z" clipRule="evenodd" />
+            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
           </svg>
         );
       default:
@@ -128,11 +128,12 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                     )}
                   </div>
                 </div>
-                {showScores && (
-                  <div className="text-gray-600 text-lg font-semibold">
-                     {(showScores && hasHostSubmitted) ? player.score : '...'}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-gray-800 text-lg">
+                    {(showScores && hasHostSubmitted) ? player.score : '...'}
+                  </span>
+                  <span className="text-xs text-gray-500">pts</span>
+                </div>
               </div>
             ))}
           </div>

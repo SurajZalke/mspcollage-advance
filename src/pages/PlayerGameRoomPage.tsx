@@ -24,9 +24,10 @@ const PlayerGameRoomPage: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const { toast } = useToast();
   const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
+  const [confettiTriggered, setConfettiTriggered] = useState(false);
 
   useEffect(() => {
-    if (activeGame?.status === 'finished') {
+    if (activeGame?.status === 'finished' && !confettiTriggered) {
       // Trigger confetti animation
       confetti({
         particleCount: 100,
@@ -40,8 +41,9 @@ const PlayerGameRoomPage: React.FC = () => {
 
       // Set showLeaderboardAnimation to true to display the leaderboard
       setShowLeaderboardAnimation(true);
+      setConfettiTriggered(true); // Mark confetti as triggered
     }
-  }, [activeGame?.status, activeGame]);
+  }, [activeGame?.status, confettiTriggered]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [pollingActive, setPollingActive] = useState(true);

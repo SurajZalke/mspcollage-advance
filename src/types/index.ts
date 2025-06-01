@@ -62,6 +62,8 @@ export interface QuestionOption {
 }
 
 export interface GameRoom {
+  negativeMarkingValue: number;
+  settings: any;
   winner: any;
   questionStartTime: number;
   showScores: boolean;

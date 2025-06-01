@@ -143,6 +143,9 @@ const HostGameRoomPage: React.FC = () => {
                   cardRef={cardRef}
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
+                  // Add negative marking options
+                  hasNegativeMarking={Boolean(activeGame.settings?.hasNegativeMarking)}
+                  negativeMarkingValue={activeGame.negativeMarkingValue}
                 />
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">

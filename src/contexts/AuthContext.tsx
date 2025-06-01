@@ -28,20 +28,6 @@ export const useAuth = () => {
   return context;
 };
 
-// Firebase Auth errors are typically handled directly in the catch block
-// const handleAuthError = (error: AuthError): string => {
-//   switch (error.message) {
-//     case 'Invalid login credentials':
-//       return 'Invalid email or password. Please try again.';
-//     case 'Email not confirmed':
-//       return 'Please verify your email before logging in.';
-//     case 'User already registered':
-//       return 'An account with this email already exists.';
-//     default:
-//       return error.message || 'An unexpected error occurred.';
-//   }
-// };
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -251,13 +237,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(prevUser => {
         if (!prevUser) return null;
         const typedPrevUser = prevUser as User & { user_metadata?: { name?: string; avatar_url?: string; bio?: string } };
-        return {
-          ...typedPrevUser,
-          user_metadata: {
-            ...typedPrevUser.user_metadata,
-            ...data,
-          },
-        };
+         return {
+           ...typedPrevUser,
+           user_metadata: {
+             ...typedPrevUser.user_metadata,
+             ...data,
+           },
+         };
       });
     } catch (error: any) {
       console.error('Error updating profile:', error.message);
