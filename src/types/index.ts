@@ -47,6 +47,7 @@ export interface Quiz {
 }
 
 export interface Question {
+  playerAnswerId: any;
   id: string;
   text: string;
   options: QuestionOption[];

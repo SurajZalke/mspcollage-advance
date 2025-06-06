@@ -109,12 +109,14 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 className={`p-4 h-auto text-left flex justify-start items-center transition-all ${
                   selectedOption === option.id
                     ? "bg-quiz-primary text-white"
+                    : isAnswered && option.id === question.correctOption
+                    ? "bg-green-600 text-white"
                     : "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
                 }`}
                 onClick={() => handleSelectOption(option.id)}
                 disabled={isAnswered || disableOptions || (isHostView && !onHostSelect)}
               >
-                <div className="mr-3 bg-gray-100 text-quiz-dark rounded-full w-6 h-6 flex items-center justify-center font-medium">
+                <div className={`mr-3 ${isAnswered && option.id === question.correctOption ? 'bg-green-200' : 'bg-gray-100'} text-quiz-dark rounded-full w-6 h-6 flex items-center justify-center font-medium`}>
                   {option.id.toUpperCase()}
                 </div>
                 <span>{option.text}</span>

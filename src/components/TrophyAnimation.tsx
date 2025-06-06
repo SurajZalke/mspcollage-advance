@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Trophy, Award, Medal } from "lucide-react";
 import { Player } from "@/types";

@@ -265,7 +265,10 @@ const PlayerGameRoomPage: React.FC = () => {
             className="transition-all duration-300"
           >
             <QuestionDisplay
-              question={currentQuestion}
+              question={{
+                ...currentQuestion,
+                correctOption: activeGame.hostSubmitted ? currentQuestion.correctOption : undefined
+              }}
               onAnswer={handleAnswerSubmit}
               disableOptions={disableOptions}
               showTimer={true}

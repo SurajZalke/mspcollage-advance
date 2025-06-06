@@ -143,9 +143,7 @@ const HostGameRoomPage: React.FC = () => {
                   cardRef={cardRef}
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
-                  // Add negative marking options
-                  hasNegativeMarking={Boolean(activeGame.settings?.hasNegativeMarking)}
-                  negativeMarkingValue={activeGame.negativeMarkingValue}
+                  
                 />
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">
@@ -167,12 +165,18 @@ const HostGameRoomPage: React.FC = () => {
                     />
                   </div>
                   
-                  {currentQuestion && (
-                    <QuestionDisplay
-                      question={currentQuestion}
-                      onHostSelect={handleHostSelect}
-                      isHostView={true}
-                    />
+                  {activeGame?.status === "active" && currentQuestion && (
+                    <div className="w-full max-w-4xl mx-auto">
+                      <QuestionDisplay
+                        question={{
+                          ...currentQuestion,
+                          correctOption: hasSubmittedAnswer ? currentQuestion.correctOption : undefined
+                        }}
+                        isHostView={true}
+                        onHostSelect={handleHostSelect}
+                        disableOptions={hasSubmittedAnswer}
+                      />
+                    </div>
                   )}
                   
                   {activeGame && activeGame.players && activeGame.players.length > 0 && (
