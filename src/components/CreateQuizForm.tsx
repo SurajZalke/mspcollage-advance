@@ -150,7 +150,6 @@ const ADVANCED_MATH = [
   { symbol: '∯', name: 'Surface Integral' },
   { symbol: '∰', name: 'Volume Integral' },
   { symbol: '∇²', name: 'Laplacian' },
-  { symbol: '∂²/∂x²', name: 'Second Partial Derivative' },
   { symbol: '∑∞ᵢ₌₁', name: 'Infinite Sum' },
   { symbol: '∏∞ᵢ₌₁', name: 'Infinite Product' },
   { symbol: 'lim x→∞', name: 'Limit to Infinity' },
@@ -195,10 +194,53 @@ const ADVANCED_BIOLOGY = [
   { symbol: 'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy', name: 'Cellular Respiration' },
 ];
 
+const CONSTANT_SYMBOLS = [
+  { symbol: '²', name: 'Squared' },
+  { symbol: '³', name: 'Cubed' },
+  { symbol: '⁴', name: 'To the Fourth' },
+  { symbol: '₁', name: 'Subscript 1' },
+  { symbol: '₂', name: 'Subscript 2' },
+  { symbol: '₃', name: 'Subscript 3' },
+  { symbol: '₄', name: 'Subscript 4' },
+  { symbol: '₅', name: 'Subscript 5' },
+  { symbol: '₆', name: 'Subscript 6' },
+  { symbol: '₇', name: 'Subscript 7' },
+  { symbol: '₈', name: 'Subscript 8' },
+  { symbol: '₉', name: 'Subscript 9' },
+  { symbol: '₀', name: 'Subscript 0' },
+  { symbol: '()', name: 'Parentheses' },
+  { symbol: '[]', name: 'Square Brackets' },
+  { symbol: '{}', name: 'Curly Brackets' },
+  { symbol: '⟨⟩', name: 'Angle Brackets' },
+  { symbol: '|', name: 'Vertical Bar' },
+  { symbol: '‖', name: 'Double Vertical Bar' },
+  { symbol: '⌈⌉', name: 'Ceiling Brackets' },
+  { symbol: '⌊⌋', name: 'Floor Brackets' },
+  { symbol: '√', name: 'Square Root' },
+  { symbol: '∛', name: 'Cube Root' },
+  { symbol: '∜', name: 'Fourth Root' },
+  { symbol: '∝', name: 'Proportional to' },
+  { symbol: '∑', name: 'Summation' },
+  { symbol: '∏', name: 'Product' },
+  { symbol: '∫', name: 'Integral' },
+  { symbol: '∆', name: 'Delta' },
+  { symbol: '∇', name: 'Nabla' },
+  { symbol: '∂', name: 'Partial Derivative' },
+  { symbol: '∂²', name: 'Second Partial Derivative' },
+  { symbol: '∂³', name: 'Third Partial Derivative' },
+  { symbol: '∂⁴', name: 'Fourth Partial Derivative' },
+  { symbol: '∂⁵', name: 'Fifth Partial Derivative' },
+  { symbol: '∂⁶', name: 'Sixth Partial Derivative' },
+  { symbol: '∂⁷', name: 'Seventh Partial Derivative' },
+  { symbol: '∂⁸', name: 'Eighth Partial Derivative' },  
+  { symbol: '∂⁹', name: 'Ninth Partial Derivative' },
+];
+
 const SymbolPicker = ({ onSelect }: { onSelect: (symbol: string) => void }) => {
-  const [activeTab, setActiveTab] = useState('math');
+  const [activeTab, setActiveTab] = useState('constant');
 
   const tabs = [
+    { id: 'constant', label: 'Basic Symbols', symbols: CONSTANT_SYMBOLS },
     { id: 'constants', label: 'Constants', symbols: CONSTANTS },
     { id: 'advanced_math', label: 'Advanced Math', symbols: ADVANCED_MATH },
     { id: 'advanced_physics', label: 'Advanced Physics', symbols: ADVANCED_PHYSICS },
@@ -310,29 +352,43 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       activeInputRef.setSelectionRange(newCursorPos, newCursorPos);
       
       // Find the question and option being edited
-      const questionIndex = questions.findIndex(q => 
-        q.options.some(opt => activeInputRef.id.includes(opt.id)) || 
-        activeInputRef.id.includes(q.id)
-      );
-  
+      let questionIndex = -1;
+      let optionIndex = -1;
+
+      for (let i = 0; i < questions.length; i++) {
+        if (activeInputRef.id === `question_${questions[i].id}`) {
+          questionIndex = i;
+          break;
+        }
+        for (let j = 0; j < questions[i].options.length; j++) {
+          if (activeInputRef.id === `option_${questions[i].id}_${questions[i].options[j].id}`) {
+            questionIndex = i;
+            optionIndex = j;
+            break;
+          }
+        }
+        if (questionIndex !== -1) break;
+      }
+
       if (questionIndex !== -1) {
         const newQuestions = [...questions];
         const question = newQuestions[questionIndex];
   
-        if (activeInputRef.id.includes(question.id)) {
+        if (optionIndex !== -1) {
+          // Update option text
+          const updatedOptions = [...question.options];
+          updatedOptions[optionIndex] = { ...updatedOptions[optionIndex], text: newValue };
+          newQuestions[questionIndex] = { ...question, options: updatedOptions };
+        } else {
           // Update question text
           newQuestions[questionIndex] = { ...question, text: newValue };
-        } else {
-          // Update option text
-          const optionId = question.options.find(opt => activeInputRef.id.includes(opt.id))?.id;
-          if (optionId) {
-            const optionIndex = question.options.findIndex(opt => opt.id === optionId);
-            newQuestions[questionIndex].options[optionIndex].text = newValue;
-          }
         }
   
         setQuestions(newQuestions);
       }
+
+      // Trigger a re-render
+      activeInputRef.dispatchEvent(new Event('input', { bubbles: true }));
     }
   };
 

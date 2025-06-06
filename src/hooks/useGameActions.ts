@@ -53,8 +53,7 @@ export const useGameActions = (
 
     let scoreChange = 0;
     if (isCorrect) {
-      const timeBonus = Math.max(0, (currentQuestion.timeLimit - timeToAnswer) / currentQuestion.timeLimit);
-      scoreChange = currentQuestion.Marks + Math.floor(currentQuestion.Marks * timeBonus * 0.5);
+      scoreChange = currentQuestion.Marks;
     } else if (currentQuiz.hasNegativeMarking) {
       scoreChange = -Math.floor(currentQuestion.Marks * currentQuiz.negativeMarkingValue / 100);
     }
