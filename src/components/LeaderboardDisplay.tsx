@@ -20,7 +20,25 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
     ...player,
     isHost: player.player_id === activeQuiz?.createdBy
   }));
-  const sortedPlayers = [...allPlayers].sort((a, b) => b.score - a.score);
+  const sortedPlayers = [...allPlayers].sort((a, b) => {
+    // Primary sort by score (descending)
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+
+    // Secondary sort by average time to answer (ascending) if scores are equal
+    // Calculate average time for player a
+    const aCorrectAnswers = a.answers?.filter(ans => ans.correct) || [];
+    const aTotalTime = aCorrectAnswers.reduce((sum, ans) => sum + ans.timeToAnswer, 0);
+    const aAvgTime = aCorrectAnswers.length > 0 ? aTotalTime / aCorrectAnswers.length : Infinity;
+
+    // Calculate average time for player b
+    const bCorrectAnswers = b.answers?.filter(ans => ans.correct) || [];
+    const bTotalTime = bCorrectAnswers.reduce((sum, ans) => sum + ans.timeToAnswer, 0);
+    const bAvgTime = bCorrectAnswers.length > 0 ? bTotalTime / bCorrectAnswers.length : Infinity;
+
+    return aAvgTime - bAvgTime;
+  });
 
   const getRankIcon = (index: number) => {
     switch(index) {
