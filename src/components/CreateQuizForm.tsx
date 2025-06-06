@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { ref as dbRef, push as dbPush, set as dbSet } from "firebase/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,241 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { scienceSubjects } from "@/utils/gameUtils";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Smile } from "lucide-react";
 import { db } from "@/lib/firebaseConfig";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+
+// Constants for symbols and formulas
+const MATH_SYMBOLS = [
+  { symbol: '±', name: 'Plus-Minus' },
+  { symbol: '×', name: 'Multiplication' },
+  { symbol: '÷', name: 'Division' },
+  { symbol: '≠', name: 'Not Equal' },
+  { symbol: '≈', name: 'Approximately' },
+  { symbol: '∞', name: 'Infinity' },
+  { symbol: '∑', name: 'Summation' },
+  { symbol: '∫', name: 'Integral' },
+  { symbol: '√', name: 'Square Root' },
+  { symbol: '∏', name: 'Product' },
+  { symbol: '∂', name: 'Partial Derivative' },
+  { symbol: '∇', name: 'Nabla/Del' },
+  { symbol: '∆', name: 'Delta/Change' },
+  { symbol: '∈', name: 'Element Of' },
+  { symbol: '∉', name: 'Not Element Of' },
+  { symbol: '⊂', name: 'Subset Of' },
+  { symbol: '⊃', name: 'Superset Of' },
+  { symbol: '∪', name: 'Union' },
+  { symbol: '∩', name: 'Intersection' },
+  { symbol: '∀', name: 'For All' },
+  { symbol: '∃', name: 'There Exists' },
+  { symbol: '∄', name: 'Does Not Exist' },
+  { symbol: '∅', name: 'Empty Set' },
+  { symbol: '∝', name: 'Proportional To' },
+  { symbol: '∞', name: 'Infinity' },
+];
+
+const CHEMISTRY_SYMBOLS = [
+  { symbol: 'H₂O', name: 'Water' },
+  { symbol: 'CO₂', name: 'Carbon Dioxide' },
+  { symbol: 'NaCl', name: 'Sodium Chloride' },
+  { symbol: 'H₂SO₄', name: 'Sulfuric Acid' },
+  { symbol: 'HCl', name: 'Hydrochloric Acid' },
+  { symbol: 'NaOH', name: 'Sodium Hydroxide' },
+  { symbol: 'CH₄', name: 'Methane' },
+  { symbol: 'C₂H₅OH', name: 'Ethanol' },
+  { symbol: 'NH₃', name: 'Ammonia' },
+  { symbol: 'O₃', name: 'Ozone' },
+  { symbol: 'CaCO₃', name: 'Calcium Carbonate' },
+  { symbol: 'Fe₂O₃', name: 'Iron(III) Oxide' },
+  { symbol: 'KMnO₄', name: 'Potassium Permanganate' },
+  { symbol: 'AgNO₃', name: 'Silver Nitrate' },
+  { symbol: '→', name: 'Reaction Arrow' },
+  { symbol: '⇌', name: 'Equilibrium' },
+  { symbol: 'Δ', name: 'Heat' },
+  { symbol: '↑', name: 'Gas Evolution' },
+  { symbol: '↓', name: 'Precipitation' },
+  { symbol: '⇅', name: 'Resonance' },
+];
+
+const PHYSICS_SYMBOLS = [
+  { symbol: 'λ', name: 'Wavelength' },
+  { symbol: 'μ', name: 'Micro' },
+  { symbol: 'Ω', name: 'Ohm' },
+  { symbol: 'π', name: 'Pi' },
+  { symbol: 'θ', name: 'Theta' },
+  { symbol: 'ρ', name: 'Density' },
+  { symbol: 'σ', name: 'Sigma' },
+  { symbol: 'τ', name: 'Tau' },
+  { symbol: 'φ', name: 'Phi' },
+  { symbol: 'ν', name: 'Frequency' },
+  { symbol: 'α', name: 'Alpha' },
+  { symbol: 'β', name: 'Beta' },
+  { symbol: 'γ', name: 'Gamma' },
+  { symbol: 'ε₀', name: 'Permittivity of Free Space' },
+  { symbol: 'μ₀', name: 'Permeability of Free Space' },
+  { symbol: '∆x', name: 'Displacement' },
+  { symbol: '∆v', name: 'Change in Velocity' },
+  { symbol: '∆t', name: 'Time Interval' },
+  { symbol: '∆E', name: 'Change in Energy' },
+  { symbol: '∆P', name: 'Change in Momentum' },
+];
+
+const BIOLOGY_SYMBOLS = [
+  { symbol: '♂', name: 'Male' },
+  { symbol: '♀', name: 'Female' },
+  { symbol: '→', name: 'Leads to' },
+  { symbol: '⇌', name: 'Reversible Process' },
+  { symbol: 'ATP', name: 'Adenosine Triphosphate' },
+  { symbol: 'DNA', name: 'Deoxyribonucleic Acid' },
+  { symbol: 'RNA', name: 'Ribonucleic Acid' },
+  { symbol: 'ADP', name: 'Adenosine Diphosphate' },
+  { symbol: 'NADH', name: 'Nicotinamide Adenine Dinucleotide' },
+  { symbol: 'CO₂', name: 'Carbon Dioxide' },
+  { symbol: 'O₂', name: 'Oxygen' },
+  { symbol: 'H₂O', name: 'Water' },
+  { symbol: 'C₆H₁₂O₆', name: 'Glucose' },
+  { symbol: 'pH', name: 'pH Scale' },
+  { symbol: '∆G', name: 'Change in Gibbs Free Energy' },
+];
+
+const COMMON_FORMULAS = [
+  { symbol: 'E=mc²', name: 'Mass-Energy Equivalence' },
+  { symbol: 'F=ma', name: 'Newton\'s Second Law' },
+  { symbol: 'PV=nRT', name: 'Ideal Gas Law' },
+  { symbol: 'c=λν', name: 'Wave Speed' },
+  { symbol: 'E=hν', name: 'Photon Energy' },
+  { symbol: 'ΔG=ΔH-TΔS', name: 'Gibbs Free Energy' },
+  { symbol: 'pH=-log[H⁺]', name: 'pH Definition' },
+  { symbol: 'F=-kx', name: 'Hooke\'s Law' },
+  { symbol: 'v=u+at', name: 'First Equation of Motion' },
+  { symbol: 's=ut+½at²', name: 'Second Equation of Motion' },
+  { symbol: 'v²=u²+2as', name: 'Third Equation of Motion' },
+  { symbol: 'T=2π√(l/g)', name: 'Period of Simple Pendulum' },
+  { symbol: 'V=IR', name: 'Ohm\'s Law' },
+  { symbol: 'P=VI', name: 'Electric Power' },
+  { symbol: 'F=GMm/r²', name: 'Gravitational Force' },
+];
+
+const CONSTANTS = [
+  { symbol: 'c = 3×10⁸ m/s', name: 'Speed of Light', unit: 'm/s' },
+  { symbol: 'h = 6.626×10⁻³⁴', name: 'Planck Constant', unit: 'J·s' },
+  { symbol: 'G = 6.674×10⁻¹¹', name: 'Gravitational Constant', unit: 'N·m²/kg²' },
+  { symbol: 'NA = 6.022×10²³', name: 'Avogadro Number', unit: 'mol⁻¹' },
+  { symbol: 'R = 8.314', name: 'Gas Constant', unit: 'J/(mol·K)' },
+  { symbol: 'k = 1.381×10⁻²³', name: 'Boltzmann Constant', unit: 'J/K' },
+  { symbol: 'e = 1.602×10⁻¹⁹', name: 'Elementary Charge', unit: 'C' },
+  { symbol: 'me = 9.109×10⁻³¹', name: 'Electron Mass', unit: 'kg' },
+  { symbol: 'mp = 1.672×10⁻²⁷', name: 'Proton Mass', unit: 'kg' },
+  { symbol: 'ε₀ = 8.854×10⁻¹²', name: 'Vacuum Permittivity', unit: 'F/m' },
+  { symbol: 'μ₀ = 4π×10⁻⁷', name: 'Vacuum Permeability', unit: 'H/m' },
+  { symbol: 'g = 9.81', name: 'Acceleration due to Gravity', unit: 'm/s²' },
+];
+
+const ADVANCED_MATH = [
+  { symbol: '∮', name: 'Line Integral' },
+  { symbol: '∯', name: 'Surface Integral' },
+  { symbol: '∰', name: 'Volume Integral' },
+  { symbol: '∇²', name: 'Laplacian' },
+  { symbol: '∂²/∂x²', name: 'Second Partial Derivative' },
+  { symbol: '∑∞ᵢ₌₁', name: 'Infinite Sum' },
+  { symbol: '∏∞ᵢ₌₁', name: 'Infinite Product' },
+  { symbol: 'lim x→∞', name: 'Limit to Infinity' },
+  { symbol: '∫∞₀', name: 'Infinite Integral' },
+  { symbol: '⟨x|ψ⟩', name: 'Bra-ket Notation' },
+];
+
+const ADVANCED_PHYSICS = [
+  { symbol: 'ψ(x,t)', name: 'Wave Function' },
+  { symbol: 'Ĥψ = Eψ', name: 'Schrödinger Equation' },
+  { symbol: 'E = ℏω', name: 'Photon Energy' },
+  { symbol: 'p = ℏk', name: 'De Broglie Relation' },
+  { symbol: 'F = -∇V', name: 'Conservative Force' },
+  { symbol: '∇×E = -∂B/∂t', name: 'Faraday\'s Law' },
+  { symbol: '∇×B = μ₀J + μ₀ε₀∂E/∂t', name: 'Ampere\'s Law' },
+  { symbol: '∇·E = ρ/ε₀', name: 'Gauss\'s Law' },
+  { symbol: '∇·B = 0', name: 'Gauss\'s Law for Magnetism' },
+  { symbol: 'ds² = gᵢⱼdxᵢdxʲ', name: 'Metric Tensor' },
+];
+
+const ADVANCED_CHEMISTRY = [
+  { symbol: 'K = [C][D]/[A][B]', name: 'Equilibrium Constant' },
+  { symbol: 'pH = -log[H⁺]', name: 'pH Definition' },
+  { symbol: 'E = E° - (RT/nF)lnQ', name: 'Nernst Equation' },
+  { symbol: 'ΔG° = -RTlnK', name: 'Standard Free Energy Change' },
+  { symbol: 'k = Ae⁻ᴱᵃ/ᴿᵀ', name: 'Arrhenius Equation' },
+  { symbol: 'PV = nRT', name: 'Ideal Gas Law' },
+  { symbol: 'μ = -RTlna', name: 'Chemical Potential' },
+  { symbol: 'dG = VdP - SdT', name: 'Gibbs Free Energy Differential' },
+  { symbol: 'ΔH = ΔU + ΔnRT', name: 'Enthalpy Change' },
+  { symbol: 'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O', name: 'Glucose Oxidation' },
+];
+
+const ADVANCED_BIOLOGY = [
+  { symbol: 'dN/dt = rN(1-N/K)', name: 'Logistic Growth' },
+  { symbol: 'v = Vmax[S]/(Km+[S])', name: 'Michaelis-Menten Equation' },
+  { symbol: 'ΔG = ΔH - TΔS', name: 'Gibbs Free Energy' },
+  { symbol: 'P + ADP + Pi → ATP', name: 'ATP Synthesis' },
+  { symbol: 'NADH + H⁺ + ½O₂ → NAD⁺ + H₂O', name: 'Electron Transport Chain' },
+  { symbol: '2H₂O → O₂ + 4H⁺ + 4e⁻', name: 'Photolysis of Water' },
+  { symbol: 'CO₂ + H₂O + energy → CH₂O + O₂', name: 'Photosynthesis' },
+  { symbol: 'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy', name: 'Cellular Respiration' },
+];
+
+const SymbolPicker = ({ onSelect }: { onSelect: (symbol: string) => void }) => {
+  const [activeTab, setActiveTab] = useState('math');
+
+  const tabs = [
+    { id: 'constants', label: 'Constants', symbols: CONSTANTS },
+    { id: 'advanced_math', label: 'Advanced Math', symbols: ADVANCED_MATH },
+    { id: 'advanced_physics', label: 'Advanced Physics', symbols: ADVANCED_PHYSICS },
+    { id: 'advanced_chemistry', label: 'Advanced Chemistry', symbols: ADVANCED_CHEMISTRY },
+    { id: 'advanced_biology', label: 'Advanced Biology', symbols: ADVANCED_BIOLOGY },
+    { id: 'math', label: 'Basic Math', symbols: MATH_SYMBOLS },
+    { id: 'chemistry', label: 'Basic Chemistry', symbols: CHEMISTRY_SYMBOLS },
+    { id: 'physics', label: 'Basic Physics', symbols: PHYSICS_SYMBOLS },
+    { id: 'biology', label: 'Basic Biology', symbols: BIOLOGY_SYMBOLS },
+    { id: 'formulas', label: 'Common Formulas', symbols: COMMON_FORMULAS },
+  ];
+
+  return (
+    <div className="p-4 max-h-[400px] overflow-y-auto">
+      <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
+        {tabs.map(tab => (
+          <Button
+            key={tab.id}
+            variant={activeTab === tab.id ? "default" : "outline"}
+            onClick={() => setActiveTab(tab.id)}
+            className="px-3 py-1 text-sm whitespace-nowrap"
+          >
+            {tab.label}
+          </Button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {tabs.find(tab => tab.id === activeTab)?.symbols.map((item) => (
+          <Button
+            key={item.symbol}
+            variant="outline"
+            onClick={() => onSelect(item.symbol)}
+            className="p-2 h-auto hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center justify-center gap-1"
+            title={item.name}
+          >
+            <span className="text-lg">{item.symbol}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 truncate w-full text-center">
+              {item.name}
+            </span>
+            {('unit' in item) && (
+              <span className="text-xs text-blue-500 dark:text-blue-400">
+                {String(item.unit)}
+              </span>
+            )}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 interface QuizOption {
   id: string;
@@ -57,6 +289,52 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null);
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setActiveInputRef(e.target);
+  };
+
+  const insertTextAtCursor = (text: string) => {
+    if (activeInputRef) {
+      const start = activeInputRef.selectionStart || 0;
+      const end = activeInputRef.selectionEnd || 0;
+      const currentValue = activeInputRef.value;
+      const newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
+      
+      // Update the input value
+      activeInputRef.value = newValue;
+      
+      // Update cursor position
+      const newCursorPos = start + text.length;
+      activeInputRef.setSelectionRange(newCursorPos, newCursorPos);
+      
+      // Find the question and option being edited
+      const questionIndex = questions.findIndex(q => 
+        q.options.some(opt => activeInputRef.id.includes(opt.id)) || 
+        activeInputRef.id.includes(q.id)
+      );
+  
+      if (questionIndex !== -1) {
+        const newQuestions = [...questions];
+        const question = newQuestions[questionIndex];
+  
+        if (activeInputRef.id.includes(question.id)) {
+          // Update question text
+          newQuestions[questionIndex] = { ...question, text: newValue };
+        } else {
+          // Update option text
+          const optionId = question.options.find(opt => activeInputRef.id.includes(opt.id))?.id;
+          if (optionId) {
+            const optionIndex = question.options.findIndex(opt => opt.id === optionId);
+            newQuestions[questionIndex].options[optionIndex].text = newValue;
+          }
+        }
+  
+        setQuestions(newQuestions);
+      }
+    }
+  };
 
   const handleAddQuestion = () => {
     setQuestions([...questions, {
@@ -155,12 +433,12 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         description,
         subject,
         grade,
-        topic: "", // Optional field
+        topic: "",
         questions,
         createdBy: currentUser?.uid || "",
         createdAt: new Date().toISOString(),
         totalQuestions: questions.length,
-        totalMarks: questions.length * 4, // Calculate total marks based on number of questions
+        totalMarks: questions.length * 4,
         hasNegativeMarking: hasNegativeMarking, 
         negativeMarkingValue: hasNegativeMarking ? negativeMarkingValue : 0
       };
@@ -274,102 +552,132 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </Button>
 
         {questions.map((question, qIndex) => (
-            <div key={question.id} className="mb-8 bg-gray-50 dark:bg-gray-700/40 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium dark:text-white">Question {qIndex + 1}</h4>
+          <div key={question.id} className="space-y-4 p-4 border rounded-lg dark:border-gray-600">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium dark:text-white">Question {qIndex + 1}</h3>
+              <div className="flex space-x-2">
                 {questions.length > 1 && (
                   <Button
                     type="button"
-                    variant="destructive" 
-                    size="sm"
+                    variant="outline"
+                    size="icon"
                     onClick={() => handleRemoveQuestion(qIndex)}
-                    className="h-8 px-2 text-xs"
                   >
-                    <Minus className="h-3 w-3 mr-1" /> Remove
+                    <Minus className="h-4 w-4" />
                   </Button>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleAddQuestion()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
-              
-              <div className="space-y-3">
-                <div>
-                  <Input
-                    value={question.text}
-                    onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
-                    placeholder="Question text"
-                    className="dark:bg-gray-700 dark:border-gray-600"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 gap-2">
-                  {question.options.map((option) => (
-                    <div key={option.id} className="flex items-center gap-2">
-                      <div className="flex-shrink-0 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 w-8 h-8 rounded-full flex items-center justify-center">
-                        {option.id.toUpperCase()}
-                      </div>
-                      <Input
-                        value={option.text}
-                        onChange={(e) => handleOptionChange(qIndex, option.id, e.target.value)}
-                        placeholder={`Option ${option.id.toUpperCase()}`}
-                        className="dark:bg-gray-700 dark:border-gray-600"
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm dark:text-gray-300 mb-1">Correct Option</label>
-                    <Select 
-                      value={question.correctOption} 
-                      onValueChange={(value) => handleQuestionChange(qIndex, 'correctOption', value)}
-                    >
-                      <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="dark:bg-gray-800">
-                        {question.options.map((opt) => (
-                          <SelectItem key={opt.id} value={opt.id}>
-                            Option {opt.id.toUpperCase()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm dark:text-gray-300 mb-1">Time Limit (seconds)</label>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Input
+                  id={`question_${question.id}`}
+                  value={question.text}
+                  onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
+                  onFocus={handleInputFocus}
+                  placeholder="Enter question text"
+                  className="flex-1 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Smile className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <SymbolPicker onSelect={insertTextAtCursor} />
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="space-y-2">
+                {question.options.map((option) => (
+                  <div key={option.id} className="flex items-center space-x-2">
+                    <span className="w-8 text-center">{option.id.toUpperCase()}</span>
                     <Input
-                      type="number"
-                      min={5}
-                      max={300}
-                      value={question.timeLimit}
-                      onChange={(e) => handleQuestionChange(qIndex, 'timeLimit', parseInt(e.target.value) || 30)}
-                      className="dark:bg-gray-700 dark:border-gray-600"
+                      id={`option_${question.id}_${option.id}`}
+                      value={option.text}
+                      onChange={(e) => handleOptionChange(qIndex, option.id, e.target.value)}
+                      onFocus={handleInputFocus}
+                      placeholder={`Option ${option.id.toUpperCase()}`}
+                      className="flex-1 dark:bg-gray-700 dark:border-gray-600"
                     />
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Smile className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <SymbolPicker onSelect={insertTextAtCursor} />
+                      </DialogContent>
+                    </Dialog>
                   </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium dark:text-gray-200 mb-1">Correct Option</label>
+                  <Select
+                    value={question.correctOption}
+                    onValueChange={(value) => handleQuestionChange(qIndex, 'correctOption', value)}
+                  >
+                    <SelectTrigger className="w-full dark:bg-gray-700 dark:border-gray-600">
+                      <SelectValue placeholder="Select correct option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {question.options.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          Option {option.id.toUpperCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium dark:text-gray-200 mb-1">Time Limit (seconds)</label>
+                  <Input
+                    type="number"
+                    value={question.timeLimit}
+                    onChange={(e) => handleQuestionChange(qIndex, 'timeLimit', parseInt(e.target.value))}
+                    className="dark:bg-gray-700 dark:border-gray-600"
+                    min="10"
+                    max="300"
+                  />
                 </div>
               </div>
             </div>
-          ))}
-          <div className="flex justify-end space-x-3 mt-6">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-              className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating..." : "Create Quiz"}
-            </Button>
           </div>
-        </form>
-      </Card>
+        ))}
+        <div className="flex justify-end space-x-3 mt-6">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onClose}
+            className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating..." : "Create Quiz"}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 };
 
