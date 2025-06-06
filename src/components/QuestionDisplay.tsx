@@ -133,7 +133,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 "Simple marking"}
             </span>
           )}
-          Points: {question.points} {isAnswered && "• Question submitted"}
+          Marks: {question.Marks} {isAnswered && "• Question submitted"}
         </div>
       </CardContent>
     </Card>

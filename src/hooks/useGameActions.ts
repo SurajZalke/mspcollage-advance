@@ -54,9 +54,9 @@ export const useGameActions = (
     let scoreChange = 0;
     if (isCorrect) {
       const timeBonus = Math.max(0, (currentQuestion.timeLimit - timeToAnswer) / currentQuestion.timeLimit);
-      scoreChange = currentQuestion.points + Math.floor(currentQuestion.points * timeBonus * 0.5);
+      scoreChange = currentQuestion.Marks + Math.floor(currentQuestion.Marks * timeBonus * 0.5);
     } else if (currentQuiz.hasNegativeMarking) {
-      scoreChange = -Math.floor(currentQuestion.points * currentQuiz.negativeMarkingValue / 100);
+      scoreChange = -Math.floor(currentQuestion.Marks * currentQuiz.negativeMarkingValue / 100);
     }
 
     const newAnswer = {
@@ -166,7 +166,7 @@ export const useGameActions = (
       let scoreChange = 0;
       if (isCorrect) {
         const timeBonus = Math.max(0, (currentQuestion.timeLimit - timeToAnswer) / currentQuestion.timeLimit);
-        scoreChange = currentQuestion.points + Math.floor(currentQuestion.points * timeBonus * 0.5);
+        scoreChange = currentQuestion.Marks + Math.floor(currentQuestion.Marks * timeBonus * 0.5);
       }
 
       // Update game state and host's data
@@ -196,9 +196,9 @@ export const useGameActions = (
 
           if (isPlayerCorrect) {
             const timeBonus = Math.max(0, (currentQuestion.timeLimit - playerAnswer.timeToAnswer) / currentQuestion.timeLimit);
-            playerScoreChange = currentQuestion.points + Math.floor(currentQuestion.points * timeBonus * 0.5);
+            playerScoreChange = currentQuestion.Marks + Math.floor(currentQuestion.Marks * timeBonus * 0.5);
           } else if (activeGame.quiz.hasNegativeMarking) {
-            playerScoreChange = -Math.floor(currentQuestion.points * activeGame.quiz.negativeMarkingValue / 100);
+            playerScoreChange = -Math.floor(currentQuestion.Marks * activeGame.quiz.negativeMarkingValue / 100);
           }
 
           // Update player's score and answer correctness

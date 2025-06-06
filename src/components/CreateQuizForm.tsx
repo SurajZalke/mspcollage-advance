@@ -30,7 +30,7 @@ interface QuizQuestion {
   options: QuizOption[];
   correctOption: string;
   timeLimit: number;
-  points: number;
+  Marks: number;
 }
 
 const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -49,7 +49,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     ],
     correctOption: "a",
     timeLimit: 30,
-    points: 100
+    Marks: 4
   }]);
   const [hasNegativeMarking, setHasNegativeMarking] = useState(false);
   const [negativeMarkingValue, setNegativeMarkingValue] = useState(0);
@@ -70,7 +70,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       ],
       correctOption: "a",
       timeLimit: 30,
-      points: 100
+      Marks: 4
     }]);
   };
 
@@ -102,12 +102,12 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setIsSubmitting(true);
 
     if (!currentUser?.uid) {
-      setIsSubmitting(false);
       toast({
         title: "Authentication Error",
         description: "You must be logged in to create a quiz.",
         variant: "destructive"
       });
+      setIsSubmitting(false);
       return;
     }
     
@@ -117,6 +117,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         description: "Please fill out all quiz details",
         variant: "destructive"
       });
+      setIsSubmitting(false);
       return;
     }
     
@@ -127,6 +128,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           description: "All questions must have text",
           variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
       }
       
@@ -137,12 +139,11 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             description: `Please fill all options for question "${question.text.substring(0, 20)}..."`,
             variant: "destructive"
           });
+          setIsSubmitting(false);
           return;
         }
       }
     }
-    
-    setIsSubmitting(true);
     
     try {
       const quizzesRef = dbRef(db, 'quizzes');
@@ -159,9 +160,9 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         createdBy: currentUser?.uid || "",
         createdAt: new Date().toISOString(),
         totalQuestions: questions.length,
-        totalPoints: questions.reduce((sum, q) => sum + q.points, 0),
+        totalMarks: questions.length * 4, // Calculate total marks based on number of questions
         hasNegativeMarking: hasNegativeMarking, 
-        negativeMarkingValue: hasNegativeMarking ? negativeMarkingValue : 0 
+        negativeMarkingValue: hasNegativeMarking ? negativeMarkingValue : 0
       };
 
       const quizRef = dbRef(db, `quizzes/${newQuizRef.key}`);
@@ -231,7 +232,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   <SelectValue placeholder="Select Grade" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-700 dark:border-gray-600">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((g) => (
+                  {['11th', '12th'].map((g) => (
                     <SelectItem key={g} value={g}>{g}</SelectItem>
                   ))}
                 </SelectContent>
@@ -263,6 +264,14 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           )}
         </div>
+
+        <Button
+          type="button"
+          onClick={handleAddQuestion}
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
+        >
+          <Plus className="h-4 w-4 mr-2" /> Add Question
+        </Button>
 
         {questions.map((question, qIndex) => (
             <div key={question.id} className="mb-8 bg-gray-50 dark:bg-gray-700/40 p-4 rounded-lg">
@@ -307,7 +316,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   ))}
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm dark:text-gray-300 mb-1">Correct Option</label>
                     <Select 
@@ -338,52 +347,31 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       className="dark:bg-gray-700 dark:border-gray-600"
                     />
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm dark:text-gray-300 mb-1">Points</label>
-                    <Input
-                      type="number"
-                      min={10}
-                      max={1000}
-                      step={10}
-                      value={question.points}
-                      onChange={(e) => handleQuestionChange(qIndex, 'points', parseInt(e.target.value) || 100)}
-                      className="dark:bg-gray-700 dark:border-gray-600"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
           ))}
+          <div className="flex justify-end space-x-3 mt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Creating..." : "Create Quiz"}
+            </Button>
+          </div>
         </form>
-        
-        <div className="flex justify-end space-x-3">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onClose}
-            className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Creating..." : "Create Quiz"}
-          </Button>
-        </div>
       </Card>
   );
 };
 
 export default CreateQuizForm;
-function ref(db: any, arg1: string) {
-  throw new Error("Function not implemented.");
-}
-
-function push(quizzesRef: any) {
-  throw new Error("Function not implemented.");
-}
 

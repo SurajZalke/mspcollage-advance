@@ -50,7 +50,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
   ...quiz,
   createdAt: typeof quiz.createdAt === 'string' ? quiz.createdAt : quiz.createdAt.toISOString(),
   totalQuestions: quiz.questions?.length || 0,
-  totalPoints: quiz.questions?.reduce((sum, q) => sum + (q.points || 0), 0) || 0
+  totalMarks: quiz.questions?.reduce((sum, q) => sum + (q.Marks || 0), 0) || 0
 })));
             navigate("/host-login");
             toast({
@@ -79,13 +79,13 @@ setQuizzes(sampleQuizzes.map(quiz => ({
                 text: opt.text || ''
               })) : [],
               correctOption: q.correctOption || '',
-              points: typeof q.points === 'number' && !isNaN(q.points) ? q.points : 1,
+              Marks: typeof q.Marks === 'number' && !isNaN(q.Marks) ? q.Marks : 1,
               timeLimit: typeof q.timeLimit === 'number' && !isNaN(q.timeLimit) ? q.timeLimit : 30,
               imageUrl: typeof q.imageUrl === 'string' ? q.imageUrl : undefined
             })) : [];
 
             const totalQuestions = questions.length;
-            const totalPoints = questions.reduce((sum, q) => sum + (typeof q.points === 'number' ? q.points : 0), 0);
+            const totalMarks = questions.reduce((sum, q) => sum + (typeof q.Marks === 'number' ? q.Marks : 0), 0);
 
             return {
               id: quiz.id || key,
@@ -98,7 +98,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
               createdAt: typeof quiz.createdAt === 'string' ? quiz.createdAt : new Date().toISOString(),
               questions,
               totalQuestions,
-              totalPoints,
+              totalMarks,
               hasNegativeMarking: typeof quiz.hasNegativeMarking === 'boolean' ? quiz.hasNegativeMarking : undefined,
               negativeMarkingValue: typeof quiz.negativeMarkingValue === 'number' ? quiz.negativeMarkingValue : undefined
             };
@@ -136,7 +136,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
           ...quiz,
           createdAt: typeof quiz.createdAt === 'string' ? quiz.createdAt : quiz.createdAt.toISOString(),
           totalQuestions: quiz.questions?.length || 0,
-          totalPoints: quiz.questions?.reduce((sum, q) => sum + (q.points || 0), 0) || 0
+          totalMarks: quiz.questions?.reduce((sum, q) => sum + (q.Marks || 0), 0) || 0
         })));
       } catch (error) {
         console.error("Error loading quizzes:", error);

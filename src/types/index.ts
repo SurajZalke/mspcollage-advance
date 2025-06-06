@@ -41,7 +41,7 @@ export interface Quiz {
   createdAt: string;
   questions: Question[];
   totalQuestions: number;
-  totalPoints: number;
+  totalMarks: number;
   hasNegativeMarking?: boolean;
   negativeMarkingValue?: number;
 }
@@ -52,7 +52,7 @@ export interface Question {
   text: string;
   options: QuestionOption[];
   correctOption: string;
-  points: number;
+  Marks: number;
   timeLimit: number; // in seconds
   imageUrl?: string;
 }
