@@ -92,7 +92,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
               title: typeof quiz.title === 'string' ? quiz.title : '',
               description: typeof quiz.description === 'string' ? quiz.description : '',
               subject: typeof quiz.subject === 'string' ? quiz.subject : '',
-              grade: typeof quiz.grade === 'string' ? quiz.grade : '11',
+              grade: typeof quiz.grade !== 'undefined' ? String(quiz.grade).trim() : '11',
               topic: typeof quiz.topic === 'string' ? quiz.topic : undefined,
               createdBy: typeof quiz.createdBy === 'string' ? quiz.createdBy : '',
               createdAt: typeof quiz.createdAt === 'string' ? quiz.createdAt : new Date().toISOString(),
@@ -135,8 +135,9 @@ setQuizzes(sampleQuizzes.map(quiz => ({
         (quiz.subject && quiz.subject.toLowerCase() === selectedSubject.toLowerCase());
       
       // Filter by grade
+      console.log(`Filtering: Quiz ID: ${quiz.id}, Quiz Grade (raw): ${quiz.grade}, Quiz Grade (processed): '${String(quiz.grade).replace(/[^\d]/g, '')}', Selected Grade: '${selectedGrade}', Match: ${selectedGrade === "all" || (quiz.grade && String(quiz.grade).replace(/[^\d]/g, '') === selectedGrade)}`);
       const matchesGrade = selectedGrade === "all" || 
-        (quiz.grade && quiz.grade === selectedGrade);
+        (quiz.grade && String(quiz.grade).replace(/[^\d]/g, '') === selectedGrade);
       
       return matchesSearch && matchesSubject && matchesGrade;
     } catch (error) {

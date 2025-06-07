@@ -326,7 +326,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     Marks: 4
   }]);
   const [hasNegativeMarking, setHasNegativeMarking] = useState(false);
-  const [negativeMarkingValue, setNegativeMarkingValue] = useState(0);
+  const [negativeMarkingValue, setNegativeMarkingValue] = useState(25);
   
   const { toast } = useToast();
   const { currentUser } = useAuth();
@@ -583,20 +583,6 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             />
           </div>
 
-          {hasNegativeMarking && (
-            <div>
-              <label className="block text-sm font-medium dark:text-gray-200 mb-1">Negative Marking Value (%)</label>
-              <Input
-                type="number"
-                value={negativeMarkingValue}
-                onChange={(e) => setNegativeMarkingValue(parseInt(e.target.value))}
-                placeholder="e.g., 10 (for 10% deduction)"
-                className="dark:bg-gray-700 dark:border-gray-600"
-                min="0"
-                max="100"
-              />
-            </div>
-          )}
         </div>
 
         <Button
@@ -738,4 +724,3 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 export default CreateQuizForm;
-

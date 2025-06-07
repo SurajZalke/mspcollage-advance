@@ -20,6 +20,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   console.log('ProtectedRoute: isLoggedIn', isLoggedIn());
   console.log('ProtectedRoute: currentUser', currentUser);
 
+  React.useEffect(() => {
+    console.log('ProtectedRoute useEffect: loading', loading);
+    console.log('ProtectedRoute useEffect: isLoggedIn', isLoggedIn());
+    console.log('ProtectedRoute useEffect: currentUser', currentUser);
+  }, [loading, isLoggedIn, currentUser]);
+
   // Wait for auth state to load
   if (loading) {
     return (
@@ -31,11 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check if user is logged in
   if (!isLoggedIn()) {
-    toast({
-      title: "Access denied",
-      description: "Please login to access this page",
-      variant: "destructive"
-    });
+  
     return <Navigate to={redirectTo} replace />;
   }
 
