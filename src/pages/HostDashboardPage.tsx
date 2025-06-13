@@ -36,6 +36,46 @@ const HostDashboardPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [gameHistory, setGameHistory] = useState<any[]>([]);
+
+  // Calculate average score for game history
+  const calculateAverageScore = (players: any) => {
+    if (!players || Object.keys(players).length === 0) return 0;
+    const totalScore = Object.values(players).reduce((sum: number, player: any) => {
+      return sum + (player.score || 0);
+    }, 0);
+    return Math.round((Number(totalScore) / Object.keys(players).length) * 100) / 100;
+  };
+
+  // Load game history
+  useEffect(() => {
+    const loadGameHistory = async () => {
+      if (!currentUser?.uid) return;
+      try {
+        const gamesRef = ref(db, 'games');
+        const snapshot = await get(gamesRef);
+        if (snapshot.exists()) {
+          const gamesData = snapshot.val();
+          const userGames = Object.entries(gamesData)
+            .filter(([_, game]: [string, any]) => game.hostId === currentUser.uid)
+            .map(([id, game]: [string, any]) => ({
+              id,
+              quizTitle: game.quiz?.title || 'Untitled Quiz',
+              startedAt: game.startedAt || '',
+              endedAt: game.endedAt || '',
+              players: Object.keys(game.players || {}).length,
+              averageScore: calculateAverageScore(game.players || {})
+            }))
+            .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+          setGameHistory(userGames);
+        }
+      } catch (error) {
+        console.error('Error loading game history:', error);
+      }
+    };
+
+    loadGameHistory();
+  }, [currentUser?.uid]);
 
   // Load subjects and quizzes
   useEffect(() => {
@@ -211,19 +251,39 @@ setQuizzes(sampleQuizzes.map(quiz => ({
     }
   };
 
-  const handleStartQuiz = (quizId: string) => {
+  const handleStartQuiz = async (quizId: string) => {
     const quiz = quizzes.find(q => q.id === quizId);
     if (quiz) {
-      setSelectedQuiz(quiz);
-      
-      toast({
-        title: "Quiz Selected",
-        description: `${quiz.title} is ready to start!`,
-        variant: "default"
-      });
-      
-      const gameRoom = createGame(quiz);
-      navigate("/host-game-room");
+      try {
+        setSelectedQuiz(quiz);
+        
+        // Create game and wait for it to be created
+        const gameRoom = await createGame(quiz);
+        
+        if (gameRoom) {
+          toast({
+            title: "Quiz Started",
+            description: `${quiz.title} has started! Redirecting to game room...`,
+            variant: "default"
+          });
+          
+          // Navigate only after game is created
+          navigate("/host-game-room");
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to create game room. Please try again.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error starting quiz:", error);
+        toast({
+          title: "Error",
+          description: "Failed to start quiz. Please try again.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -409,11 +469,38 @@ setQuizzes(sampleQuizzes.map(quiz => ({
                 Clear Game History
               </Button>
             </div>
-            <div className="quiz-card p-6 text-center bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
+            <div className="quiz-card p-6 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
               <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Game History</h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                You haven't hosted any games yet. Start a quiz to see your game history.
-              </p>
+              {gameHistory.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b dark:border-gray-700">
+                        <th className="p-4">Quiz Title</th>
+                        <th className="p-4">Started</th>
+                        <th className="p-4">Ended</th>
+                        <th className="p-4">Players</th>
+                        <th className="p-4">Avg. Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gameHistory.map((game) => (
+                        <tr key={game.id} className="border-b dark:border-gray-700">
+                          <td className="p-4">{game.quizTitle}</td>
+                          <td className="p-4">{new Date(game.startedAt).toLocaleString()}</td>
+                          <td className="p-4">{game.endedAt ? new Date(game.endedAt).toLocaleString() : 'In Progress'}</td>
+                          <td className="p-4">{game.players}</td>
+                          <td className="p-4">{game.averageScore}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-300">
+                  You haven't hosted any games yet. Start a quiz to see your game history.
+                </p>
+              )}
             </div>
           </TabsContent>
         </Tabs>

@@ -93,34 +93,40 @@ export const useGameState = () => {
       await set(newGameRef, gameData);
 
       // Update local state
-      setActiveGame({
+      const gameRoom = {
         ...gameData,
         players: Object.values(gameData.players),
-        showScores: false // Add required showScores property
-      } as unknown as GameRoom);
-      setCurrentPlayer(gameData.players[0]);
-      setIsHost(true);
+        showScores: false
+      } as unknown as GameRoom;
+      
+      setActiveGame(gameRoom);
       setCurrentQuiz(quiz);
+      setIsHost(true);
+      setCurrentPlayer(gameData.players[user.uid]);
 
       toast({
         title: 'Game Created!',
         description: `Share code ${code} with your players`,
       });
 
-      return { success: true };
+      return {
+        success: true,
+        message: `Game created successfully with code ${code}`
+      };
+
     } catch (error) {
       console.error('Error creating game:', error);
       toast({
         title: 'Error',
-        description: `Failed to create game: ${error.message || 'Unknown error'}. Please try again.`,
+        description: 'Failed to create game. Please try again.',
         variant: 'destructive'
       });
       return {
         success: false,
-        message: 'Failed to create game. Please try again.',
+        message: 'Failed to create game. Please try again.'
       };
     }
-  }, [toast]);
+  }, [setActiveGame, setCurrentQuiz, setIsHost, setCurrentPlayer, toast]);
 
   return {
     activeGame,
