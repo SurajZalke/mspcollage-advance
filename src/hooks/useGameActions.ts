@@ -9,7 +9,8 @@ export const useGameActions = (
   setActiveGame: (game: GameRoom | null) => void,
   currentPlayer: Player | null,
   currentQuestion: Question | null,
-  currentQuiz: Quiz | null
+  currentQuiz: Quiz | null,
+  questionStartTime: number | null
 ) => {
   const startGame = useCallback(async () => {
     if (!activeGame) return;
@@ -19,6 +20,7 @@ export const useGameActions = (
        await update(gameRef, {
          status: 'active',
          currentQuestionIndex: 0,
+         questionStartTime: Date.now(),
        });
 
       // No direct state update here, GameContext's onSnapshot will handle it
@@ -36,7 +38,7 @@ export const useGameActions = (
       // before marking the game as ended.
       await update(gameRef, {
         ...activeGame,
-        status: 'finished',
+        status: 'ended',
       });
 
       // No direct state update here, GameContext's onSnapshot will handle it
@@ -49,7 +51,7 @@ export const useGameActions = (
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;
 
     const isCorrect = optionId === currentQuestion.correctOption;
-    const timeToAnswer = Math.floor(Math.random() * 10) + 1;
+    const timeToAnswer = questionStartTime ? Math.floor((Date.now() - questionStartTime) / 1000) : 0; // Calculate time taken to answer in seconds
 
     let scoreChange = 0;
     if (isCorrect) {
@@ -68,6 +70,7 @@ export const useGameActions = (
     // Update player's score and answers in Realtime Database
     const playerAnswersRef = ref(db, `games/${activeGame.id}/players/${currentPlayer.player_id}/answers`);
     const playerRef = ref(db, `games/${activeGame.id}/players/${currentPlayer.player_id}`);
+    const gameRef = ref(db, `games/${activeGame.id}`); // Define gameRef here
 
     try {
       // Fetch current player data to get existing answers
@@ -86,9 +89,21 @@ export const useGameActions = (
 
       // If the current player is the host, update hostSubmitted flag
       if (currentPlayer.player_id === activeGame.hostId) {
-        const gameRef = ref(db, `games/${activeGame.id}`);
         await update(gameRef, {
           hostSubmitted: true
+        });
+      }
+
+      // Check if all players have submitted their answers
+      const gameSnapshot = await getDatabaseData(gameRef);
+      const latestGame = gameSnapshot.val() as GameRoom;
+
+      const allPlayersAnswered = latestGame.players.every(player => player.status === 'answered');
+
+      if (allPlayersAnswered) {
+        await update(gameRef, {
+          showScores: true,
+          lastAnsweredQuestion: currentQuestion.id
         });
       }
 
@@ -135,7 +150,7 @@ export const useGameActions = (
   const setCorrectAnswer = useCallback(async (optionId: string, questionId: string | undefined) => {
     if (!activeGame || !currentQuestion || !currentPlayer) return;
 
-    const timeToAnswer = Math.floor(Date.now() / 1000) - (activeGame.questionStartTime || Math.floor(Date.now() / 1000));
+    const timeToAnswer = questionStartTime ? Math.floor((Date.now() - questionStartTime) / 1000) : 0;
     const isCorrect = optionId === currentQuestion.correctOption;
 
     // Create host's answer object

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types";
 import { Progress } from "@/components/ui/progress";
+import { useGame } from "@/contexts/GameContext";
 
 interface QuestionDisplayProps {
   question: Question;
@@ -14,9 +15,10 @@ interface QuestionDisplayProps {
   markingType?: string;
   negativeValue?: number;
   onHostSelect?: (optionId: string) => void;
+  showCorrectAnswer?: boolean;
 }
 
-const QuestionDisplay: React.FC<QuestionDisplayProps> = ({ 
+const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   question, 
   onAnswer,
   showTimer = true,
@@ -24,34 +26,49 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   disableOptions = false,
   markingType,
   negativeValue,
-  onHostSelect
+  onHostSelect,
+  showCorrectAnswer
 }) => {
   const [timeLeft, setTimeLeft] = useState(question.timeLimit);
+  const { questionStartTime } = useGame(); // Get questionStartTime from GameContext
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   
   // Timer effect
   useEffect(() => {
-    if (!showTimer || isAnswered) return;
+    if (!showTimer || isAnswered || disableOptions) return; // Stop timer if options are disabled
     
-    if (timeLeft <= 0) {
-      setIsAnswered(true);
+    const now = Date.now();
+    const elapsed = questionStartTime ? Math.floor((now - questionStartTime) / 1000) : 0;
+    const remaining = question.timeLimit - elapsed;
+
+    if (remaining <= 0) {
+      setTimeLeft(0);
       return;
     }
+
+    setTimeLeft(remaining);
     
     const timer = setTimeout(() => {
       setTimeLeft(prev => prev - 1);
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [timeLeft, isAnswered, showTimer]);
+  }, [timeLeft, isAnswered, showTimer, questionStartTime, question.timeLimit, disableOptions]);
   
   // Reset state when question changes
   useEffect(() => {
     setTimeLeft(question.timeLimit);
     setSelectedOption(null);
     setIsAnswered(false);
-  }, [question.id, question.timeLimit]);
+  }, [question.id, question.timeLimit, questionStartTime]);
+
+  // Synchronize isAnswered with showCorrectAnswer from GameContext
+  useEffect(() => {
+    if (showCorrectAnswer) {
+      setIsAnswered(true);
+    }
+  }, [showCorrectAnswer]);
   
   const handleSelectOption = (optionId: string) => {
     if (isAnswered || disableOptions) return;
@@ -109,14 +126,14 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 className={`p-4 h-auto text-left flex justify-start items-center transition-all ${
                   selectedOption === option.id
                     ? "bg-quiz-primary text-white"
-                    : isAnswered && option.id === question.correctOption
-                    ? "bg-green-600 text-white"
+                    : showCorrectAnswer && option.id === question.correctOption
+                    ? "bg-green-600 text-white" // Highlight correct answer when showCorrectAnswer is true
                     : "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
                 }`}
                 onClick={() => handleSelectOption(option.id)}
                 disabled={isAnswered || disableOptions || (isHostView && !onHostSelect)}
               >
-                <div className={`mr-3 ${isAnswered && option.id === question.correctOption ? 'bg-green-200' : 'bg-gray-100'} text-quiz-dark rounded-full w-6 h-6 flex items-center justify-center font-medium`}>
+                <div className={`mr-3 ${showCorrectAnswer && option.id === question.correctOption ? 'bg-green-200' : 'bg-gray-100'} text-quiz-dark rounded-full w-6 h-6 flex items-center justify-center font-medium`}>
                   {option.id.toUpperCase()}
                 </div>
                 <span>{option.text}</span>
@@ -132,6 +149,11 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 `Negative marking (-${negativeValue}%)` : 
                 "Simple marking"}
             </span>
+          )}
+          {showCorrectAnswer && (
+            <div className="mt-4 text-lg font-semibold">
+              Correct Answer: {question.options.find(opt => opt.id === question.correctOption)?.text}
+            </div>
           )}
           Marks: {question.Marks} {isAnswered && "• Question submitted"}
         </div>

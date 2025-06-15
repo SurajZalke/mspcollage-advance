@@ -76,13 +76,13 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
   const getBackgroundClass = (index: number) => {
     switch(index) {
       case 0:
-        return 'bg-gradient-to-r from-yellow-100 to-yellow-50 border-yellow-300';
+        return 'bg-yellow-100 border-yellow-300';
       case 1:
-        return 'bg-gradient-to-r from-gray-100 to-gray-50 border-gray-300';
+        return 'bg-gray-100 border-gray-300';
       case 2:
-        return 'bg-gradient-to-r from-amber-100 to-amber-50 border-amber-300';
+        return 'bg-amber-100 border-amber-300';
       default:
-        return 'bg-white border-gray-200 hover:bg-gray-50';
+        return 'bg-blue-50 border-blue-100 hover:bg-blue-100';
     }
   };
 
@@ -93,9 +93,9 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
     : undefined;
 
   return (
-    <Card className="quiz-card shadow-lg border-0">
-      <CardHeader className="pb-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-t-lg">
-        <CardTitle className="text-center text-xl font-bold text-gray-800">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-lg bg-gray-100">
+      <CardHeader className="text-center text-2xl font-bold py-4 bg-gray-200 rounded-t-lg">
+        <CardTitle className="text-center text-3xl font-extrabold text-gray-800">
           Leaderboard
         </CardTitle>
         {markingType && (
@@ -112,12 +112,9 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
         ) : (
           <div className="space-y-3">
             {sortedPlayers.map((player, index) => (
-              <div 
-                key={`${player.id}-${index}`}
-                className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 ${getBackgroundClass(index)}`}
-              >
-                <div className="flex items-center space-x-4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-white shadow-sm ${
+<div className="flex items-center p-4 border-b border-gray-300 hover:bg-gray-200 last:border-b-0">
+                <div className="flex items-center space-x-6">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-white shadow-sm ${
                     index === 0 
                       ? 'text-yellow-500' 
                       : index === 1 

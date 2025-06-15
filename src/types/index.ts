@@ -14,6 +14,7 @@ export interface User {
 }
 
 export interface Player {
+  uid: string;
   id: any;
   player_id: string;
   nickname: string;
@@ -73,7 +74,7 @@ export interface GameRoom {
   quiz: Quiz;
   hostId: string;
   players: Player[];
-  status: "waiting" | "active" | "finished";
+  status: "waiting" | "active" | "finished" | "ended";
   currentQuestionIndex: number;
   startTime: Date | null;
   endTime: Date | null;

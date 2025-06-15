@@ -16,6 +16,10 @@ interface GameContextType {
   currentQuiz: Quiz | null;
   currentQuestion: Question | null;
   isHost: boolean;
+
+  questionStartTime: number | null; // Timestamp when the current question started
+  questionEnded: boolean; // New state to indicate if the question has ended
+  setQuestionEnded: (ended: boolean) => void; // Function to set questionEnded state
   createGame: (quiz: Quiz) => Promise<{ success: boolean; message?: string }>;
   joinGame: (code: string, nickname: string) => Promise<{
     gameId: string | null;
@@ -56,6 +60,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentQuestion,
     isHost,
     setIsHost,
+
+    questionStartTime,
+    setQuestionStartTime,
+    questionEnded,
+    setQuestionEnded,
     createGame
   } = useGameState();
 
@@ -65,7 +74,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     submitAnswer,
     nextQuestion,
     setCorrectAnswer
-  } = useGameActions(activeGame, setActiveGame, currentPlayer, currentQuestion, currentQuiz);
+  } = useGameActions(activeGame, setActiveGame, currentPlayer, currentQuestion, currentQuiz, questionStartTime);
 
   const {
     validateGameCode,
@@ -116,6 +125,40 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        setGameSubscription(null);
     }
   }, [activeGame?.id]); // Depend on activeGame.id to re-subscribe when game changes
+
+  // Ensure questionEnded reflects activeGame.showScores
+  useEffect(() => {
+    if (activeGame?.showScores) {
+      setQuestionEnded(true);
+    } else {
+      setQuestionEnded(false);
+    }
+  }, [activeGame?.showScores]);
+
+  // Effect to handle question timer ending for the host
+  useEffect(() => {
+    if (isHost && activeGame?.status === "active" && currentQuestion && questionStartTime && !activeGame.showScores) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - questionStartTime) / 1000);
+      const remaining = currentQuestion.timeLimit - elapsed;
+
+      if (remaining <= 0) {
+        // Time is up, update showScores and hostSubmitted in the database
+        const gameRef = ref(db, `games/${activeGame.id}`);
+        update(gameRef, { showScores: true, hostSubmitted: true })
+          .catch(error => console.error("Error updating showScores and hostSubmitted on timer end:", error));
+      } else {
+        // Set a timeout to trigger when the time runs out
+        const timerTimeout = setTimeout(() => {
+          const gameRef = ref(db, `games/${activeGame.id}`);
+          update(gameRef, { showScores: true, hostSubmitted: true })
+            .catch(error => console.error("Error updating showScores and hostSubmitted on timer end:", error));
+        }, remaining * 1000);
+
+        return () => clearTimeout(timerTimeout);
+      }
+    }
+  }, [isHost, activeGame?.status, activeGame?.id, currentQuestion, questionStartTime, activeGame?.showScores]);
 
   // Update current question on game/quiz changes and game status
   useEffect(() => {
@@ -180,6 +223,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If we reach here, gameData is valid
       setActiveGame(gameData);
       console.log('refreshGameState: activeGame state updated to:', gameData);
+
+      // Update questionStartTime when the active game or current question changes
+      if (gameData.questionStartTime !== undefined) {
+        setQuestionStartTime(gameData.questionStartTime);
+      }
 
       // Set the quiz from gameData
 
@@ -331,6 +379,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentQuiz,
     currentQuestion,
     isHost,
+
+    questionStartTime,
+    questionEnded,
+    setQuestionEnded,
     createGame,
     joinGame,
     validateGameCode,
@@ -340,7 +392,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     nextQuestion,
     refreshGameState,
     getAvailableGameCodes,
-    setCorrectAnswer
+    setCorrectAnswer,
+    setQuestionStartTime
   };
 
   return (
@@ -366,3 +419,5 @@ const profileModalStyle = {
   justifyContent: 'center',
   padding: '20px',
 };
+
+

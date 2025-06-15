@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { GameProvider } from "./contexts/GameContext";
 import { useEffect } from "react";
+import CreatorAttribution from "./components/CreatorAttribution";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Pages
@@ -20,6 +21,7 @@ import JoinGamePage from "./pages/JoinGamePage";
 import NotFound from "./pages/NotFound";
 import PlayerSetupPage from "./pages/PlayerSetupPage";
 import ProfileSetup from "./components/ProfileSetup";
+import { LeaderAnimationPage } from "./pages/LeaderAnimationPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,7 @@ const App = () => {
               <Toaster />
               <Sonner />
               <Routes>
+
                 <Route path="/" element={<HomePage />} />
                 <Route path="/host-login" element={<HostLoginPage />} />
                 <Route path="/host-signup" element={<HostSignupPage />} />
@@ -55,10 +58,12 @@ const App = () => {
                 <Route path="/game-room" element={<PlayerGameRoomPage />} />
                 <Route path="/join" element={<JoinGamePage />} />
                 <Route path="/player-setup" element={<PlayerSetupPage />} />
+                <Route path="/leader-animation" element={<LeaderAnimationPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </GameProvider>
           </AuthProvider>
+          <CreatorAttribution />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

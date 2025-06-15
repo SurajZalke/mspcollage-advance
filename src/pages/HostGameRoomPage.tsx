@@ -16,6 +16,8 @@ import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 import TrophyAnimation from "@/components/TrophyAnimation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { ref, update } from "firebase/database";
+import { db } from "@/lib/firebaseConfig";
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -38,6 +40,17 @@ const HostGameRoomPage: React.FC = () => {
       navigate("/host-dashboard");
     }
   }, [currentUser, activeGame, isHost, navigate]);
+
+  useEffect(() => {
+    if (activeGame?.status === "ended") {
+      console.log("Game has ended, navigating to leader animation page.");
+      if (activeGame.players && activeGame.quiz) {
+        navigate('/leader-animation', { state: { players: activeGame.players, activeQuiz: activeGame.quiz, currentQuestionIndex: activeGame.quiz.questions.length - 1, isHost: true } });
+      } else {
+        console.warn("Game ended but player or quiz data is missing for navigation.", activeGame);
+      }
+    }
+  }, [activeGame, navigate]);
 
   const handleManualRefresh = () => {
     setConnectionStatus("connecting");
@@ -74,7 +87,7 @@ const HostGameRoomPage: React.FC = () => {
   }, []);
 
   const handleHostSelect = async (answerId: string) => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || !activeGame) return;
     
     await setCorrectAnswer(answerId, currentQuestion.id);
     setHasSubmittedAnswer(true);
@@ -84,9 +97,13 @@ const HostGameRoomPage: React.FC = () => {
       await submitAnswer(currentQuestion.id, answerId);
     }
     
+    // Update game ref to ensure showScores is true
+    const gameRef = ref(db, `games/${activeGame.id}`);
+    await update(gameRef, { showScores: true });
+    
     toast({
       title: "Answer Selected",
-      description: "The correct answer has been recorded",
+      description: "The correct answer has been recorded and revealed",
     });
   };
 
@@ -143,8 +160,8 @@ const HostGameRoomPage: React.FC = () => {
                   cardRef={cardRef}
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
-                  
                 />
+
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
@@ -152,10 +169,7 @@ const HostGameRoomPage: React.FC = () => {
                       Question {activeGame.currentQuestionIndex + 1} of {currentQuiz?.questions.length}
                     </h2>
                     <GameControls 
-                        onEndGame={() => {
-                          console.log("HostGameRoomPage: Calling endGame function.");
-                          endGame();
-                        }}
+                        onEndGame={endGame}
                         onNextQuestion={() => {
                           nextQuestion();
                           setHasSubmittedAnswer(false);
@@ -170,11 +184,12 @@ const HostGameRoomPage: React.FC = () => {
                       <QuestionDisplay
                         question={{
                           ...currentQuestion,
-                          correctOption: hasSubmittedAnswer ? currentQuestion.correctOption : undefined
+                          correctOption: currentQuestion.correctOption
                         }}
                         isHostView={true}
                         onHostSelect={handleHostSelect}
-                        disableOptions={hasSubmittedAnswer}
+                        disableOptions={activeGame.status !== 'active' || hasSubmittedAnswer || activeGame.showScores} // Disable options if correct answer is shown
+                        showCorrectAnswer={activeGame.showScores}
                       />
                     </div>
                   )}

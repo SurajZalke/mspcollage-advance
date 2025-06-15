@@ -12,6 +12,9 @@ export const useGameState = () => {
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
+
+  const [questionStartTime, setQuestionStartTime] = useState<number | null>(null);
+  const [questionEnded, setQuestionEnded] = useState<boolean>(false);
   const { toast } = useToast();
 
   const createGame = useCallback(async (quiz: Quiz): Promise<{ success: boolean; message?: string }> => {
@@ -139,6 +142,11 @@ export const useGameState = () => {
     setCurrentQuestion,
     isHost,
     setIsHost,
+    showCorrectAnswer: activeGame?.showScores || false,
+    questionStartTime,
+    setQuestionStartTime,
+    questionEnded,
+    setQuestionEnded,
     createGame
   };
 };

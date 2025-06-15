@@ -17,11 +17,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 
 const PlayerGameRoomPage: React.FC = () => {
-  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame } = useGame();
+  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame, questionStartTime, questionEnded } = useGame();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(currentQuestion?.timeLimit || 0);
   const { toast } = useToast();
   const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
   const [confettiTriggered, setConfettiTriggered] = useState(false);
@@ -44,6 +44,33 @@ const PlayerGameRoomPage: React.FC = () => {
       setConfettiTriggered(true); // Mark confetti as triggered
     }
   }, [activeGame?.status, confettiTriggered]);
+
+  // Timer effect for PlayerGameRoomPage to control timeLeft state
+  useEffect(() => {
+    if (!currentQuestion || !questionStartTime) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - questionStartTime) / 1000);
+      const remaining = currentQuestion.timeLimit - elapsed;
+
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        clearInterval(interval);
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentQuestion, questionStartTime]);
+
+  // Reset timeLeft when question changes
+  useEffect(() => {
+    if (currentQuestion) {
+      setTimeLeft(currentQuestion.timeLimit);
+    }
+  }, [currentQuestion?.id, currentQuestion?.timeLimit]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [pollingActive, setPollingActive] = useState(true);
@@ -195,8 +222,17 @@ const PlayerGameRoomPage: React.FC = () => {
     console.log("PlayerGameRoomPage: activeGame.players:", activeGame.players);
     console.log("PlayerGameRoomPage: activeGame.quiz:", activeGame.quiz);
 
-    if (activeGame.status === "finished") {
-      console.log("PlayerGameRoomPage: Game status is 'finished'. Attempting to render leaderboard.");
+    if (activeGame.status === "ended") {
+
+      console.log("PlayerGameRoomPage: Game status is 'finished'. Navigating to LeaderAnimationPage.");
+      navigate('/leader-animation', {
+        state: {
+          players: activeGame.players,
+          activeQuiz: activeGame.quiz,
+          currentQuestionIndex: activeGame.quiz.questions.length - 1, // Assuming last question index
+          isHost: false, // Indicate that this is a player viewing the page
+        }
+      });
       return (
         <div className={`space-y-6 transition-opacity duration-1000 ${showLeaderboardAnimation ? 'opacity-100' : 'opacity-0'}`}>
           <div className="flex justify-between items-center">
@@ -215,8 +251,8 @@ const PlayerGameRoomPage: React.FC = () => {
             <LeaderboardDisplay 
               players={activeGame.players}
               activeQuiz={activeGame.quiz}
-              showScores={true}
-              hasHostSubmitted={true}
+              showScores={activeGame.showScores} // Changed from true to activeGame.showScores
+              hasHostSubmitted={activeGame.hostSubmitted}
             />
           ) : (
             <div className="text-center text-red-500 py-8 text-lg">
@@ -264,15 +300,25 @@ const PlayerGameRoomPage: React.FC = () => {
             onMouseLeave={resetTilt}
             className="transition-all duration-300"
           >
-            <QuestionDisplay
-              question={{
-                ...currentQuestion,
-                correctOption: activeGame.hostSubmitted ? currentQuestion.correctOption : undefined
-              }}
-              onAnswer={handleAnswerSubmit}
-              disableOptions={disableOptions}
-              showTimer={true}
-            />
+            {currentQuestion && (
+                    <QuestionDisplay
+                      question={currentQuestion}
+                      onAnswer={handleAnswerSubmit}
+                      disableOptions={hasAnsweredCurrentQuestion() || questionEnded}
+                      showCorrectAnswer={questionEnded}
+                    />
+            )}
+
+            {questionEnded && (
+              <div className="mt-8 text-center">
+                <h3 className="text-2xl font-bold">Time's Up!</h3>
+                {activeGame?.players && activeGame.players.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-xl font-semibold">Your Score: {currentPlayer?.score || 0}</h4>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {hasAnsweredCurrentQuestion() && (
@@ -303,7 +349,7 @@ const PlayerGameRoomPage: React.FC = () => {
               <LeaderboardDisplay
                 players={activeGame.players}
                 activeQuiz={activeGame.quiz}
-                showScores={true}
+                showScores={activeGame.showScores} // Changed from true to activeGame.showScores
                 hasHostSubmitted={activeGame.hostSubmitted}
               />
             </>
