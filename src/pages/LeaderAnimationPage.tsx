@@ -279,16 +279,23 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
           </div>
         </div>
 
-        {isHost && ( // Only show "Go to Home" button if the user is the host
-          <div className="mt-8">
+        <div className="mt-8">
+          {isHost ? (
+            <button
+              onClick={() => navigate('/host-dashboard')}
+              className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 transition duration-300"
+            >
+              Go to Host Dashboard 🧑‍🏫
+            </button>
+          ) : (
             <button
               onClick={() => navigate('/')}
               className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 transition duration-300"
             >
-              Go to Home
+              Go to Home 🏡 
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </React.Fragment>
   );

@@ -236,6 +236,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
 
 
 
+      setGameHistory([]); // Clear game history from state
       toast({
         title: "All User Data Cleared",
         description: "All your hosted games  have been cleared successfully.",
