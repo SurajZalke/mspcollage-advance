@@ -76,13 +76,13 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
   const getBackgroundClass = (index: number) => {
     switch(index) {
       case 0:
-        return 'bg-yellow-100 border-yellow-300';
+        return 'bg-[#2a3356] border-[#2a3356] hover:bg-[#323c64]';
       case 1:
-        return 'bg-gray-100 border-gray-300';
+        return 'bg-[#2a3356] border-[#2a3356] hover:bg-[#323c64]';
       case 2:
-        return 'bg-amber-100 border-amber-300';
+        return 'bg-[#2a3356] border-[#2a3356] hover:bg-[#323c64]';
       default:
-        return 'bg-blue-50 border-blue-100 hover:bg-blue-100';
+        return 'bg-[#2a3356] border-[#2a3356] hover:bg-[#323c64]';
     }
   };
 
@@ -93,9 +93,9 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
     : undefined;
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-lg bg-gray-100">
-      <CardHeader className="text-center text-2xl font-bold py-4 bg-gray-200 rounded-t-lg">
-        <CardTitle className="text-center text-3xl font-extrabold text-gray-800">
+    <Card className="w-full md:max-w-2xl lg:max-w-4xl mx-auto shadow-lg rounded-lg bg-[#1f2747]">
+      <CardHeader className="text-center text-2xl font-bold py-4 bg-[#2a3356] rounded-t-lg">
+        <CardTitle className="text-center text-3xl font-extrabold text-white">
           Leaderboard
         </CardTitle>
         {markingType && (
@@ -106,15 +106,15 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
       </CardHeader>
       <CardContent className="p-4">
         {sortedPlayers.length === 0 ? (
-          <div className="text-center text-gray-500 py-8 text-lg">
+          <div className="text-center text-gray-300 py-8 text-lg">
             No players yet
           </div>
         ) : (
           <div className="space-y-3">
             {sortedPlayers.map((player, index) => (
-<div className="flex items-center p-4 border-b border-gray-300 hover:bg-gray-200 last:border-b-0">
-                <div className="flex items-center space-x-6">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-white shadow-sm ${
+<div className="flex flex-wrap justify-between items-center p-4 border-b border-gray-700 hover:bg-[#323c64] last:border-b-0">
+                <div className="flex flex-wrap items-center space-x-6">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-[#2a3356] shadow-sm ${
                     index === 0 
                       ? 'text-yellow-500' 
                       : index === 1 
@@ -125,7 +125,7 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                   }`}>
                     {index + 1}
                   </div>
-                  <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
+                  <Avatar className="w-10 h-10 border-2 border-gray-700 shadow-sm">
                     <AvatarImage src={player.avatar || ''} />
                     <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white">
                       {typeof player.nickname === 'string' && player.nickname.length > 0 
@@ -134,20 +134,20 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-800">{player.nickname}</span>
+                    <span className="font-semibold text-gray-200">{player.nickname}</span>
                     {getRankIcon(index)}
                     {player.isHost && (
-                      <span className="text-xs bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
+                      <span className="text-xs bg-purple-700 text-white px-3 py-1 rounded-full font-medium">
                         Host
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-800 text-lg">
+                  <span className="font-bold text-gray-200 text-lg">
                     {(showScores && hasHostSubmitted) ? player.score : '...'}
                   </span>
-                  <span className="text-xs text-gray-500">pts</span>
+                  <span className="text-xs text-gray-400">pts</span>
                 </div>
               </div>
             ))}

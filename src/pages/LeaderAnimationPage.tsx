@@ -91,7 +91,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
   const calculateAverageResponseTime = (player: Player): string => {
     const correctAnswers = player.answers?.filter(ans => ans.correct) || [];
     if (correctAnswers.length === 0) {
-      return 'N/A';
+      return '0s';
     }
     const totalTime = correctAnswers.reduce((sum, ans) => sum + ans.timeToAnswer, 0);
     const avgTime = totalTime / correctAnswers.length;
