@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Play, Settings, Users } from "lucide-react";
 import CreatorAttribution from "@/components/CreatorAttribution";
+import FadeInOnScroll from '@/components/FadeInOnScroll';
 
 const HomePage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -25,16 +26,16 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <BackgroundContainer className="homepage-background">
+    <><BackgroundContainer className="homepage-background">
       <div className="min-h-screen flex flex-col">
         <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-sm">
           <div className="container mx-auto p-4 flex justify-between items-center">
             <Logo />
-            
+
             {currentUser ? (
               <div className="space-x-2">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="dark:text-white dark:hover:bg-white/10"
                   onClick={() => navigate("/host-dashboard")}
                 >
@@ -43,15 +44,15 @@ const HomePage: React.FC = () => {
               </div>
             ) : (
               <div className="space-x-2">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="dark:text-white dark:hover:bg-white/10"
                   onClick={() => navigate("/host-login")}
                 >
                   <LogIn className="w-4 h-4 mr-2" />
                   Sign In
                 </Button>
-                <Button 
+                <Button
                   className="bg-indigo-600 hover:bg-indigo-700 text-white"
                   onClick={() => navigate("/host-signup")}
                 >
@@ -61,17 +62,17 @@ const HomePage: React.FC = () => {
             )}
           </div>
         </header>
-        
+
         <main className="container mx-auto flex-1 flex flex-col justify-center items-center p-4">
-          <div className="text-center mb-12 animate-fade-in">
+          <div className="text-center mb-4 animate-fade-in">
             <h1 className="text-5xl font-bold gradient-heading mb-4">Interactive Science Quiz Platform</h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Create and participate in engaging science quizzes for high school students. 
+              Create and participate in engaging science quizzes for high school students.
               Perfect for classroom activities or remote learning.
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl w-full">
             <div className="quiz-card p-8 text-center transform hover:scale-105 transition-all duration-300 bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg hover:shadow-xl border border-indigo-100 dark:border-indigo-900/50">
               <div className="mb-4">
                 <div className="mx-auto bg-indigo-100 dark:bg-indigo-900/50 w-16 h-16 rounded-full flex items-center justify-center">
@@ -87,7 +88,7 @@ const HomePage: React.FC = () => {
                 Join Game
               </Button>
             </div>
-            
+
             <div className="quiz-card p-8 text-center transform hover:scale-105 transition-all duration-300 bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg hover:shadow-xl border border-indigo-100 dark:border-indigo-900/50">
               <div className="mb-4">
                 <div className="mx-auto bg-purple-100 dark:bg-purple-900/50 w-16 h-16 rounded-full flex items-center justify-center">
@@ -103,51 +104,163 @@ const HomePage: React.FC = () => {
               </Button>
             </div>
           </div>
-          
-          <div className="mt-16 text-center max-w-3xl">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-              How It Works
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-              <div className="flex flex-col items-center">
-                <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">1</span>
+        </main>
+      </div>
+      <div className="p-4 text-white">
+        <h2 className="text-3xl font-bold text-center mb-4">Our Esteemed Faculty</h2>
+
+        {/* Principal's Section */}
+        <FadeInOnScroll className="flex flex-col items-center mb-2">
+          <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-purple-500 shadow-lg mb-4">
+            <img src="/principal.jpeg" alt="Principal" className="w-full h-full object-cover" />
+          </div>
+          <h3 className="text-2xl font-semibold">Dr. N. S. Thakare Sir</h3>
+          <p className="text-lg text-dark text-black-400 mb-4">"Since 1986 we are developing quailitatively and quanititatively. College has given special attention towards student's educational & cultural development, under the valuable guidance of board of directors, with the coordination of faculties, employees, students and parents, we have developed impressive college building, modern laboratories, computer department, huge premises, well equiped library, sports ground and Matoshri garden."</p>
+
+          <a href="https://www.mspkptmanora.ac.in/" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105">Visit College Website🎓🎓</a>
+        </FadeInOnScroll>
+
+        {/* Subjects Section */}
+        <FadeInOnScroll className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-2">
+          {/* Subject 1 */}
+          <div className="bg-gray-800 rounded-lg p-6 shadow-md">
+            <h4 className="text-xl font-bold mb-4">Mathematics</h4>
+            <div className="space-y-6">
+              {/* Teacher 1 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-400">
+                  <img src="/math_teacher1.jpg" alt="Math Teacher 1" className="w-full h-full object-cover" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Create Quiz</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-center">
-                  Teachers create custom quizzes with various question types
-                </p>
+                <div>
+                  <p className="font-semibold">Prof.Ram Chavhan </p>
+                  <p className="text-sm text-gray-400">10+ Years Experience</p>
+                </div>
               </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-green-100 dark:bg-green-900/30 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-xl font-bold text-green-600 dark:text-green-400">2</span>
+              {/* Teacher 2 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-400">
+                  <img src="/math_teacher2.jpg" alt="Math Teacher 2" className="w-full h-full object-cover" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Share Code</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-center">
-                  Students join using a unique game code
-                </p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-amber-100 dark:bg-amber-900/30 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-xl font-bold text-amber-600 dark:text-amber-400">3</span>
+                <div>
+                  <p className="font-semibold">Prof.Ashitosh Thakare</p>
+                  <p className="text-sm text-gray-400">10+ Years Experience</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Play & Learn</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-center">
-                  Compete in real-time and see instant results
-                </p>
               </div>
             </div>
           </div>
-        </main>
-        
-        <footer className="bg-white/10 dark:bg-gray-900/60 py-4 backdrop-blur-sm">
-          <div className="container mx-auto text-center text-gray-600 dark:text-gray-400 text-sm">
-            <p>© 2025 Science Quiz Platform — Interactive learning tool for science education</p>
+
+          {/* Subject 2 */}
+          <div className="bg-gray-800 rounded-lg p-6 shadow-md">
+            <h4 className="text-xl font-bold mb-4">Biology</h4>
+            <div className="space-y-6">
+              {/* Teacher 1 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-400">
+                  <img src="/science_teacher1.jpg" alt="Science Teacher 1" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.S.A.Kale</p>
+                  <p className="text-sm text-gray-400">20+ Years Experience</p>
+                </div>
+              </div>
+              {/* Teacher 2 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-400">
+                  <img src="/science_teacher2.jpg" alt="Science Teacher 2" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.Thamevr</p>
+                  <p className="text-sm text-gray-400">15+ Years Experience</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </footer>
+
+          {/* Subject 3 */}
+          <div className="bg-gray-800 rounded-lg p-6 shadow-md">
+            <h4 className="text-xl font-bold mb-4">Chemistry</h4>
+            <div className="space-y-6">
+              {/* Teacher 1 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-400">
+                  <img src="/history_teacher1.jpg" alt="History Teacher 1" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.P.D.Raut</p>
+                  <p className="text-sm text-gray-400">20+ Years Experience</p>
+                </div>
+              </div>
+              {/* Teacher 2 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-400">
+                  <img src="/history_teacher2.jpg" alt="History Teacher 2" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.V.D.Dhole</p>
+                  <p className="text-sm text-gray-400">20+ Years Experience</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Subject 4 */}
+          <div className="bg-gray-800 rounded-lg p-6 shadow-md">
+            <h4 className="text-xl font-bold mb-4">Physics</h4>
+            <div className="space-y-6">
+              {/* Teacher 1 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400">
+                  <img src="/english_teacher1.jpg" alt="English Teacher 1" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.S.P.Deshmukh</p>
+                  <p className="text-sm text-gray-400">25+ Years Experience</p>
+                </div>
+              </div>
+              {/* Teacher 2 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400">
+                  <img src="/english_teacher2.jpg" alt="English Teacher 2" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.V.R.Dable</p>
+                  <p className="text-sm text-gray-400">20+ Years Experience</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeInOnScroll>
       </div>
       <CreatorAttribution />
-    </BackgroundContainer>
+      <Footer />
+    </BackgroundContainer></>
+  );
+};
+const Footer = () => {
+  return (
+    <footer className="py-4 bg-gray-800 text-white">
+      <div className="container mx-auto text-center text-gray-600 dark:text-gray-400 text-sm">
+        <div className="flex justify-center items-center">
+          <div className="mr-4">
+            <Link to="/privacy-policy" className="text-white hover:underline">
+              Privacy Policy
+            </Link>
+          </div>
+          <div className="mr-4">
+            <Link to="/terms-of-service" className="text-white hover:underline">
+              Terms of Service
+            </Link>
+          </div>
+          <div className="mr-4">
+            <Link to="/contact" className="text-white hover:underline">
+              Contact Us: mspcollage724@gmail.com
+            </Link>
+          </div>
+        </div>
+
+        <p>© 2025 Science Quiz Platform — Interactive learning tool for science education</p>
+      </div>
+    </footer>
   );
 };
 
