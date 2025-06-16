@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { scienceSubjects } from "@/utils/gameUtils";
 import { Plus, Minus, Smile } from "lucide-react";
 import { db } from "@/lib/firebaseConfig";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
@@ -311,6 +312,9 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("");
+  const [topic, setTopic] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [grade, setGrade] = useState("");
   const [questions, setQuestions] = useState<QuizQuestion[]>([{
     id: `q_${Date.now()}`,
@@ -489,7 +493,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         description,
         subject,
         grade,
-        topic: "",
+        topic,
         questions,
         createdBy: currentUser?.uid || "",
         createdAt: new Date().toISOString(),
@@ -558,6 +562,15 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div> {/* Add a div for the new input to maintain grid layout */}
+              <label className="block text-sm font-medium dark:text-gray-200 mb-1">Topic</label>
+              <Input
+                placeholder="e.g., 'Thermodynamics', 'Genetics'"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className="dark:bg-gray-700 dark:border-gray-600"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium dark:text-gray-200 mb-1">Grade Level</label>
