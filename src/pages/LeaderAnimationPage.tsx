@@ -224,6 +224,12 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
                   transition: { duration: 1, ease: "easeOut", delay: 1 + (index * 0.2) } // Staggered delay
                 }}
               >
+                <motion.span
+                  className="text-4xl mb-2" role="img" aria-label="star"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1.2, rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 0.8, ease: "easeOut", repeat: Infinity, repeatType: "reverse", repeatDelay: 1 }}
+                >⭐</motion.span>
                 <Avatar className="w-16 h-16 border-2 border-white shadow-lg mb-2">
                   <AvatarImage src={player.avatar || ''} />
                   <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-2xl font-bold">

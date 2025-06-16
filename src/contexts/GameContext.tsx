@@ -68,6 +68,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     createGame
   } = useGameState();
 
+  // Function to store game and host status in local storage
+  const storeGameSession = (gameId: string, hostStatus: boolean) => {
+    localStorage.setItem('activeGameId', gameId);
+    localStorage.setItem('isHost', String(hostStatus));
+  };
+
+  // Function to clear game session from local storage
+  const clearGameSession = () => {
+    localStorage.removeItem('activeGameId');
+    localStorage.removeItem('isHost');
+  };
+
+  // Override the createGame function from useGameState to include local storage logic
+  const createGameWithLocalStorage = async (quiz: Quiz) => {
+    const result = await createGame(quiz);
+    if (result.success && result.gameId) { // Check for result.gameId instead of activeGame
+      storeGameSession(result.gameId, true);
+      navigate(`/host-game-room/${result.gameId}`);
+    }
+    return result;
+  };
+
   const {
     startGame,
     endGame,
@@ -123,6 +145,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        console.log('Unsubscribing due to activeGame becoming null');
        gameSubscription(); // Call the stored unsubscribe function
        setGameSubscription(null);
+       clearGameSession(); // Clear session if activeGame becomes null
     }
   }, [activeGame?.id]); // Depend on activeGame.id to re-subscribe when game changes
 
@@ -185,6 +208,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshGameState = async (gameIdFromParam?: string, playerIdFromParam?: string) => {
     const targetGameId = gameIdFromParam || activeGame?.id;
+    const storedIsHost = localStorage.getItem('isHost') === 'true';
+    const storedGameId = localStorage.getItem('activeGameId');
+
+    console.log('refreshGameState called with:', {
+      gameIdFromParam,
+      playerIdFromParam,
+      activeGameId: activeGame?.id,
+      storedGameId,
+      storedIsHost,
+      currentUserUid: auth.currentUser?.uid
+    });
+
     if (!targetGameId) {
       console.log('refreshGameState: No targetGameId, returning.');
       return; // Ensure a game ID exists to refresh
@@ -243,7 +278,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const updatedPlayerData = (gameData.players || []).find((p: Player) => p.player_id === currentUserId);
         if (updatedPlayerData) {
           setCurrentPlayer(updatedPlayerData);
-          setIsHost(gameData.hostId === currentUserId);
+          // Use the storedIsHost from the beginning of the function for consistency
+          setIsHost(storedIsHost && gameData.hostId === updatedPlayerData.player_id);
+          console.log('refreshGameState: Player found. isHost set to:', storedIsHost && gameData.hostId === updatedPlayerData.player_id, ' (storedIsHost:', storedIsHost, 'gameData.hostId:', gameData.hostId, 'updatedPlayerData.player_id:', updatedPlayerData.player_id, ')');
         } else {
           console.warn(`Player with ID ${currentUserId} not found in refreshed game data players list.`);
           setCurrentPlayer(null);
@@ -348,7 +385,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           nickname: nickname,
           score: 0,
 
-          answers: []
+          answers: [],
+          uid: ""
         };
         if (!gameData.players) {
           gameData.players = {};
@@ -359,6 +397,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Set current player and game in context
         setCurrentPlayer(newPlayer);
         setActiveGame(gameData);
+
+        // Store game session for host if they are the host of this game
+        if (gameData.hostId === playerId) {
+          storeGameSession(gameData.id, true);
+        } else {
+          // For players, store their game and player ID
+          localStorage.setItem('playerGameId', gameData.id);
+          localStorage.setItem('currentPlayerId', playerId);
+        }
 
         // Redirect to player setup page
         return { success: true, gameId: gameData.id, playerId: playerId };
@@ -383,7 +430,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     questionStartTime,
     questionEnded,
     setQuestionEnded,
-    createGame,
+    createGame: createGameWithLocalStorage, // Use the wrapped createGame
     joinGame,
     validateGameCode,
     startGame,

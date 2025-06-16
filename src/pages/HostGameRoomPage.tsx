@@ -25,6 +25,7 @@ const HostGameRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // New loading state
   const { toast } = useToast();
   const cardRef = React.useRef<HTMLDivElement>(null);
 
@@ -35,9 +36,23 @@ const HostGameRoomPage: React.FC = () => {
       return;
     }
     
-    if (currentUser && !activeGame && isHost === false) {
-      console.log("User logged in but no active game and not hosting, redirecting to dashboard");
-      navigate("/host-dashboard");
+    if (currentUser && !activeGame) {
+      const storedGameId = localStorage.getItem('activeGameId');
+      const storedIsHost = localStorage.getItem('isHost') === 'true';
+
+      if (storedGameId && storedIsHost) {
+        console.log("User logged in, no active game in context, but found stored host game. Attempting to refresh.");
+        setIsLoading(true); // Set loading to true before refresh
+        refreshGameState(storedGameId, currentUser.uid).finally(() => {
+          setIsLoading(false); // Set loading to false after refresh completes
+        });
+      } else {
+        console.log("User logged in but no active game and not hosting, redirecting to dashboard");
+        setIsLoading(false); // No game to load, so set loading to false
+        navigate("/host-dashboard");
+      }
+    } else if (activeGame) {
+      setIsLoading(false); // Active game is already loaded, so set loading to false
     }
   }, [currentUser, activeGame, isHost, navigate]);
 
@@ -107,18 +122,18 @@ const HostGameRoomPage: React.FC = () => {
     });
   };
 
-  if (!currentUser) {
+  if (!currentUser || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-bold mb-4">Loading...</h2>
+          <h2 className="text-xl font-bold mb-4">Loading Game...</h2>
           <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent mx-auto"></div>
         </div>
       </div>
     );
   }
 
-  if (!activeGame && !isHost) {
+  if (!activeGame) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">

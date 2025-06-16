@@ -17,11 +17,14 @@ export const useGameState = () => {
   const [questionEnded, setQuestionEnded] = useState<boolean>(false);
   const { toast } = useToast();
 
-  const createGame = useCallback(async (quiz: Quiz): Promise<{ success: boolean; message?: string }> => {
+  const createGame = useCallback(async (quiz: Quiz): Promise<{
+    gameId: string | null; success: boolean; message?: string 
+}> => {
     try {
       const user = auth.currentUser;
       if (!user) {
         return {
+          gameId: null,
           success: false,
           message: 'You must be logged in to create a game.',
         };
@@ -31,6 +34,7 @@ export const useGameState = () => {
 
       if (!quiz) {
         return {
+          gameId: null,
           success: false,
           message: 'Quiz not found.',
         };
@@ -47,9 +51,10 @@ export const useGameState = () => {
         const codeExists = Object.values(games).some((game: any) => game.code === code);
         if (codeExists) {
           return {
-            success: false,
-            message: 'Failed to generate unique game code. Please try again.',
-          };
+            gameId: null,
+          success: false,
+          message: 'Failed to generate unique game code. Please try again.',
+        };
         }
       }
 
@@ -59,6 +64,7 @@ export const useGameState = () => {
 
       if (!gameId) {
         return {
+          gameId: null,
           success: false,
           message: 'Failed to generate game ID.',
         };
@@ -105,7 +111,10 @@ export const useGameState = () => {
       setActiveGame(gameRoom);
       setCurrentQuiz(quiz);
       setIsHost(true);
-      setCurrentPlayer(gameData.players[user.uid]);
+      setCurrentPlayer({
+        ...gameData.players[user.uid],
+        uid: user.uid
+      });
 
       toast({
         title: 'Game Created!',
@@ -113,6 +122,7 @@ export const useGameState = () => {
       });
 
       return {
+        gameId: gameId,
         success: true,
         message: `Game created successfully with code ${code}`
       };
@@ -125,6 +135,7 @@ export const useGameState = () => {
         variant: 'destructive'
       });
       return {
+        gameId: null,
         success: false,
         message: 'Failed to create game. Please try again.'
       };

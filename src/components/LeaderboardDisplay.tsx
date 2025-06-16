@@ -63,13 +63,17 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
             <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
           </svg>
         );
-      default:
+      case 3:
+      case 4:
+      case 5:
         return (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" 
                className="w-5 h-5 text-blue-400">
             <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-1.007.607-2.295-.217-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clipRule="evenodd" />
           </svg>
         );
+      default:
+        return null; // Or a default icon for ranks beyond 6 if desired
     }
   };
 
@@ -126,11 +130,11 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                     {index + 1}
                   </div>
                   <Avatar className="w-10 h-10 border-2 border-gray-700 shadow-sm">
-                    <AvatarImage src={player.avatar || ''} />
+                    <AvatarImage src={player.avatar || `https://ui-avatars.com/api/?name=${player.nickname}&background=random`} />
                     <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white">
                       {typeof player.nickname === 'string' && player.nickname.length > 0 
                         ? player.nickname.charAt(0).toUpperCase() 
-                        : ''}
+                        : '?'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex items-center gap-3">
