@@ -107,7 +107,8 @@ const HomePage: React.FC = () => {
         </main>
       </div>
       <div className="p-4 text-white">
-        <h2 className="text-3xl font-bold text-center mb-4">Our Esteemed Faculty</h2>
+        <h2 className="text-3xl font-bold text-center mb-4">About Us</h2>
+        <h3 className="text-2xl font-bold text-center mb-4">Our Esteemed Faculty</h3>
 
         {/* Principal's Section */}
         <FadeInOnScroll className="flex flex-col items-center mb-2">
@@ -183,7 +184,7 @@ const HomePage: React.FC = () => {
               {/* Teacher 1 */}
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-400">
-                  <img src="/history_teacher1.jpg" alt="History Teacher 1" className="w-full h-full object-cover" />
+                  <img src="/chemistry_teacher1.jpg" alt="Chemistry Teacher 1" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="font-semibold">Prof.P.D.Raut</p>
@@ -193,7 +194,7 @@ const HomePage: React.FC = () => {
               {/* Teacher 2 */}
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-400">
-                  <img src="/history_teacher2.jpg" alt="History Teacher 2" className="w-full h-full object-cover" />
+                  <img src="/chemistry_teacher2.jpg" alt="Chemistry Teacher 2" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="font-semibold">Prof.V.D.Dhole</p>
@@ -210,7 +211,7 @@ const HomePage: React.FC = () => {
               {/* Teacher 1 */}
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400">
-                  <img src="/english_teacher1.jpg" alt="English Teacher 1" className="w-full h-full object-cover" />
+                  <img src="/physics_teacher1.jpg" alt="Physics Teacher 1" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="font-semibold">Prof.S.P.Deshmukh</p>
@@ -220,7 +221,7 @@ const HomePage: React.FC = () => {
               {/* Teacher 2 */}
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400">
-                  <img src="/english_teacher2.jpg" alt="English Teacher 2" className="w-full h-full object-cover" />
+                  <img src="/physics_teacher2.jpg" alt="Physics Teacher 2" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="font-semibold">Prof.V.R.Dable</p>
