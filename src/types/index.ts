@@ -56,6 +56,7 @@ export interface Question {
   Marks: number;
   timeLimit: number; // in seconds
   imageUrl?: string;
+  imageFile?: File | null;
 }
 
 export interface QuestionOption {

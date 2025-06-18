@@ -19,223 +19,13 @@ import { db } from "@/lib/firebaseConfig";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Cloudinary } from '@cloudinary/url-gen';
+import { AdvancedImage } from '@cloudinary/react';
+import { fill } from '@cloudinary/url-gen/actions/resize';
+import { byRadius } from '@cloudinary/url-gen/actions/roundCorners';
+import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity';
 
-// Constants for symbols and formulas
-const MATH_SYMBOLS = [
-  { symbol: '±', name: 'Plus-Minus' },
-  { symbol: '×', name: 'Multiplication' },
-  { symbol: '÷', name: 'Division' },
-  { symbol: '≠', name: 'Not Equal' },
-  { symbol: '≈', name: 'Approximately' },
-  { symbol: '∞', name: 'Infinity' },
-  { symbol: '∑', name: 'Summation' },
-  { symbol: '∫', name: 'Integral' },
-  { symbol: '√', name: 'Square Root' },
-  { symbol: '∏', name: 'Product' },
-  { symbol: '∂', name: 'Partial Derivative' },
-  { symbol: '∇', name: 'Nabla/Del' },
-  { symbol: '∆', name: 'Delta/Change' },
-  { symbol: '∈', name: 'Element Of' },
-  { symbol: '∉', name: 'Not Element Of' },
-  { symbol: '⊂', name: 'Subset Of' },
-  { symbol: '⊃', name: 'Superset Of' },
-  { symbol: '∪', name: 'Union' },
-  { symbol: '∩', name: 'Intersection' },
-  { symbol: '∀', name: 'For All' },
-  { symbol: '∃', name: 'There Exists' },
-  { symbol: '∄', name: 'Does Not Exist' },
-  { symbol: '∅', name: 'Empty Set' },
-  { symbol: '∝', name: 'Proportional To' },
-  { symbol: '∞', name: 'Infinity' },
-];
-
-const CHEMISTRY_SYMBOLS = [
-  { symbol: 'H₂O', name: 'Water' },
-  { symbol: 'CO₂', name: 'Carbon Dioxide' },
-  { symbol: 'NaCl', name: 'Sodium Chloride' },
-  { symbol: 'H₂SO₄', name: 'Sulfuric Acid' },
-  { symbol: 'HCl', name: 'Hydrochloric Acid' },
-  { symbol: 'NaOH', name: 'Sodium Hydroxide' },
-  { symbol: 'CH₄', name: 'Methane' },
-  { symbol: 'C₂H₅OH', name: 'Ethanol' },
-  { symbol: 'NH₃', name: 'Ammonia' },
-  { symbol: 'O₃', name: 'Ozone' },
-  { symbol: 'CaCO₃', name: 'Calcium Carbonate' },
-  { symbol: 'Fe₂O₃', name: 'Iron(III) Oxide' },
-  { symbol: 'KMnO₄', name: 'Potassium Permanganate' },
-  { symbol: 'AgNO₃', name: 'Silver Nitrate' },
-  { symbol: '→', name: 'Reaction Arrow' },
-  { symbol: '⇌', name: 'Equilibrium' },
-  { symbol: 'Δ', name: 'Heat' },
-  { symbol: '↑', name: 'Gas Evolution' },
-  { symbol: '↓', name: 'Precipitation' },
-  { symbol: '⇅', name: 'Resonance' },
-];
-
-const PHYSICS_SYMBOLS = [
-  { symbol: 'λ', name: 'Wavelength' },
-  { symbol: 'μ', name: 'Micro' },
-  { symbol: 'Ω', name: 'Ohm' },
-  { symbol: 'π', name: 'Pi' },
-  { symbol: 'θ', name: 'Theta' },
-  { symbol: 'ρ', name: 'Density' },
-  { symbol: 'σ', name: 'Sigma' },
-  { symbol: 'τ', name: 'Tau' },
-  { symbol: 'φ', name: 'Phi' },
-  { symbol: 'ν', name: 'Frequency' },
-  { symbol: 'α', name: 'Alpha' },
-  { symbol: 'β', name: 'Beta' },
-  { symbol: 'γ', name: 'Gamma' },
-  { symbol: 'ε₀', name: 'Permittivity of Free Space' },
-  { symbol: 'μ₀', name: 'Permeability of Free Space' },
-  { symbol: '∆x', name: 'Displacement' },
-  { symbol: '∆v', name: 'Change in Velocity' },
-  { symbol: '∆t', name: 'Time Interval' },
-  { symbol: '∆E', name: 'Change in Energy' },
-  { symbol: '∆P', name: 'Change in Momentum' },
-];
-
-const BIOLOGY_SYMBOLS = [
-  { symbol: '♂', name: 'Male' },
-  { symbol: '♀', name: 'Female' },
-  { symbol: '→', name: 'Leads to' },
-  { symbol: '⇌', name: 'Reversible Process' },
-  { symbol: 'ATP', name: 'Adenosine Triphosphate' },
-  { symbol: 'DNA', name: 'Deoxyribonucleic Acid' },
-  { symbol: 'RNA', name: 'Ribonucleic Acid' },
-  { symbol: 'ADP', name: 'Adenosine Diphosphate' },
-  { symbol: 'NADH', name: 'Nicotinamide Adenine Dinucleotide' },
-  { symbol: 'CO₂', name: 'Carbon Dioxide' },
-  { symbol: 'O₂', name: 'Oxygen' },
-  { symbol: 'H₂O', name: 'Water' },
-  { symbol: 'C₆H₁₂O₆', name: 'Glucose' },
-  { symbol: 'pH', name: 'pH Scale' },
-  { symbol: '∆G', name: 'Change in Gibbs Free Energy' },
-];
-
-const COMMON_FORMULAS = [
-  { symbol: 'E=mc²', name: 'Mass-Energy Equivalence' },
-  { symbol: 'F=ma', name: 'Newton\'s Second Law' },
-  { symbol: 'PV=nRT', name: 'Ideal Gas Law' },
-  { symbol: 'c=λν', name: 'Wave Speed' },
-  { symbol: 'E=hν', name: 'Photon Energy' },
-  { symbol: 'ΔG=ΔH-TΔS', name: 'Gibbs Free Energy' },
-  { symbol: 'pH=-log[H⁺]', name: 'pH Definition' },
-  { symbol: 'F=-kx', name: 'Hooke\'s Law' },
-  { symbol: 'v=u+at', name: 'First Equation of Motion' },
-  { symbol: 's=ut+½at²', name: 'Second Equation of Motion' },
-  { symbol: 'v²=u²+2as', name: 'Third Equation of Motion' },
-  { symbol: 'T=2π√(l/g)', name: 'Period of Simple Pendulum' },
-  { symbol: 'V=IR', name: 'Ohm\'s Law' },
-  { symbol: 'P=VI', name: 'Electric Power' },
-  { symbol: 'F=GMm/r²', name: 'Gravitational Force' },
-];
-
-const CONSTANTS = [
-  { symbol: 'c = 3×10⁸ m/s', name: 'Speed of Light', unit: 'm/s' },
-  { symbol: 'h = 6.626×10⁻³⁴', name: 'Planck Constant', unit: 'J·s' },
-  { symbol: 'G = 6.674×10⁻¹¹', name: 'Gravitational Constant', unit: 'N·m²/kg²' },
-  { symbol: 'NA = 6.022×10²³', name: 'Avogadro Number', unit: 'mol⁻¹' },
-  { symbol: 'R = 8.314', name: 'Gas Constant', unit: 'J/(mol·K)' },
-  { symbol: 'k = 1.381×10⁻²³', name: 'Boltzmann Constant', unit: 'J/K' },
-  { symbol: 'e = 1.602×10⁻¹⁹', name: 'Elementary Charge', unit: 'C' },
-  { symbol: 'me = 9.109×10⁻³¹', name: 'Electron Mass', unit: 'kg' },
-  { symbol: 'mp = 1.672×10⁻²⁷', name: 'Proton Mass', unit: 'kg' },
-  { symbol: 'ε₀ = 8.854×10⁻¹²', name: 'Vacuum Permittivity', unit: 'F/m' },
-  { symbol: 'μ₀ = 4π×10⁻⁷', name: 'Vacuum Permeability', unit: 'H/m' },
-  { symbol: 'g = 9.81', name: 'Acceleration due to Gravity', unit: 'm/s²' },
-];
-
-const ADVANCED_MATH = [
-  { symbol: '∮', name: 'Line Integral' },
-  { symbol: '∯', name: 'Surface Integral' },
-  { symbol: '∰', name: 'Volume Integral' },
-  { symbol: '∇²', name: 'Laplacian' },
-  { symbol: '∑∞ᵢ₌₁', name: 'Infinite Sum' },
-  { symbol: '∏∞ᵢ₌₁', name: 'Infinite Product' },
-  { symbol: 'lim x→∞', name: 'Limit to Infinity' },
-  { symbol: '∫∞₀', name: 'Infinite Integral' },
-  { symbol: '⟨x|ψ⟩', name: 'Bra-ket Notation' },
-];
-
-const ADVANCED_PHYSICS = [
-  { symbol: 'ψ(x,t)', name: 'Wave Function' },
-  { symbol: 'Ĥψ = Eψ', name: 'Schrödinger Equation' },
-  { symbol: 'E = ℏω', name: 'Photon Energy' },
-  { symbol: 'p = ℏk', name: 'De Broglie Relation' },
-  { symbol: 'F = -∇V', name: 'Conservative Force' },
-  { symbol: '∇×E = -∂B/∂t', name: 'Faraday\'s Law' },
-  { symbol: '∇×B = μ₀J + μ₀ε₀∂E/∂t', name: 'Ampere\'s Law' },
-  { symbol: '∇·E = ρ/ε₀', name: 'Gauss\'s Law' },
-  { symbol: '∇·B = 0', name: 'Gauss\'s Law for Magnetism' },
-  { symbol: 'ds² = gᵢⱼdxᵢdxʲ', name: 'Metric Tensor' },
-];
-
-const ADVANCED_CHEMISTRY = [
-  { symbol: 'K = [C][D]/[A][B]', name: 'Equilibrium Constant' },
-  { symbol: 'pH = -log[H⁺]', name: 'pH Definition' },
-  { symbol: 'E = E° - (RT/nF)lnQ', name: 'Nernst Equation' },
-  { symbol: 'ΔG° = -RTlnK', name: 'Standard Free Energy Change' },
-  { symbol: 'k = Ae⁻ᴱᵃ/ᴿᵀ', name: 'Arrhenius Equation' },
-  { symbol: 'PV = nRT', name: 'Ideal Gas Law' },
-  { symbol: 'μ = -RTlna', name: 'Chemical Potential' },
-  { symbol: 'dG = VdP - SdT', name: 'Gibbs Free Energy Differential' },
-  { symbol: 'ΔH = ΔU + ΔnRT', name: 'Enthalpy Change' },
-  { symbol: 'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O', name: 'Glucose Oxidation' },
-];
-
-const ADVANCED_BIOLOGY = [
-  { symbol: 'dN/dt = rN(1-N/K)', name: 'Logistic Growth' },
-  { symbol: 'v = Vmax[S]/(Km+[S])', name: 'Michaelis-Menten Equation' },
-  { symbol: 'ΔG = ΔH - TΔS', name: 'Gibbs Free Energy' },
-  { symbol: 'P + ADP + Pi → ATP', name: 'ATP Synthesis' },
-  { symbol: 'NADH + H⁺ + ½O₂ → NAD⁺ + H₂O', name: 'Electron Transport Chain' },
-  { symbol: '2H₂O → O₂ + 4H⁺ + 4e⁻', name: 'Photolysis of Water' },
-  { symbol: 'CO₂ + H₂O + energy → CH₂O + O₂', name: 'Photosynthesis' },
-  { symbol: 'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy', name: 'Cellular Respiration' },
-];
-
-const CONSTANT_SYMBOLS = [
-  { symbol: '²', name: 'Squared' },
-  { symbol: '³', name: 'Cubed' },
-  { symbol: '⁴', name: 'To the Fourth' },
-  { symbol: '₁', name: 'Subscript 1' },
-  { symbol: '₂', name: 'Subscript 2' },
-  { symbol: '₃', name: 'Subscript 3' },
-  { symbol: '₄', name: 'Subscript 4' },
-  { symbol: '₅', name: 'Subscript 5' },
-  { symbol: '₆', name: 'Subscript 6' },
-  { symbol: '₇', name: 'Subscript 7' },
-  { symbol: '₈', name: 'Subscript 8' },
-  { symbol: '₉', name: 'Subscript 9' },
-  { symbol: '₀', name: 'Subscript 0' },
-  { symbol: '()', name: 'Parentheses' },
-  { symbol: '[]', name: 'Square Brackets' },
-  { symbol: '{}', name: 'Curly Brackets' },
-  { symbol: '⟨⟩', name: 'Angle Brackets' },
-  { symbol: '|', name: 'Vertical Bar' },
-  { symbol: '‖', name: 'Double Vertical Bar' },
-  { symbol: '⌈⌉', name: 'Ceiling Brackets' },
-  { symbol: '⌊⌋', name: 'Floor Brackets' },
-  { symbol: '√', name: 'Square Root' },
-  { symbol: '∛', name: 'Cube Root' },
-  { symbol: '∜', name: 'Fourth Root' },
-  { symbol: '∝', name: 'Proportional to' },
-  { symbol: '∑', name: 'Summation' },
-  { symbol: '∏', name: 'Product' },
-  { symbol: '∫', name: 'Integral' },
-  { symbol: '∆', name: 'Delta' },
-  { symbol: '∇', name: 'Nabla' },
-  { symbol: '∂', name: 'Partial Derivative' },
-  { symbol: '∂²', name: 'Second Partial Derivative' },
-  { symbol: '∂³', name: 'Third Partial Derivative' },
-  { symbol: '∂⁴', name: 'Fourth Partial Derivative' },
-  { symbol: '∂⁵', name: 'Fifth Partial Derivative' },
-  { symbol: '∂⁶', name: 'Sixth Partial Derivative' },
-  { symbol: '∂⁷', name: 'Seventh Partial Derivative' },
-  { symbol: '∂⁸', name: 'Eighth Partial Derivative' },  
-  { symbol: '∂⁹', name: 'Ninth Partial Derivative' },
-];
+import { MATH_SYMBOLS, CHEMISTRY_SYMBOLS, PHYSICS_SYMBOLS, BIOLOGY_SYMBOLS, COMMON_FORMULAS, CONSTANTS, ADVANCED_MATH, ADVANCED_PHYSICS, ADVANCED_CHEMISTRY, ADVANCED_BIOLOGY, CONSTANT_SYMBOLS } from '@/utils/constants';
 
 const SymbolPicker = ({ onSelect }: { onSelect: (symbol: string) => void }) => {
   const [activeTab, setActiveTab] = useState('constant');
@@ -302,19 +92,21 @@ interface QuizQuestion {
   id: string;
   text: string;
   imageUrl?: string;
+  imageFile?: File | null;
+  publicId?: string; // Add publicId for Cloudinary
   options: QuizOption[];
   correctOption: string;
   timeLimit: number;
   Marks: number;
 }
 
+
 const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const [grade, setGrade] = useState("");
   const [questions, setQuestions] = useState<QuizQuestion[]>([{
     id: `q_${Date.now()}`,
@@ -426,6 +218,46 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setQuestions(newQuestions);
   };
 
+  const handleImageChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const newQuestions = [...questions];
+
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); // Use environment variable
+
+      try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        if (data.public_id) {
+          newQuestions[index] = { ...newQuestions[index], imageFile: file, imageUrl: data.secure_url, publicId: data.public_id };
+          setQuestions(newQuestions);
+          toast({
+            title: "Image Uploaded",
+            description: "Image successfully uploaded to Cloudinary.",
+          });
+        } else {
+          console.error("Cloudinary upload response data:", data);
+          throw new Error(`Cloudinary upload failed: ${data.error ? data.error.message : 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error("Error uploading image to Cloudinary:", error);
+        toast({
+          title: "Image Upload Failed",
+          description: `There was an error uploading your image: ${error instanceof Error ? error.message : String(error)}. Please try again.`, 
+          variant: "destructive",
+        });
+        newQuestions[index] = { ...newQuestions[index], imageFile: null, imageUrl: undefined, publicId: undefined };
+        setQuestions(newQuestions);
+      }
+    }
+  };
+
   const handleOptionChange = (questionIndex: number, optionId: string, value: string) => {
     const newQuestions = [...questions];
     const optionIndex = newQuestions[questionIndex].options.findIndex(opt => opt.id === optionId);
@@ -494,7 +326,16 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         subject,
         grade,
         topic,
-        questions,
+        questions: questions.map(q => ({
+          id: q.id,
+          text: q.text,
+          imageUrl: q.imageUrl || null,
+          publicId: q.publicId || null, // Include publicId
+          options: q.options,
+          correctOption: q.correctOption,
+          timeLimit: q.timeLimit,
+          Marks: q.Marks,
+        })),
         createdBy: currentUser?.uid || "",
         createdAt: new Date().toISOString(),
         totalQuestions: questions.length,
@@ -653,6 +494,44 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </DialogContent>
                 </Dialog>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <label htmlFor={`image-upload-${question.id}`} className="block text-sm font-medium dark:text-gray-200">Image (Optional)</label>
+                <Input
+                  id={`image-upload-${question.id}`}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageChange(qIndex, e)}
+                  className="flex-1 dark:bg-gray-700 dark:border-gray-600"
+                />
+                {question.imageUrl && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleQuestionChange(qIndex, 'imageUrl', undefined)}
+                  >
+                    Remove Image
+                  </Button>
+                )}
+              </div>
+
+              {question.publicId ? (
+                <div className="mt-2">
+                  <AdvancedImage
+                    cldImg={new Cloudinary({ cloud: { cloudName: 'dvgldpn5m' } })
+                      .image(question.publicId)
+                      .resize(fill().width(200).height(150))
+                      .roundCorners(byRadius(10))
+                      }
+                    className="rounded-lg object-cover"
+                  />
+                </div>
+              ) : question.imageUrl ? (
+                <div className="mt-2">
+                  <img src={question.imageUrl} alt="Question Preview" className="w-48 h-36 object-cover rounded-lg" />
+                </div>
+              ) : null}
 
               <div className="space-y-2">
                 {question.options.map((option) => (
