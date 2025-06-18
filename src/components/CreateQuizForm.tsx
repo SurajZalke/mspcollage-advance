@@ -218,6 +218,24 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setQuestions(newQuestions);
   };
 
+  // Placeholder for a new API upload function
+  const uploadToNewApi = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET1);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME1}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+    if (data.public_id) {
+      return { url: data.secure_url, id: data.public_id };
+    } else {
+      throw new Error(`Fallback Cloudinary upload failed: ${data.error ? data.error.message : 'Unknown error'}`);
+    }
+  };
+
   const handleImageChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -249,10 +267,37 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         console.error("Error uploading image to Cloudinary:", error);
         toast({
           title: "Image Upload Failed",
-          description: `There was an error uploading your image: ${error instanceof Error ? error.message : String(error)}. Please try again.`, 
+          description: `There was an error uploading your image: ${error instanceof Error ? error.message : String(error)}. Attempting fallback upload.`, 
           variant: "destructive",
         });
-        newQuestions[index] = { ...newQuestions[index], imageFile: null, imageUrl: undefined, publicId: undefined };
+
+        // Fallback to a new API if Cloudinary upload fails
+        try {
+          // Placeholder for new API upload logic
+          // You would replace this with actual API call, e.g., to your own backend or another service
+          console.log("Attempting fallback upload for image:", file.name);
+          const fallbackUploadResult = await uploadToNewApi(file);
+          newQuestions[index] = { 
+            ...newQuestions[index], 
+            imageFile: file, 
+            imageUrl: fallbackUploadResult.url, // Assuming the new API returns a URL
+            publicId: fallbackUploadResult.id // Assuming the new API returns an ID
+          };
+          toast({
+            title: "Fallback Upload Success",
+            description: "Image uploaded successfully via fallback API.",
+            variant: "default",
+          });
+
+        } catch (fallbackError) {
+          console.error("Error during fallback image upload:", fallbackError);
+          toast({
+            title: "Fallback Upload Failed",
+            description: `Failed to upload image via fallback: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}.`, 
+            variant: "destructive",
+          });
+          newQuestions[index] = { ...newQuestions[index], imageFile: null, imageUrl: undefined, publicId: undefined };
+        }
         setQuestions(newQuestions);
       }
     }
@@ -516,18 +561,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 )}
               </div>
 
-              {question.publicId ? (
-                <div className="mt-2">
-                  <AdvancedImage
-                    cldImg={new Cloudinary({ cloud: { cloudName: 'dvgldpn5m' } })
-                      .image(question.publicId)
-                      .resize(fill().width(200).height(150))
-                      .roundCorners(byRadius(10))
-                      }
-                    className="rounded-lg object-cover"
-                  />
-                </div>
-              ) : question.imageUrl ? (
+              {question.imageUrl ? (
                 <div className="mt-2">
                   <img src={question.imageUrl} alt="Question Preview" className="w-48 h-36 object-cover rounded-lg" />
                 </div>
