@@ -108,9 +108,13 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
           title: "Successfully joined!",
           description: `You've joined the game as ${nickname}!`, 
         });
-        navigate("/player-setup", {
-          state: { gameId: result.gameId, playerId: result.playerId },
-        });
+        // Introduce a 2-second delay before navigating and reloading
+        setTimeout(() => {
+          navigate("/player-setup", {
+            state: { gameId: result.gameId, playerId: result.playerId },
+          });
+          window.location.reload(); // Reload the page after navigation
+        }, 2000); // 200 milliseconds = 2 seconds
       } else {
         throw new Error(result.message || "Failed to join game");
       }
