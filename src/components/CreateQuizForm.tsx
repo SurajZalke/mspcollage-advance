@@ -232,7 +232,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     if (data.public_id) {
       return { url: data.secure_url, id: data.public_id };
     } else {
-      throw new Error(`Fallback Cloudinary upload failed: ${data.error ? data.error.message : 'Unknown error'}`);
+      throw new Error(``);
     }
   };
 
@@ -267,15 +267,15 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         console.error("Error uploading image to Cloudinary:", error);
         toast({
           title: "Image Upload Failed",
-          description: `There was an error uploading your image: ${error instanceof Error ? error.message : String(error)}. Attempting fallback upload.`, 
-          variant: "destructive",
+          description: ``, 
+          variant: "default",
         });
 
         // Fallback to a new API if Cloudinary upload fails
         try {
           // Placeholder for new API upload logic
           // You would replace this with actual API call, e.g., to your own backend or another service
-          console.log("Attempting fallback upload for image:", file.name);
+          console.log("Attempting upload for image:", file.name);
           const fallbackUploadResult = await uploadToNewApi(file);
           newQuestions[index] = { 
             ...newQuestions[index], 
@@ -285,7 +285,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           };
           toast({
             title: "Fallback Upload Success",
-            description: "Image uploaded successfully via fallback API.",
+            description: "Image uploaded successfully .",
             variant: "default",
           });
 
