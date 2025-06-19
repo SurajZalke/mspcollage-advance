@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Logo from "@/components/Logo";
@@ -311,45 +313,111 @@ setQuizzes(sampleQuizzes.map(quiz => ({
     <BackgroundContainer>
       <div className="min-h-screen flex flex-col">
         <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
-          <div className="container mx-auto p-4 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
+          <div className="container mx-auto p-4 flex justify-between items-center relative">
+            <div className="flex items-center space-x-4 md:space-x-6">
               <Logo />
-              <Button
-                variant="ghost"
-                className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2"
-                onClick={() => navigate("/")}
-              >
-                <Home className="h-4 w-4" />
-                Home
-              </Button>
+              {/* Desktop Navigation */}
+              <div className="flex items-center space-x-4 lg:space-x-6">
+                <div className="flex items-center space-x-2">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={currentUser.user_metadata?.avatar_url || ''} />
+                    <AvatarFallback>{currentUser.user_metadata?.name?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-gray-600 dark:text-white">
+                    Welcome, <span className="font-medium">{currentUser.user_metadata?.name || 'Host'}</span>
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2 hidden md:flex"
+                  onClick={() => navigate("/")}
+                >
+                  <Home className="h-4 w-4" />
+                  Home
+                </Button>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            {/* Mobile Menu and Desktop Profile/Logout */}
+            <div className="flex items-center space-x-4 md:space-x-6">
+              <div className="md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-6 w-6" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[280px] sm:w-[320px] dark:bg-gray-900 overflow-y-auto flex flex-col">
+                    <nav className="flex flex-col gap-4 p-4 w-full">
+                      <Logo />
+                      <Button
+                        variant="ghost"
+                        className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2 justify-start w-full"
+                        onClick={() => { navigate("/"); /* Close sheet */ }}
+                      >
+                        <Home className="h-4 w-4" />
+                        Home
+                      </Button>
+                      {/* Profile Edit Button for Mobile */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" className="flex items-center space-x-3 dark:text-white dark:hover:bg-gray-800 justify-start w-full text-left whitespace-normal h-auto py-2">
+                            <Avatar className="w-8 h-8">
+                              <AvatarImage src={currentUser.user_metadata?.avatar_url || ''} />
+                              <AvatarFallback>{currentUser.user_metadata?.name?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-gray-600 dark:text-white text-left break-words">
+                              Welcome, <span className="font-medium">{currentUser.user_metadata?.name || 'Host'}</span>
+                            </span>
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px] flex items-center justify-center">
+                          <ProfileSetup />
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2 justify-start w-full"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </Button>
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+              </div>
+
+              {/* Desktop Profile and Logout */}
+              <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
               {/* Profile Edit Button */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 dark:text-white dark:hover:bg-gray-800">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={currentUser.user_metadata?.avatar_url || ''} />
-                      <AvatarFallback>{currentUser.user_metadata?.name?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-gray-600 dark:text-white">
-                      Welcome, <span className="font-medium">{currentUser.user_metadata?.name || 'Host'}</span>
-                    </span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] flex items-center justify-center">
-                  <ProfileSetup />
-                </DialogContent>
-              </Dialog>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 dark:text-white dark:hover:bg-gray-800">
+                      <div className="flex items-center space-x-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={currentUser.user_metadata?.avatar_url || ''} />
+                          <AvatarFallback>{currentUser.user_metadata?.name?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-gray-600 dark:text-white">
+                          Welcome, <span className="font-medium">{currentUser.user_metadata?.name || 'Host'}</span>
+                        </span>
+                      </div>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] flex items-center justify-center">
+                    <ProfileSetup />
+                  </DialogContent>
+                </Dialog>
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="dark:text-white dark:hover:bg-gray-800 flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
             </div>
           </div>
         </header>
@@ -361,7 +429,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
         </div>
 
         <Tabs defaultValue="my-quizzes" className="mb-8">
-          <TabsList className="mb-6 bg-gray-100/70 dark:bg-gray-800/70 backdrop-blur-md">
+          <TabsList className="mb-6 bg-gray-100/70 dark:bg-gray-800/70 backdrop-blur-md flex-wrap h-auto">
             <TabsTrigger value="my-quizzes" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
               <BookOpen className="w-4 h-4 mr-2" />
               My Quizzes
@@ -377,7 +445,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
           </TabsList>
 
           <TabsContent value="my-quizzes">
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="flex items-center relative">
                 <Search className="absolute left-3 text-gray-400" size={18} />
                 <input
@@ -418,7 +486,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredQuizzes.length > 0 ? (
                 filteredQuizzes.map((quiz) => (
                   <QuizCard

@@ -160,6 +160,8 @@ const HostGameRoomPage: React.FC = () => {
         <GameHeader 
           connectionStatus={connectionStatus}
           onRefresh={handleManualRefresh}
+          name={currentUser?.user_metadata?.name}
+          avatarUrl={currentUser?.user_metadata?.avatar_url}
         />
 
         <main className="container mx-auto p-4 py-8">
@@ -175,6 +177,8 @@ const HostGameRoomPage: React.FC = () => {
                   cardRef={cardRef}
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
+                  nickname={currentUser?.user_metadata?.name}
+                  avatarUrl={currentUser?.user_metadata?.avatar_url}
                 />
 
               ) : activeGame?.status === "active" ? (

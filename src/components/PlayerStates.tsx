@@ -64,7 +64,7 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId,
               return (
                 <TableRow 
                   key={player.id}
-                  className="transform hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 hover:scale-[1.02] transition-all duration-300"
+                  className="transform hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 hover:scale-[1.02]"
                   style={{ animationDelay: `${idx * 0.1}s` }}
                 >
                   <TableCell key={`${player.id}-nickname`} className="font-medium flex items-center gap-2">
@@ -77,12 +77,12 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId,
                   <TableCell key={`${player.id}-status`}>
                     {player.status === 'answered' || answer ? (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         Answered
                       </span>
                     ) : (
                       <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
                         Waiting
                       </span>
                     )}
@@ -94,9 +94,9 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId,
                     {showResults && hasHostSubmitted ? (
                       answer ? (
                         answer.correct ? (
-                          <span className="text-green-600 dark:text-green-400 font-bold animate-pulse-scale">✓</span>
+                          <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
                         ) : (
-                          <span className="text-red-600 dark:text-red-400 font-bold animate-pulse-scale">✗</span>
+                          <span className="text-red-600 dark:text-red-400 font-bold">✗</span>
                         )
                       ) : (
                         "-"

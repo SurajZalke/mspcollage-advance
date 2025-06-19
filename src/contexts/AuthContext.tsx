@@ -48,23 +48,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (snapshot.exists()) {
           console.log('onAuthStateChanged: Profile exists', snapshot.val());
+          const profileData = snapshot.val();
+          console.log('onAuthStateChanged: Profile name from DB:', profileData?.name);
           // Profile exists, update currentUser state with fetched profile data
           setCurrentUser({
             ...user,
-            user_metadata: snapshot.val()
+            user_metadata: profileData
           } as User & { user_metadata?: { name?: string; avatar_url?: string; bio?: string } });
           setLoading(false);
         } else {
             console.warn(`onAuthStateChanged: Profile data not found for user ${user.uid}. Creating a new profile.`);
             // Profile does not exist, create it in Realtime Database
             const newProfileData = {
-               name: user.displayName || '',
-               avatar_url: user.photoURL || '',
+               name: user.displayName || user.email || 'New User',
+               avatar_url: user.photoURL || 'https://www.gravatar.com/avatar/?d=mp',
                bio: '',
                email: user.email || '',
                createdAt: serverTimestamp(),
               };
-            console.log('onAuthStateChanged: Creating new profile', newProfileData); // Existing log
+            console.log('onAuthStateChanged: Creating new profile with data:', newProfileData);
+            console.log('onAuthStateChanged: user.displayName:', user.displayName);
+            console.log('onAuthStateChanged: user.email:', user.email);
             try { // Added try-catch for profile creation
               await set(profileRef, newProfileData);
               console.log('onAuthStateChanged: Profile created successfully'); // Added log
@@ -94,10 +98,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const unsubscribeProfile = onValue(profileRef, (snapshot) => {
             if (snapshot.exists()) {
               console.log('Profile update received via real-time:', snapshot.val());
+              const updatedProfileData = snapshot.val();
+              console.log('Profile update received via real-time - name:', updatedProfileData?.name);
               if (user) {
                 setCurrentUser({
                   ...user,
-                  user_metadata: snapshot.val()
+                  user_metadata: updatedProfileData
                 } as User & { user_metadata?: { name?: string; avatar_url?: string; bio?: string } });
               }
             } else {
@@ -177,13 +183,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update user profile in Firebase Auth
       await updateProfileFirebase(user, {
         displayName: name,
-        photoURL: '', // Default empty avatar
+        photoURL: user.photoURL || 'https://www.gravatar.com/avatar/?d=mp', // Use user's photoURL or a default Gravatar if empty
       });
 
       // Create a profile entry in Realtime Database
       await set(ref(db, 'profiles/' + user.uid), {
         name: name,
-        avatar_url: '',
+        avatar_url: user.photoURL || 'https://www.gravatar.com/avatar/?d=mp',
         bio: '',
         email: user.email,
         createdAt: serverTimestamp(),

@@ -1,10 +1,11 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GameRoom, Player, Quiz, Question } from '@/types';
 import { generateGameCode } from '@/utils/gameUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { db, auth } from '@/lib/firebaseConfig';
-import { ref, set, push, get } from 'firebase/database';
+import { ref, set, push, get, update } from 'firebase/database';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useGameState = () => {
   const [activeGame, setActiveGame] = useState<GameRoom | null>(null);
@@ -16,6 +17,57 @@ export const useGameState = () => {
   const [questionStartTime, setQuestionStartTime] = useState<number | null>(null);
   const [questionEnded, setQuestionEnded] = useState<boolean>(false);
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (currentUser && activeGame && isHost) {
+      const hostPlayerId = currentUser.uid;
+      const currentHostPlayer = activeGame.players.find(p => p.id === hostPlayerId);
+
+      if (currentHostPlayer && 
+          (currentHostPlayer.nickname !== currentUser.user_metadata?.name || 
+           currentHostPlayer.avatar !== currentUser.user_metadata?.avatar_url)) {
+        const updatedHostPlayer = {
+          ...currentHostPlayer,
+          nickname: currentUser.user_metadata?.name || currentHostPlayer.nickname,
+          avatar: currentUser.user_metadata?.avatar_url || currentHostPlayer.avatar,
+        };
+        
+        setActiveGame(prevGame => {
+          if (!prevGame) return null;
+
+          const updatedPlayers = prevGame.players.map(player => {
+            if (player.id === hostPlayerId) {
+              return {
+                ...player,
+                nickname: currentUser.user_metadata?.name || player.nickname,
+                avatar: currentUser.user_metadata?.avatar_url || player.avatar,
+              };
+            }
+            return player;
+          });
+
+          return {
+            ...prevGame,
+            players: updatedPlayers,
+          };
+        });
+
+        const playerRef = ref(db, `games/${activeGame.id}/players/${hostPlayerId}`);
+        update(playerRef, {
+          nickname: updatedHostPlayer.nickname,
+          avatar: updatedHostPlayer.avatar,
+        }).catch(error => {
+          console.error("Failed to update host player profile in Firebase:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update host profile in game. Please try refreshing.",
+            variant: "destructive"
+          });
+        });
+      }
+    }
+  }, [currentUser, activeGame, isHost, setActiveGame, toast]);
 
   const createGame = useCallback(async (quiz: Quiz): Promise<{
     gameId: string | null; success: boolean; message?: string 
@@ -87,9 +139,10 @@ export const useGameState = () => {
           [user.uid]: {
             id: user.uid,
             player_id: user.uid,
-            nickname: user.displayName || 'Host',
+            nickname: currentUser?.user_metadata?.name || user.displayName || user.email || 'Host',
             score: 0,
-            answers: []
+            answers: [],
+            avatar: currentUser?.user_metadata?.avatar_url || user.photoURL || null
           },
         },
         startTime: null,

@@ -8,6 +8,8 @@ import { Wifi, RefreshCw } from "lucide-react";
 interface GameHeaderProps {
   connectionStatus: "connected" | "connecting" | "disconnected";
   onRefresh: () => void;
+  name?: string;
+  avatarUrl?: string;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({ connectionStatus, onRefresh }) => {
