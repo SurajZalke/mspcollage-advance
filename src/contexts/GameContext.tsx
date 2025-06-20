@@ -262,6 +262,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update questionStartTime when the active game or current question changes
       if (gameData.questionStartTime !== undefined) {
         setQuestionStartTime(gameData.questionStartTime);
+  
       }
 
       // Set the quiz from gameData

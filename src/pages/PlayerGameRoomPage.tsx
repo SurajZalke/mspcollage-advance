@@ -22,7 +22,6 @@ const PlayerGameRoomPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const isMobile = useIsMobile();
-  const [timeLeft, setTimeLeft] = useState(currentQuestion?.timeLimit || 0);
   const { toast } = useToast();
   const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
   const [confettiTriggered, setConfettiTriggered] = useState(false);
@@ -46,42 +45,7 @@ const PlayerGameRoomPage: React.FC = () => {
     }
   }, [activeGame?.status, confettiTriggered]);
 
-  // Timer effect for PlayerGameRoomPage to control timeLeft state
-  useEffect(() => {
-    if (!currentQuestion || !questionStartTime) return;
 
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = Math.floor((now - questionStartTime) / 1000);
-      let remaining = currentQuestion.timeLimit - elapsed;
-
-      // Remove mobile-specific cap. Always use the actual remaining time.
-      // if (isMobile && currentQuestion.timeLimit === 30) {
-      //   remaining = Math.min(remaining, 21);
-      // }
-
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        clearInterval(interval);
-      } else {
-        setTimeLeft(remaining);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentQuestion, questionStartTime]);
-
-  // Reset timeLeft when question changes
-  useEffect(() => {
-    if (currentQuestion) {
-      // Remove mobile-specific logic. Always use the question's time limit.
-      // if (isMobile && currentQuestion.timeLimit === 30) {
-      //   setTimeLeft(21);
-      // } else {
-        setTimeLeft(currentQuestion.timeLimit);
-      // }
-    }
-  }, [currentQuestion?.id, currentQuestion?.timeLimit, isMobile]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [pollingActive, setPollingActive] = useState(true);

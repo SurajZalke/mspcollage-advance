@@ -38,23 +38,25 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   useEffect(() => {
     if (!showTimer || isAnswered || disableOptions) return; // Stop timer if options are disabled
     
-    const now = Date.now();
-    const elapsed = questionStartTime ? Math.floor((now - questionStartTime) / 1000) : 0;
-    const remaining = question.timeLimit - elapsed;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = questionStartTime ? Math.floor((now - questionStartTime) / 1000) : 0;
+      const remaining = question.timeLimit - elapsed;
+      setTimeLeft(Math.max(0, remaining));
 
-    if (remaining <= 0) {
-      setTimeLeft(0);
-      return;
-    }
-
-    setTimeLeft(remaining);
-    
-    const timer = setTimeout(() => {
-      setTimeLeft(prev => prev - 1);
+      if (remaining <= 0) {
+        clearInterval(interval);
+      }
     }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [timeLeft, isAnswered, showTimer, questionStartTime, question.timeLimit, disableOptions]);
+
+    // Initial calculation when the effect runs
+    const initialNow = Date.now();
+    const initialElapsed = questionStartTime ? Math.floor((initialNow - questionStartTime) / 1000) : 0;
+    setTimeLeft(Math.max(0, question.timeLimit - initialElapsed));
+
+
+    return () => clearInterval(interval);
+  }, [showTimer, isAnswered, disableOptions, questionStartTime, question.timeLimit]);
   
   // Reset state when question changes
   useEffect(() => {
