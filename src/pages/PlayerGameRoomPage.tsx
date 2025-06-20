@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
@@ -56,18 +55,18 @@ const PlayerGameRoomPage: React.FC = () => {
       const elapsed = Math.floor((now - questionStartTime) / 1000);
       let remaining = currentQuestion.timeLimit - elapsed;
 
-    // If on mobile and original time limit is 30, cap remaining time at 21
-    if (isMobile && currentQuestion.timeLimit === 30) {
-      remaining = Math.min(remaining, 21);
-    }
+      // Remove mobile-specific cap. Always use the actual remaining time.
+      // if (isMobile && currentQuestion.timeLimit === 30) {
+      //   remaining = Math.min(remaining, 21);
+      // }
 
-    if (remaining <= 0) {
-      setTimeLeft(0);
-      clearInterval(interval);
-    } else {
-      setTimeLeft(remaining);
-    }
-      }, 1000);
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        clearInterval(interval);
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [currentQuestion, questionStartTime]);
@@ -75,12 +74,12 @@ const PlayerGameRoomPage: React.FC = () => {
   // Reset timeLeft when question changes
   useEffect(() => {
     if (currentQuestion) {
-      // If on mobile and original time limit is 30, set initial timeLeft to 21
-      if (isMobile && currentQuestion.timeLimit === 30) {
-        setTimeLeft(21);
-      } else {
+      // Remove mobile-specific logic. Always use the question's time limit.
+      // if (isMobile && currentQuestion.timeLimit === 30) {
+      //   setTimeLeft(21);
+      // } else {
         setTimeLeft(currentQuestion.timeLimit);
-      }
+      // }
     }
   }, [currentQuestion?.id, currentQuestion?.timeLimit, isMobile]);
 
