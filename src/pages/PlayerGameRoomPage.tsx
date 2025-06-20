@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
 import Logo from "@/components/Logo";
+import { useIsMobile } from "@/hooks/use-mobile";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import { Button } from "@/components/ui/button";
 import BackgroundContainer from "@/components/BackgroundContainer";
@@ -21,6 +22,7 @@ const PlayerGameRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
+  const isMobile = useIsMobile();
   const [timeLeft, setTimeLeft] = useState(currentQuestion?.timeLimit || 0);
   const { toast } = useToast();
   const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
@@ -52,15 +54,20 @@ const PlayerGameRoomPage: React.FC = () => {
     const interval = setInterval(() => {
       const now = Date.now();
       const elapsed = Math.floor((now - questionStartTime) / 1000);
-      const remaining = currentQuestion.timeLimit - elapsed;
+      let remaining = currentQuestion.timeLimit - elapsed;
 
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        clearInterval(interval);
-      } else {
-        setTimeLeft(remaining);
-      }
-    }, 1000);
+    // If on mobile and original time limit is 30, cap remaining time at 21
+    if (isMobile && currentQuestion.timeLimit === 30) {
+      remaining = Math.min(remaining, 21);
+    }
+
+    if (remaining <= 0) {
+      setTimeLeft(0);
+      clearInterval(interval);
+    } else {
+      setTimeLeft(remaining);
+    }
+      }, 1000);
 
     return () => clearInterval(interval);
   }, [currentQuestion, questionStartTime]);
@@ -68,9 +75,14 @@ const PlayerGameRoomPage: React.FC = () => {
   // Reset timeLeft when question changes
   useEffect(() => {
     if (currentQuestion) {
-      setTimeLeft(currentQuestion.timeLimit);
+      // If on mobile and original time limit is 30, set initial timeLeft to 21
+      if (isMobile && currentQuestion.timeLimit === 30) {
+        setTimeLeft(21);
+      } else {
+        setTimeLeft(currentQuestion.timeLimit);
+      }
     }
-  }, [currentQuestion?.id, currentQuestion?.timeLimit]);
+  }, [currentQuestion?.id, currentQuestion?.timeLimit, isMobile]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [pollingActive, setPollingActive] = useState(true);
