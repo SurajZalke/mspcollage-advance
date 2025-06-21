@@ -134,25 +134,42 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           )}
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {question.options.map(option => (
-              <Button
-                key={option.id}
-                className={`p-4 h-auto text-left flex justify-start items-center transition-all ${
-                  selectedOption === option.id
-                    ? "bg-quiz-primary text-white"
-                    : showCorrectAnswer && option.id === question.correctOption
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
-                }`}
-                onClick={() => handleSelectOption(option.id)}
-                disabled={isAnswered || disableOptions || (isHostView && !onHostSelect)}
-              >
-                <div className={`mr-3 ${showCorrectAnswer && option.id === question.correctOption ? 'bg-green-200' : 'bg-gray-100'} text-quiz-dark rounded-full w-6 h-6 flex items-center justify-center font-medium`}>
-                  {option.id.toUpperCase()}
-                </div>
-                <span>{option.text}</span>
-              </Button>
-            ))}
+
+
+{question.options.map((option, idx) => {
+  const optionLabel = String.fromCharCode(65 + idx);
+  const selected = selectedOption === option.id;
+  const disabled = isAnswered || disableOptions;
+  const isCorrect = showCorrectAnswer && option.id === question.correctOption;
+
+  return (
+    <div
+      key={option.id}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-3 cursor-pointer transition-all
+        ${isCorrect
+          ? "bg-green-600/80 border-2 border-green-500 text-white"
+          : selected
+            ? "bg-purple-400/30 border border-purple-400"
+            : "bg-gray-800/60"}
+        ${disabled ? "opacity-60 pointer-events-none" : ""}
+      `}
+      style={{ minHeight: "48px" }}
+      onClick={() => !disabled && handleSelectOption(option.id)}
+    >
+      <span className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-bold mr-2
+        ${isCorrect ? "bg-green-500 text-white" : "bg-gray-700 text-white"}
+      `}>
+        {optionLabel}
+      </span>
+      <span className="flex-1 text-left break-words whitespace-pre-line text-base font-medium">
+        {option.text}
+      </span>
+      {isCorrect && (
+        <span className="ml-2 text-green-200 text-xl font-bold">&#10003;</span>
+      )}
+    </div>
+  );
+})}
           </div>
           {/* Polling bar: only show after time ends or host submits answer */}
           {showCorrectAnswer && (

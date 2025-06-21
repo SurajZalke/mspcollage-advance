@@ -75,8 +75,8 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId,
                   </TableCell>
                   <TableCell key={`${player.id}-status`}>
                     {player.status === 'answered' || answer ? (
-                      <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-green-800 dark:text-greem-800 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-800 rounded-full"></div>
                         Answered
                       </span>
                     ) : (
