@@ -4,7 +4,7 @@ import { GameRoom, Player, Quiz, Question } from '@/types';
 import { generateGameCode } from '@/utils/gameUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { db, auth } from '@/lib/firebaseConfig';
-import { ref, set, push, get, update } from 'firebase/database';
+import { ref, set, push, get, update, onValue } from 'firebase/database';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useGameState = () => {
@@ -16,6 +16,18 @@ export const useGameState = () => {
 
   const [questionStartTime, setQuestionStartTime] = useState<number | null>(null);
   const [questionEnded, setQuestionEnded] = useState<boolean>(false);
+  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+
+  // Initialize server time offset
+  useEffect(() => {
+    const offsetRef = ref(db, '.info/serverTimeOffset');
+    const unsubscribe = onValue(offsetRef, (snapshot) => {
+      const offset = snapshot.val() || 0;
+      setServerTimeOffset(offset);
+    });
+
+    return () => unsubscribe();
+  }, []);
   const { toast } = useToast();
   const { currentUser } = useAuth();
 
@@ -211,6 +223,7 @@ export const useGameState = () => {
     setQuestionStartTime,
     questionEnded,
     setQuestionEnded,
+    serverTimeOffset,
     createGame
   };
 };

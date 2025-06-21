@@ -104,7 +104,7 @@ const PlayerGameRoomPage: React.FC = () => {
       const simulateNetworkDelay = Math.random() > 0.95;
       if (simulateNetworkDelay) {
         setConnectionStatus("connecting");
-        setTimeout(() => setConnectionStatus("connected"), 800);
+        setTimeout(() => setConnectionStatus("connected"), 1000);
       }
     }, 5000);
     
@@ -256,12 +256,23 @@ const PlayerGameRoomPage: React.FC = () => {
 
     if (currentQuestion) {
       const disableOptions = hasAnsweredCurrentQuestion();
+      // Show waiting spinner only if questionStartTime is missing
+      if (!questionStartTime) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[200px]">
+            <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Waiting for host to start the question...</p>
+          </div>
+        );
+      }
 
       return (
         <div className="space-y-5">
           <div className="flex justify-between items-center">
             <div className="text-sm font-medium dark:text-gray-300">
-              Question {activeGame.currentQuestionIndex + 1} / {currentQuestion.timeLimit}s
+            <h2 className="text-2xl font-bold text-quiz-dark dark:text-white">
+              Question {activeGame.currentQuestionIndex + 1} of {activeGame.quiz.questions.length}
+            </h2>
             </div>
             <div className="flex items-center gap-1 text-sm">
               <span className={`inline-block w-2 h-2 rounded-full ${connectionStatus === "connected" ? "bg-green-500" : "bg-amber-500 animate-pulse"}`}></span>
@@ -358,4 +369,3 @@ const PlayerGameRoomPage: React.FC = () => {
   );
 };
 export default PlayerGameRoomPage;
-

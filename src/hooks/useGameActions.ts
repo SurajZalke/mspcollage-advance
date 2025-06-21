@@ -1,8 +1,7 @@
-
 import { useCallback } from 'react';
 import { GameRoom, Player, Quiz, Question } from '@/types';
 import { db } from '@/lib/firebaseConfig';
-import { ref, update, get as getDatabaseData, set } from 'firebase/database';
+import { ref, update, get as getDatabaseData, set, serverTimestamp } from 'firebase/database';
 
 export const useGameActions = (
   activeGame: GameRoom | null,
@@ -10,7 +9,8 @@ export const useGameActions = (
   currentPlayer: Player | null,
   currentQuestion: Question | null,
   currentQuiz: Quiz | null,
-  questionStartTime: number | null
+  questionStartTime: number | null,
+  serverTimeOffset: number
 ) => {
   const startGame = useCallback(async () => {
     if (!activeGame) return;
@@ -20,7 +20,7 @@ export const useGameActions = (
        await update(gameRef, {
          status: 'active',
          currentQuestionIndex: 0,
-         questionStartTime: Date.now(),
+         questionStartTime: serverTimestamp(),
        });
 
       // No direct state update here, GameContext's onSnapshot will handle it
@@ -50,8 +50,29 @@ export const useGameActions = (
   const submitAnswer = useCallback(async (questionId: string, optionId: string) => {
     if (!currentPlayer || !currentQuestion || !activeGame || !currentQuiz) return;
 
+    // Always fetch the latest questionStartTime from the database for accurate timing
+    let latestQuestionStartTime = null;
+    try {
+      const gameRef = ref(db, `games/${activeGame.id}`);
+      const gameSnapshot = await getDatabaseData(gameRef);
+      let gameData = null;
+      if (gameSnapshot.exists && typeof gameSnapshot.exists === 'function' ? gameSnapshot.exists() : gameSnapshot) {
+        gameData = gameSnapshot.val ? gameSnapshot.val() : gameSnapshot;
+        if (gameData && gameData.questionStartTime) {
+          latestQuestionStartTime = gameData.questionStartTime;
+        }
+      }
+    } catch (err) {
+      // fallback to local questionStartTime if fetch fails
+      latestQuestionStartTime = questionStartTime;
+    }
+
+    // If still not found, fallback to 0
+    if (!latestQuestionStartTime) latestQuestionStartTime = 0;
+
     const isCorrect = optionId === currentQuestion.correctOption;
-    const timeToAnswer = questionStartTime ? Math.floor((Date.now() - questionStartTime) / 1000) : 0; // Calculate time taken to answer in seconds
+    const now = Date.now() + serverTimeOffset;
+    const timeToAnswer = Math.max(0, Math.floor((now - latestQuestionStartTime) / 1000));
 
     let scoreChange = 0;
     if (isCorrect) {
@@ -127,7 +148,7 @@ export const useGameActions = (
      try {
        const updates: any = {
          currentQuestionIndex: activeGame.currentQuestionIndex + 1,
-         questionStartTime: Date.now(),
+         questionStartTime: serverTimestamp(),
          showScores: false,
          hostSubmitted: false
        };
@@ -150,7 +171,25 @@ export const useGameActions = (
   const setCorrectAnswer = useCallback(async (optionId: string, questionId: string | undefined) => {
     if (!activeGame || !currentQuestion || !currentPlayer) return;
 
-    const timeToAnswer = questionStartTime ? Math.floor((Date.now() - questionStartTime) / 1000) : 0;
+    // Always fetch the latest questionStartTime from the database for accurate timing
+    let latestQuestionStartTime = null;
+    try {
+      const gameRef = ref(db, `games/${activeGame.id}`);
+      const gameSnapshot = await getDatabaseData(gameRef);
+      let gameData = null;
+      if (gameSnapshot.exists && typeof gameSnapshot.exists === 'function' ? gameSnapshot.exists() : gameSnapshot) {
+        gameData = gameSnapshot.val ? gameSnapshot.val() : gameSnapshot;
+        if (gameData && gameData.questionStartTime) {
+          latestQuestionStartTime = gameData.questionStartTime;
+        }
+      }
+    } catch (err) {
+      // fallback to local questionStartTime if fetch fails
+      latestQuestionStartTime = questionStartTime;
+    }
+    if (!latestQuestionStartTime) latestQuestionStartTime = 0;
+
+    const timeToAnswer = Math.max(0, Math.floor((Date.now() - latestQuestionStartTime) / 1000));
     const isCorrect = optionId === currentQuestion.correctOption;
 
     // Create host's answer object

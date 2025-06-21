@@ -20,6 +20,7 @@ interface GameContextType {
   questionStartTime: number | null; // Timestamp when the current question started
   questionEnded: boolean; // New state to indicate if the question has ended
   setQuestionEnded: (ended: boolean) => void; // Function to set questionEnded state
+  serverTimeOffset: number; // Offset between client and server time
   createGame: (quiz: Quiz) => Promise<{ success: boolean; message?: string }>;
   joinGame: (code: string, nickname: string) => Promise<{
     gameId: string | null;
@@ -65,7 +66,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setQuestionStartTime,
     questionEnded,
     setQuestionEnded,
-    createGame
+    createGame,
+    serverTimeOffset
   } = useGameState();
 
   // Function to store game and host status in local storage
@@ -96,7 +98,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     submitAnswer,
     nextQuestion,
     setCorrectAnswer
-  } = useGameActions(activeGame, setActiveGame, currentPlayer, currentQuestion, currentQuiz, questionStartTime);
+  } = useGameActions(activeGame, setActiveGame, currentPlayer, currentQuestion, currentQuiz, questionStartTime, serverTimeOffset);
 
   const {
     validateGameCode,
@@ -112,7 +114,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Subscribe to game changes using Realtime Database
-      const gamesRef = ref(db, 'games');
       const gameRef = ref(db, `games/${activeGame.id}`);
       const unsubscribe = onValue(gameRef, async (snapshot) => {
         console.log('onValue listener triggered for game:', activeGame.id);
@@ -161,7 +162,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Effect to handle question timer ending for the host
   useEffect(() => {
     if (isHost && activeGame?.status === "active" && currentQuestion && questionStartTime && !activeGame.showScores) {
-      const now = Date.now();
+      const now = Date.now() + serverTimeOffset;
       const elapsed = Math.floor((now - questionStartTime) / 1000);
       const remaining = currentQuestion.timeLimit - elapsed;
 
@@ -445,7 +446,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <GameContext.Provider value={value as GameContextType}>
+    <GameContext.Provider value={{ ...value, serverTimeOffset } as GameContextType}>
       {children}
     </GameContext.Provider>
   );
@@ -453,19 +454,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export default GameContext;
 
-const avatarContainerStyle = {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
-};
 
-const profileModalStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '20px',
-};
 
 

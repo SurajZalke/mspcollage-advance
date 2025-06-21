@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,39 +29,37 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   showCorrectAnswer
 }) => {
   const [timeLeft, setTimeLeft] = useState(question.timeLimit);
-  const { questionStartTime } = useGame(); // Get questionStartTime from GameContext
+  const { questionStartTime, serverTimeOffset } = useGame(); // Get questionStartTime and serverTimeOffset from GameContext
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   
   // Timer effect
   useEffect(() => {
-    if (!showTimer || isAnswered || disableOptions) return; // Stop timer if options are disabled
-    
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = questionStartTime ? Math.floor((now - questionStartTime) / 1000) : 0;
-      const remaining = question.timeLimit - elapsed;
-      setTimeLeft(Math.max(0, remaining));
+    if (!showTimer || isAnswered || disableOptions || !questionStartTime) return;
 
-      if (remaining <= 0) {
-        clearInterval(interval);
-      }
+    // Always calculate remaining time from server-synced questionStartTime with serverTimeOffset
+    const calculateTimeLeft = () => {
+      const now = Date.now() + serverTimeOffset;
+      const elapsed = Math.floor((now - questionStartTime) / 1000);
+      return Math.max(0, question.timeLimit - elapsed);
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    if (calculateTimeLeft() <= 0) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
     }, 1000);
 
-    // Initial calculation when the effect runs
-    const initialNow = Date.now();
-    const initialElapsed = questionStartTime ? Math.floor((initialNow - questionStartTime) / 1000) : 0;
-    setTimeLeft(Math.max(0, question.timeLimit - initialElapsed));
-
-
     return () => clearInterval(interval);
-  }, [showTimer, isAnswered, disableOptions, questionStartTime, question.timeLimit]);
+  }, [showTimer, isAnswered, disableOptions, questionStartTime, question.timeLimit, serverTimeOffset]);
   
   // Reset state when question changes
   useEffect(() => {
-    setTimeLeft(question.timeLimit);
     setSelectedOption(null);
     setIsAnswered(false);
+    // Do not reset timeLeft here; let timer effect handle it from questionStartTime
   }, [question.id, question.timeLimit, questionStartTime]);
 
   // Synchronize isAnswered with showCorrectAnswer from GameContext
