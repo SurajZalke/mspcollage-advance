@@ -133,14 +133,18 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [showSymbolPicker, setShowSymbolPicker] = useState(false);
 
-  const superscriptMap: { [key: string]: string } = {
+  interface SuperscriptMap {
+    [key: string]: string;
+  }
+
+  const initialSuperscriptMap: SuperscriptMap = {
     '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
     '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
     '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾', 'x': 'ˣ', 't': 'ᵗ',
     'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ', 'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ', 'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ', 'p': 'ᵖ', 'q': 'ᵠ', 'r': 'ʳ', 's': 'ˢ', 'u': 'ᵘ', 'v': 'ᵛ', 'w': 'ʷ', 'y': 'ʸ', 'z': 'ᶻ'
   };
 
-  const subscriptMap: { [key: string]: string } = {
+  const initialSubscriptMap: { [key: string]: string } = {
     '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
     '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
     '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎',
@@ -173,309 +177,6 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     // Convert forward slash to division sign
     convertedText = convertedText.replace(/\//g, '÷');
-
-    // Convert sqrt(x) to √x
-    convertedText = convertedText.replace(/sqrt\(([^)]*)\)/g, '√$1');
-
-    // Convert int x dx to ∫x dx
-    convertedText = convertedText.replace(/int\s*([a-zA-Z])\s*d([a-zA-Z])/g, '∫$1 d$2');
-
-    // Convert lim x->0 to limₓ→₀
-    convertedText = convertedText.replace(/lim\s*([a-zA-Z])->([0-9])/g, 'lim$1→$2');
-
-    // Convert x != y to x ≠ y
-    convertedText = convertedText.replace(/! =/g, '≠');
-
-    // Convert x <= y to x ≤ y
-    convertedText = convertedText.replace(/< =/g, '≤');
-
-    // Convert x >= y to x ≥ y
-    convertedText = convertedText.replace(/> =/g, '≥');
-
-    // Convert x^y to xʸ
-    convertedText = convertedText.replace(/(\w)\^(\w)/g, '$1$2');
-
-    // Convert pi to π
-    convertedText = convertedText.replace(/pi/g, 'π');
-
-    // Convert infinity to ∞
-    convertedText = convertedText.replace(/infinity/g, '∞');
-
-    // Convert sum to Σ
-    convertedText = convertedText.replace(/sum/g, 'Σ');
-
-    // Convert product to Π
-    convertedText = convertedText.replace(/product/g, 'Π');
-
-    // Convert delta to Δ
-    convertedText = convertedText.replace(/delta/g, 'Δ');
-
-    // Convert theta to θ
-    convertedText = convertedText.replace(/theta/g, 'θ');
-
-    // Convert alpha to α
-    convertedText = convertedText.replace(/alpha/g, 'α');
-
-    // Convert beta to β
-    convertedText = convertedText.replace(/beta/g, 'β');
-
-    // Convert gamma to γ
-    convertedText = convertedText.replace(/gamma/g, 'γ');
-
-    // Convert epsilon to ε
-    convertedText = convertedText.replace(/epsilon/g, 'ε');
-
-    // Convert lambda to λ
-    convertedText = convertedText.replace(/lambda/g, 'λ');
-
-    // Convert mu to μ
-    convertedText = convertedText.replace(/mu/g, 'μ');
-
-    // Convert sigma to σ
-    convertedText = convertedText.replace(/sigma/g, 'σ');
-
-    // Convert omega to ω
-    convertedText = convertedText.replace(/omega/g, 'ω');
-
-    // Convert degree to °
-    convertedText = convertedText.replace(/degree/g, '°');
-
-    // Convert approx to ≈
-    convertedText = convertedText.replace(/approx/g, '≈');
-
-    // Convert not equal to ≠
-    convertedText = convertedText.replace(/!=/g, '≠');
-
-    // Convert less than or equal to ≤
-    convertedText = convertedText.replace(/<=/g, '≤');
-
-    // Convert greater than or equal to ≥
-    convertedText = convertedText.replace(/>=/g, '≥');
-
-    // Convert plus minus to ±
-    convertedText = convertedText.replace(/\+-/g, '±');
-
-    // Convert times to ×
-    convertedText = convertedText.replace(/\*/g, '×');
-
-    // Convert divide to ÷
-    convertedText = convertedText.replace(/\//g, '÷');
-
-    // Convert square root to √
-    convertedText = convertedText.replace(/sqrt/g, '√');
-
-    // Convert cube root to ∛
-    convertedText = convertedText.replace(/cbrt/g, '∛');
-
-    // Convert nth root to ⁿ√
-    convertedText = convertedText.replace(/nrt/g, 'ⁿ√');
-
-    // Convert integral to ∫
-    convertedText = convertedText.replace(/int/g, '∫');
-
-    // Convert partial derivative to ∂
-    convertedText = convertedText.replace(/partial/g, '∂');
-
-    // Convert sum to ∑
-    convertedText = convertedText.replace(/sum/g, '∑');
-
-    // Convert product to ∏
-    convertedText = convertedText.replace(/prod/g, '∏');
-
-    // Convert union to ∪
-    convertedText = convertedText.replace(/union/g, '∪');
-
-    // Convert intersection to ∩
-    convertedText = convertedText.replace(/intersect/g, '∩');
-
-    // Convert element of to ∈
-    convertedText = convertedText.replace(/in/g, '∈');
-
-    // Convert not element of to ∉
-    convertedText = convertedText.replace(/notin/g, '∉');
-
-    // Convert subset to ⊂
-    convertedText = convertedText.replace(/subset/g, '⊂');
-
-    // Convert superset to ⊃
-    convertedText = convertedText.replace(/supset/g, '⊃');
-
-    // Convert empty set to ∅
-    convertedText = convertedText.replace(/emptyset/g, '∅');
-
-    // Convert for all to ∀
-    convertedText = convertedText.replace(/forall/g, '∀');
-
-    // Convert exists to ∃
-    convertedText = convertedText.replace(/exists/g, '∃');
-
-    // Convert therefore to ∴
-    convertedText = convertedText.replace(/therefore/g, '∴');
-
-    // Convert because to ∵
-    convertedText = convertedText.replace(/because/g, '∵');
-
-    // Convert angle to ∠
-    convertedText = convertedText.replace(/angle/g, '∠');
-
-    // Convert perpendicular to ⊥
-    convertedText = convertedText.replace(/perp/g, '⊥');
-
-    // Convert parallel to ∥
-    convertedText = convertedText.replace(/parallel/g, '∥');
-
-    // Convert congruent to ≅
-    convertedText = convertedText.replace(/cong/g, '≅');
-
-    // Convert similar to ∼
-    convertedText = convertedText.replace(/sim/g, '∼');
-
-    // Convert approximately equal to ≈
-    convertedText = convertedText.replace(/approxeq/g, '≈');
-
-    // Convert proportional to ∝
-    convertedText = convertedText.replace(/prop/g, '∝');
-
-    // Convert right arrow to →
-    convertedText = convertedText.replace(/->/g, '→');
-
-    // Convert left arrow to ←
-    convertedText = convertedText.replace(/<-/g, '←');
-
-    // Convert double arrow to ↔
-    convertedText = convertedText.replace(/<->/g, '↔');
-
-    // Convert up arrow to ↑
-    convertedText = convertedText.replace(/\^/g, '↑');
-
-    // Convert down arrow to ↓
-    convertedText = convertedText.replace(/v/g, '↓');
-
-    // Convert nabla to ∇
-    convertedText = convertedText.replace(/nabla/g, '∇');
-
-    // Convert circ to ∘
-    convertedText = convertedText.replace(/circ/g, '∘');
-
-    // Convert bullet to •
-    convertedText = convertedText.replace(/bullet/g, '•');
-
-    // Convert prime to ′
-    convertedText = convertedText.replace(/prime/g, '′');
-
-    // Convert double prime to ″
-    convertedText = convertedText.replace(/doubleprime/g, '″');
-
-    // Convert triple prime to ‴
-    convertedText = convertedText.replace(/tripleprime/g, '‴');
-
-    // Convert degree Celsius to ℃
-    convertedText = convertedText.replace(/degC/g, '℃');
-
-    // Convert degree Fahrenheit to ℉
-    convertedText = convertedText.replace(/degF/g, '℉');
-
-    // Convert micro to µ
-    convertedText = convertedText.replace(/micro/g, 'µ');
-
-    // Convert Ohm to Ω
-    convertedText = convertedText.replace(/Ohm/g, 'Ω');
-
-    // Convert copyright to ©
-    convertedText = convertedText.replace(/copy/g, '©');
-
-    // Convert registered to ®
-    convertedText = convertedText.replace(/reg/g, '®');
-
-    // Convert trademark to ™
-    convertedText = convertedText.replace(/tm/g, '™');
-
-    // Convert euro to €
-    convertedText = convertedText.replace(/euro/g, '€');
-
-    // Convert cent to ¢
-    convertedText = convertedText.replace(/cent/g, '¢');
-
-    // Convert pound to £
-    convertedText = convertedText.replace(/pound/g, '£');
-
-    // Convert yen to ¥
-    convertedText = convertedText.replace(/yen/g, '¥');
-
-    // Convert section to §
-    convertedText = convertedText.replace(/sect/g, '§');
-
-    // Convert dagger to †
-    convertedText = convertedText.replace(/dagger/g, '†');
-
-    // Convert double dagger to ‡
-    convertedText = convertedText.replace(/ddagger/g, '‡');
-
-    // Convert ellipsis to …
-    convertedText = convertedText.replace(/.../g, '…');
-
-    // Convert permil to ‰
-    convertedText = convertedText.replace(/permil/g, '‰');
-
-    // Convert prime to ′
-    convertedText = convertedText.replace(/prime/g, '′');
-
-    // Convert double prime to ″
-    convertedText = convertedText.replace(/doubleprime/g, '″');
-
-    // Convert triple prime to ‴
-    convertedText = convertedText.replace(/tripleprime/g, '‴');
-
-    // Convert degree Celsius to ℃
-    convertedText = convertedText.replace(/degC/g, '℃');
-
-    // Convert degree Fahrenheit to ℉
-    convertedText = convertedText.replace(/degF/g, '℉');
-
-    // Convert micro to µ
-    convertedText = convertedText.replace(/micro/g, 'µ');
-
-    // Convert Ohm to Ω
-    convertedText = convertedText.replace(/Ohm/g, 'Ω');
-
-    // Convert copyright to ©
-    convertedText = convertedText.replace(/copy/g, '©');
-
-    // Convert registered to ®
-    convertedText = convertedText.replace(/reg/g, '®');
-
-    // Convert trademark to ™
-    convertedText = convertedText.replace(/tm/g, '™');
-
-    // Convert euro to €
-    convertedText = convertedText.replace(/euro/g, '€');
-
-    // Convert cent to ¢
-    convertedText = convertedText.replace(/cent/g, '¢');
-
-    // Convert pound to £
-    convertedText = convertedText.replace(/pound/g, '£');
-
-    // Convert yen to ¥
-    convertedText = convertedText.replace(/yen/g, '¥');
-
-    // Convert section to §
-    convertedText = convertedText.replace(/sect/g, '§');
-
-    // Convert dagger to †
-    convertedText = convertedText.replace(/dagger/g, '†');
-
-    // Convert double dagger to ‡
-    convertedText = convertedText.replace(/ddagger/g, '‡');
-
-    // Convert ellipsis to …
-    convertedText = convertedText.replace(/.../g, '…');
-
-    // Convert permil to ‰
-    convertedText = convertedText.replace(/permil/g, '‰');
-
-    // Convert x >= y to x ≥ y
-    convertedText = convertedText.replace(/> =/g, '≥');
 
     return convertedText;
   };
@@ -606,6 +307,19 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     } else {
       throw new Error(``);
     }
+  };
+    const superscriptMap: { [key: string]: string } = {
+    '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾', 'x': 'ˣ', 't': 'ᵗ',
+    'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ', 'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ', 'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ', 'p': 'ᵖ', 'q': 'ᵠ', 'r': 'ʳ', 's': 'ˢ', 'u': 'ᵘ', 'v': 'ᵛ', 'w': 'ʷ', 'y': 'ʸ', 'z': 'ᶻ'
+  };
+
+  const subscriptMap: { [key: string]: string } = {
+    '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎',
+    'a': 'ₐ', 'e': 'ₑ', 'h': 'ₕ', 'i': 'ᵢ', 'j': 'ⱼ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ', 'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ', 'v': 'ᵥ', 'x': 'ₓ'
   };
 
   const handleImageChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
