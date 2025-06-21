@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -91,12 +90,12 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId,
                     {answer ? `${answer.timeToAnswer}s` : "-"}
                   </TableCell>
                   <TableCell key={`${player.id}-correct`}>
-                    {showResults && hasHostSubmitted ? (
+                    {hasHostSubmitted ? (
                       answer ? (
                         answer.correct ? (
-                          <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
+                          <span className="text-green-600 dark:text-green-400 font-bold">&#10003;</span>
                         ) : (
-                          <span className="text-red-600 dark:text-red-400 font-bold">✗</span>
+                          <span className="text-red-600 dark:text-red-400 font-bold">&#10007;</span>
                         )
                       ) : (
                         "-"

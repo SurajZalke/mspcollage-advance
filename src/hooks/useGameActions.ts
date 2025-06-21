@@ -20,14 +20,14 @@ export const useGameActions = (
        await update(gameRef, {
          status: 'active',
          currentQuestionIndex: 0,
-         questionStartTime: serverTimestamp(),
+         questionStartTime: Date.now() + serverTimeOffset, // Use calculated server time
        });
 
       // No direct state update here, GameContext's onSnapshot will handle it
     } catch (error: any) {
       console.error('Error starting game in Realtime Database:', error);
     }
-  }, [activeGame, setActiveGame]);
+  }, [activeGame, setActiveGame, serverTimeOffset]);
 
   const endGame = useCallback(async () => {
     if (!activeGame) return;
@@ -148,7 +148,7 @@ export const useGameActions = (
      try {
        const updates: any = {
          currentQuestionIndex: activeGame.currentQuestionIndex + 1,
-         questionStartTime: serverTimestamp(),
+         questionStartTime: Date.now() + serverTimeOffset, // Use calculated server time
          showScores: false,
          hostSubmitted: false
        };

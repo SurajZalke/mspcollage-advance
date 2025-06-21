@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Player, Quiz } from "@/types";
+import { Progress } from '@/components/ui/progress';
 
 interface LeaderboardDisplayProps {
   players: Player[];
@@ -16,6 +17,11 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
   showScores = false, 
   hasHostSubmitted = false 
 }) => {
+  // Track previous order for animation
+  const [prevOrder, setPrevOrder] = useState<string[]>([]);
+  const [animateRows, setAnimateRows] = useState<{[id: string]: 'up'|'down'|null}>({});
+  const prevPlayersRef = useRef<Player[]>(players);
+
   const allPlayers = players.map(player => ({
     ...player,
     isHost: player.player_id === activeQuiz?.createdBy
@@ -39,6 +45,40 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
 
     return aAvgTime - bAvgTime;
   });
+
+  // Animation logic: compare previous and current order
+  useEffect(() => {
+    const newOrder = sortedPlayers.map(p => p.player_id);
+    const anim: {[id: string]: 'up'|'down'|null} = {};
+    if (prevOrder.length > 0) {
+      newOrder.forEach((id, idx) => {
+        const prevIdx = prevOrder.indexOf(id);
+        if (prevIdx !== -1) {
+          if (prevIdx > idx) anim[id] = 'up';
+          else if (prevIdx < idx) anim[id] = 'down';
+          else anim[id] = null;
+        } else {
+          anim[id] = null;
+        }
+      });
+      setAnimateRows(anim);
+      // Remove animation after 1s
+      setTimeout(() => setAnimateRows({}), 1000);
+    }
+    setPrevOrder(newOrder);
+    prevPlayersRef.current = players;
+  }, [players, showScores, hasHostSubmitted]);
+
+  // Helper: check for 3+ correct answers in a row (streak)
+  const getStreak = (player: Player) => {
+    if (!player.answers || player.answers.length < 3) return 0;
+    let streak = 0;
+    for (let i = player.answers.length - 1; i >= 0; i--) {
+      if (player.answers[i].correct) streak++;
+      else break;
+    }
+    return streak;
+  };
 
   const getRankIcon = (index: number) => {
     switch(index) {
@@ -96,70 +136,154 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
       : "Simple Marking"
     : undefined;
 
+  // Only show/animate leaderboard when scores are revealed
+  const shouldShowLeaderboard = showScores && hasHostSubmitted;
+
+  // Store the last revealed sortedPlayers and scores for freezing
+  const [frozenPlayers, setFrozenPlayers] = useState(sortedPlayers);
+  const [frozenScores, setFrozenScores] = useState(sortedPlayers.map(p => p.score));
+
+  useEffect(() => {
+    if (shouldShowLeaderboard) {
+      setFrozenPlayers(sortedPlayers);
+      setFrozenScores(sortedPlayers.map(p => p.score));
+    }
+  }, [shouldShowLeaderboard, sortedPlayers]);
+
+  // Helper for up/down arrow
+  const getMoveArrow = (animate: 'up' | 'down' | null) => {
+    if (animate === 'up') {
+      return (
+        <span className="ml-2 animate-arrow-crazy">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20V4M12 4l-5 5M12 4l5 5" stroke="#00e6e6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </span>
+      );
+    }
+    if (animate === 'down') {
+      return (
+        <span className="ml-2 animate-arrow-down">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v16M12 20l-5-5M12 20l5-5" stroke="#ff4d4d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </span>
+      );
+    }
+    return null;
+  };
+
+  // --- Polling logic for host: count answers for each option ---
+  // (Removed from leaderboard, will be moved to QuestionDisplay)
+
+  // Use frozenPlayers/frozenScores if not revealed, else live sortedPlayers
+  const displayPlayers = shouldShowLeaderboard ? sortedPlayers : frozenPlayers;
+  const displayScores = shouldShowLeaderboard ? sortedPlayers.map(p => p.score) : frozenScores;
+
   return (
-    <Card className="w-full md:max-w-2xl lg:max-w-4xl mx-auto shadow-lg rounded-lg bg-[#1f2747]">
-      <CardHeader className="text-center text-2xl font-bold py-4 bg-[#2a3356] rounded-t-lg">
-        <CardTitle className="text-center text-3xl font-extrabold text-white">
-          Leaderboard
-        </CardTitle>
+    <Card className="quiz-card p-0 border border-glow-purple/30 shadow-glow-purple rounded-2xl bg-white/90 dark:bg-gray-900/80 max-w-2xl mx-auto">
+      <CardHeader className="bg-[#232b4a] dark:bg-[#232b4a] rounded-t-2xl px-6 py-4 border-b border-glow-purple/20">
+        <CardTitle className="text-3xl font-extrabold text-white text-center">Leaderboard</CardTitle>
         {markingType && (
-          <div className="text-xs text-gray-600 mt-1 text-center font-medium">
+          <div className="text-xs text-gray-300 mt-1 text-center font-medium">
             {markingType}
           </div>
         )}
       </CardHeader>
-      <CardContent className="p-4">
-        {sortedPlayers.length === 0 ? (
-          <div className="text-center text-gray-300 py-8 text-lg">
-            No players yet
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sortedPlayers.map((player, index) => (
-<div className="flex flex-wrap justify-between items-center p-4 border-b border-gray-700 hover:bg-[#323c64] last:border-b-0">
-                <div className="flex flex-wrap items-center space-x-6">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-[#2a3356] shadow-sm ${
-                    index === 0 
-                      ? 'text-yellow-500' 
-                      : index === 1 
-                      ? 'text-gray-600'
-                      : index === 2 
-                      ? 'text-amber-500'
-                      : 'text-gray-600'
-                  }`}>
-                    {index + 1}
-                  </div>
-                  <Avatar className="w-10 h-10 border-2 border-gray-700 shadow-sm">
-                    <AvatarImage src={player.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${player.nickname}`} />
-                    <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white">
-                      {typeof player.nickname === 'string' && player.nickname.length > 0 
-                        ? player.nickname.charAt(0).toUpperCase() 
-                        : '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-200">{player.nickname}</span>
-                    {getRankIcon(index)}
-                    {player.isHost && (
-                      <span className="text-xs bg-purple-700 text-white px-3 py-1 rounded-full font-medium">
-                        Host
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-200 text-lg">
-                    {(showScores && hasHostSubmitted) ? player.score : '...'}
-                  </span>
-                  <span className="text-xs text-gray-400">pts</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-700">
+            <thead className="bg-[#2a3356]">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Rank</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Player</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Score</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Points</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700">
+              {displayPlayers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center text-gray-300 py-8 text-lg">No players yet</td>
+                </tr>
+              ) : (
+                displayPlayers.map((player, index) => {
+                  const streak = getStreak(player);
+                  const animate = shouldShowLeaderboard ? animateRows[player.player_id] : null;
+                  let streakNameClass = '';
+                  let streakBadge = null;
+                  let streakEffect = null;
+                  // Streak logic: show count and label only, no emoji
+                  if (shouldShowLeaderboard && streak >= 7) {
+                    streakNameClass = 'text-yellow-400 font-extrabold';
+                    streakBadge = (
+                      <span className="ml-2 px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold border border-yellow-300">Golden {streak}x</span>
+                    );
+                  } else if (shouldShowLeaderboard && streak >= 10) {
+                    streakNameClass = 'text-purple-400 font-extrabold';
+                    streakBadge = (
+                      <span className="ml-2 px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold border border-purple-300">Grandmaster {streak}x</span>
+                    );
+                  } else if (shouldShowLeaderboard && streak >= 5) {
+                    streakNameClass = 'text-blue-400 font-bold';
+                    streakBadge = (
+                      <span className="ml-2 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold border border-blue-300">Platinum {streak}x</span>
+                    );
+                  } else if (shouldShowLeaderboard && streak >= 3) {
+                    streakNameClass = 'text-gray-300 font-bold';
+                    streakBadge = (
+                      <span className="ml-2 px-2 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-bold border border-gray-300">Silver {streak}x</span>
+                    );
+                  }
+                  streakEffect = null;
+                  const rowAnim = shouldShowLeaderboard ? `animate-leaderboard-row-in animate-delay-${index}` : '';
+                  const topGlow = shouldShowLeaderboard && index < 3 ? `leaderboard-top-glow leaderboard-top-glow-${index}` : '';
+                  const shimmer = shouldShowLeaderboard && index === 0 ? 'leaderboard-shimmer' : '';
+                  return (
+                    <tr
+                      key={player.player_id}
+                      className={`bg-[#232b4a] hover:bg-[#323c64] transition-all duration-500 ${rowAnim} ${topGlow} ${shimmer}`}
+                    >
+                      <td className="px-6 py-4 font-bold text-lg text-indigo-300 align-middle">{index + 1}</td>
+                      <td className="px-6 py-4 align-middle">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-9 h-9 border-2 border-gray-700 shadow-sm">
+                            <AvatarImage src={player.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${player.nickname}`} />
+                            <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white">
+                              {typeof player.nickname === 'string' && player.nickname.length > 0 
+                                ? player.nickname.charAt(0).toUpperCase() 
+                                : '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className={`font-semibold text-gray-200 transition-all duration-500 ${streakNameClass}`}>{player.nickname}</span>
+                          {streakBadge}
+                          {streakEffect}
+                          {getRankIcon(index)}
+                          {player.isHost && (
+                            <span className="text-xs bg-purple-700 text-white px-3 py-1 rounded-full font-medium ml-2">Host</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 align-middle font-bold text-gray-200 text-lg">{displayScores[index]}</td>
+                      <td className="px-6 py-4 align-middle text-indigo-200 font-semibold text-base">Points</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
   );
 };
+
+// Add CSS for exclusive streak animations
+// .animate-streak-three { animation: streakThree 1.3s cubic-bezier(.68,-0.55,.27,1.55); }
+// .text-rainbow { background: linear-gradient(90deg, #FFD700, #FF69B4, #00E6E6, #FFD700); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 16px #FFD700, 0 0 32px #FF69B4; animation: rainbowText 2s linear infinite alternate; }
+// .animate-crown-pop { animation: crownPop 1.3s cubic-bezier(.68,-0.55,.27,1.55); }
+// .animate-stick-pop { animation: stickPop 1.1s cubic-bezier(.68,-0.55,.27,1.55); }
+// .animate-fire-burst { animation: fireBurst 1.1s cubic-bezier(.68,-0.55,.27,1.55); }
+// @keyframes streakThree { 0% { transform: scale(1); } 30% { transform: scale(1.18) rotate(-8deg); } 60% { transform: scale(0.97) rotate(4deg); } 100% { transform: scale(1); } }
+// @keyframes rainbowText { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+// @keyframes crownPop { 0% { transform: scale(0.5) rotate(-20deg); opacity: 0; } 80% { transform: scale(1.4) rotate(10deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+// @keyframes stickPop { 0% { transform: scale(0.7) rotate(-10deg); opacity: 0; } 80% { transform: scale(1.2) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+// @keyframes fireBurst { 0% { transform: scale(0.7) rotate(-10deg); opacity: 0; } 80% { transform: scale(1.2) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 
 export default LeaderboardDisplay;

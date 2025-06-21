@@ -32,7 +32,22 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   const { questionStartTime, serverTimeOffset } = useGame(); // Get questionStartTime and serverTimeOffset from GameContext
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
-  
+  const { activeGame, currentPlayer } = useGame();
+
+  // Polling logic: count answers for each option for this question
+  let pollCounts: Record<string, number> = {};
+  let totalAnswers = 0;
+  if (activeGame && question) {
+    question.options.forEach(opt => { pollCounts[opt.id] = 0; });
+    activeGame.players.forEach(player => {
+      const ans = player.answers?.find(a => a.questionId === question.id);
+      if (ans) {
+        pollCounts[ans.selectedOption] = (pollCounts[ans.selectedOption] || 0) + 1;
+        totalAnswers++;
+      }
+    });
+  }
+
   // Timer effect
   useEffect(() => {
     if (!showTimer || isAnswered || disableOptions || !questionStartTime) return;
@@ -126,7 +141,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                   selectedOption === option.id
                     ? "bg-quiz-primary text-white"
                     : showCorrectAnswer && option.id === question.correctOption
-                    ? "bg-green-600 text-white" // Highlight correct answer when showCorrectAnswer is true
+                    ? "bg-green-600 text-white"
                     : "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
                 }`}
                 onClick={() => handleSelectOption(option.id)}
@@ -139,6 +154,22 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               </Button>
             ))}
           </div>
+          {/* Polling bar: only show after time ends or host submits answer */}
+          {showCorrectAnswer && (
+            <div className="mt-6">
+              <h4 className="text-lg font-bold text-white mb-2">Answer Polling</h4>
+              <div className="space-y-2">
+                {question.options.map(opt => (
+                  <div key={opt.id} className="flex items-center gap-2">
+                    <span className="w-8 font-bold text-white">{opt.id.toUpperCase()}</span>
+                    <Progress value={totalAnswers ? (pollCounts[opt.id] / totalAnswers) * 100 : 0} className="flex-1 h-3 bg-gray-700" />
+                    <span className="w-8 text-right text-white">{pollCounts[opt.id]}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs text-gray-300 mt-1">Total answers: {totalAnswers}</div>
+            </div>
+          )}
         </div>
         
         <div className="text-center text-sm text-gray-500">
