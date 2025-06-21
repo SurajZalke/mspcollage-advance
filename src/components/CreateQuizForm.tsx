@@ -27,6 +27,9 @@ import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity';
 
 import { MATH_SYMBOLS, CHEMISTRY_SYMBOLS, PHYSICS_SYMBOLS, BIOLOGY_SYMBOLS, COMMON_FORMULAS, CONSTANTS, ADVANCED_MATH, ADVANCED_PHYSICS, ADVANCED_CHEMISTRY, ADVANCED_BIOLOGY, CONSTANT_SYMBOLS } from '@/utils/constants';
 
+import 'katex/dist/katex.min.css';
+import katex from 'katex';
+
 const SymbolPicker = ({ onSelect }: { onSelect: (symbol: string) => void }) => {
   const [activeTab, setActiveTab] = useState('constant');
 
@@ -127,10 +130,72 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null);
+  const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const [showSymbolPicker, setShowSymbolPicker] = useState(false);
 
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+  const superscriptMap: { [key: string]: string } = {
+    '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+    '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾', 'x': 'ˣ', 't': 'ᵗ',
+    'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ', 'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ', 'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ', 'p': 'ᵖ', 'q': 'ᵠ', 'r': 'ʳ', 's': 'ˢ', 'u': 'ᵘ', 'v': 'ᵛ', 'w': 'ʷ', 'y': 'ʸ', 'z': 'ᶻ'
+  };
+
+  const subscriptMap: { [key: string]: string } = {
+    '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+    '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎',
+    'a': 'ₐ', 'e': 'ₑ', 'h': 'ₕ', 'i': 'ᵢ', 'j': 'ⱼ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ', 'o': 'ₒ', 'p': 'ₚ', 'r': 'ᵣ', 's': 'ₛ', 't': 'ₜ', 'u': 'ᵤ', 'v': 'ᵥ', 'x': 'ₓ'
+  };
+
+  const convertToUnicodeMath = (text: string): string => {
+    let convertedText = text;
+
+    // Convert superscripts: x^2 -> x²
+    convertedText = convertedText.replace(/(\w|\))(\^)([0-9+\-=\(\)a-zA-Z]+)/g, (match, base, caret, exponent) => {
+      let unicodeExponent = '';
+      for (const char of exponent) {
+        unicodeExponent += superscriptMap[char] || char;
+      }
+      return base + unicodeExponent;
+    });
+
+    // Convert subscripts: x_2 -> x₂
+    convertedText = convertedText.replace(/(\w|\))(_)([0-9+\-=\(\) ]+)/g, (match, base, underscore, subscript) => {
+      let unicodeSubscript = '';
+      for (const char of subscript) {
+        unicodeSubscript += subscriptMap[char] || char;
+      }
+      return base + unicodeSubscript;
+    });
+
+    // Convert asterisk to multiplication sign
+    convertedText = convertedText.replace(/\*/g, '×');
+
+    // Convert forward slash to division sign
+    convertedText = convertedText.replace(/\//g, '÷');
+
+    return convertedText;
+  };
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setActiveInputRef(e.target);
+  };
+
+  const renderMath = (text: string) => {
+    // Preprocess the text to convert common notations to LaTeX
+    let latexText = text;
+    // Convert x^y to x^{y}
+    latexText = latexText.replace(/(\w+)\^(\w+)/g, '$1^{$2}');
+    // Convert squ(x) to \sqrt{x}
+    latexText = latexText.replace(/squ\(([^)]*)\)/g, '\\sqrt{$1}');
+    // Convert division like a/b to \frac{a}{b}
+    latexText = latexText.replace(/(\w+)\/(\w+)/g, '\\frac{$1}{$2}');
+
+    try {
+      return katex.renderToString(latexText, { throwOnError: false });
+    } catch (e) {
+      return text;
+    }
   };
 
   const insertTextAtCursor = (text: string) => {
@@ -138,15 +203,11 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const start = activeInputRef.selectionStart || 0;
       const end = activeInputRef.selectionEnd || 0;
       const currentValue = activeInputRef.value;
-      const newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
+      let newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
       
-      // Update the input value
-      activeInputRef.value = newValue;
-      
-      // Update cursor position
-      const newCursorPos = start + text.length;
-      activeInputRef.setSelectionRange(newCursorPos, newCursorPos);
-      
+      // Apply conversion to the new value before updating state
+      newValue = convertToUnicodeMath(newValue);
+
       // Find the question and option being edited
       let questionIndex = -1;
       let optionIndex = -1;
@@ -181,11 +242,18 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
   
         setQuestions(newQuestions);
-      }
 
-      // Trigger a re-render
-      activeInputRef.dispatchEvent(new Event('input', { bubbles: true }));
+        // Manually set cursor position after state update, if activeInputRef is still valid
+        // This might require a slight delay or a more robust approach for controlled components
+        // For now, keeping it simple as the primary goal is content display.
+        activeInputRef.setSelectionRange(start + text.length, start + text.length);
+      }
     }
+  };
+
+  const handleSymbolSelect = (symbol: string) => {
+    insertTextAtCursor(symbol);
+    setShowSymbolPicker(false);
   };
 
   const handleAddQuestion = () => {
@@ -214,7 +282,8 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const handleQuestionChange = (index: number, field: keyof QuizQuestion, value: any) => {
     const newQuestions = [...questions];
-    newQuestions[index] = { ...newQuestions[index], [field]: value };
+    const convertedValue = convertToUnicodeMath(String(value)); // Apply conversion, ensure value is string
+    newQuestions[index] = { ...newQuestions[index], [field]: convertedValue };
     setQuestions(newQuestions);
   };
 
@@ -307,7 +376,8 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const newQuestions = [...questions];
     const optionIndex = newQuestions[questionIndex].options.findIndex(opt => opt.id === optionId);
     if (optionIndex !== -1) {
-      newQuestions[questionIndex].options[optionIndex].text = value;
+      const convertedValue = convertToUnicodeMath(value); // Apply conversion
+      newQuestions[questionIndex].options[optionIndex].text = convertedValue;
       setQuestions(newQuestions);
     }
   };
@@ -427,6 +497,10 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 className="dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
+
+            <Button type="button" onClick={() => setShowSymbolPicker(!showSymbolPicker)} className="ml-2">
+              <Smile className="h-4 w-4" />
+            </Button>
             <div>
               <label className="block text-sm font-medium dark:text-gray-200 mb-1">Description</label>
               <Textarea
@@ -520,14 +594,16 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Input
+                <Textarea
                   id={`question_${question.id}`}
                   value={question.text}
                   onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
                   onFocus={handleInputFocus}
                   placeholder="Enter question text"
+                  rows={1}
                   className="flex-1 dark:bg-gray-700 dark:border-gray-600"
                 />
+
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -535,7 +611,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
-                    <SymbolPicker onSelect={insertTextAtCursor} />
+                    <SymbolPicker onSelect={handleSymbolSelect} />
                   </DialogContent>
                 </Dialog>
               </div>
@@ -571,14 +647,16 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 {question.options.map((option) => (
                   <div key={option.id} className="flex items-center space-x-2">
                     <span className="w-8 text-center">{option.id.toUpperCase()}</span>
-                    <Input
-                      id={`option_${question.id}_${option.id}`}
-                      value={option.text}
-                      onChange={(e) => handleOptionChange(qIndex, option.id, e.target.value)}
-                      onFocus={handleInputFocus}
-                      placeholder={`Option ${option.id.toUpperCase()}`}
-                      className="flex-1 dark:bg-gray-700 dark:border-gray-600"
-                    />
+                    <Textarea
+                  id={`option_${question.id}_${option.id}`}
+                  value={convertToUnicodeMath(option.text)}
+                  onChange={(e) => handleOptionChange(qIndex, option.id, e.target.value)}
+                  onFocus={handleInputFocus}
+                  placeholder={`Option ${option.id.toUpperCase()}`}
+                  rows={1}
+                  className="flex-1 dark:bg-gray-700 dark:border-gray-600"
+                />
+
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="icon">
@@ -627,6 +705,13 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           </div>
         ))}
+          {showSymbolPicker && (
+            <Dialog open={showSymbolPicker} onOpenChange={setShowSymbolPicker}>
+              <DialogContent className="sm:max-w-[600px]">
+                <SymbolPicker onSelect={handleSymbolSelect} />
+              </DialogContent>
+            </Dialog>
+          )}
         <div className="flex justify-end space-x-3 mt-6">
           <Button 
             type="button" 
