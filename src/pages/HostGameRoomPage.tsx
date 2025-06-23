@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,7 +15,7 @@ import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 import TrophyAnimation from "@/components/TrophyAnimation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { ref, update } from "firebase/database";
+import { ref, update, onValue, off } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
 
 const HostGameRoomPage: React.FC = () => {
@@ -28,6 +27,8 @@ const HostGameRoomPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true); // New loading state
   const { toast } = useToast();
   const cardRef = React.useRef<HTMLDivElement>(null);
+  const [emojis, setEmojis] = useState<{ id: string; emoji: string; playerId: string; timestamp: number }[]>([]);
+  const [animatedEmojis, setAnimatedEmojis] = useState([]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -66,6 +67,61 @@ const HostGameRoomPage: React.FC = () => {
       }
     }
   }, [activeGame, navigate]);
+
+  useEffect(() => {
+    if (!activeGame?.id) return;
+
+    const emojisRef = ref(db, `games/${activeGame.id}/emojis`);
+
+    const unsubscribe = onValue(emojisRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const loadedEmojis = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key]
+        }));
+        setEmojis(loadedEmojis);
+      } else {
+        setEmojis([]);
+      }
+    });
+
+    return () => {
+      off(emojisRef, 'value', unsubscribe);
+    };
+  }, [activeGame?.id]);
+
+  useEffect(() => {
+    if (!activeGame?.id) return;
+    const chatRef = ref(db, `games/${activeGame.id}/emojiChat`);
+    let lastId = null;
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const arr = Object.entries(data).map(([id, msg]) => (typeof msg === 'object' && msg !== null ? { ...msg, id } : { id }));
+      if (arr.length > 0) {
+        const last = arr[arr.length - 1];
+        // Type guard to ensure last has emoji, player, and avatar properties
+        if (
+          last &&
+          typeof last === "object" &&
+          "emoji" in last &&
+          "player" in last &&
+          "avatar" in last &&
+          lastId !== last.id
+        ) {
+          setAnimatedEmojis((prev) => [
+            ...prev,
+            { emoji: (last as any).emoji, player: (last as any).player, avatar: (last as any).avatar, id: last.id }
+          ]);
+          setTimeout(() => {
+            setAnimatedEmojis((prev) => prev.filter(e => e.id !== last.id));
+          }, 5000); // match your animation duration
+          lastId = last.id;
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [activeGame?.id]);
 
   const handleManualRefresh = () => {
     setConnectionStatus("connecting");
@@ -305,6 +361,108 @@ const HostGameRoomPage: React.FC = () => {
         </main>
         <CreatorAttribution />
       </div>
+      {/* Emoji Fall Animation CSS */}
+      <style>{`
+.emoji-fall-cool {
+  position: fixed;
+  top: -40px;
+  font-size: 1.25rem;
+  z-index: 9999;
+  pointer-events: none;
+  text-align: center;
+  width: 48px;
+  margin-left: -24px;
+  filter: drop-shadow(0 2px 8px #0008);
+  animation: emojiCoolFall 5s cubic-bezier(.4,1.5,.5,1) forwards; /* Slower */
+  opacity: 0.95;
+}
+        }
+        .emoji-fall-cool {
+          position: fixed;
+          top: -60px;
+          font-size: 2.8rem;
+          z-index: 9999;
+          pointer-events: none;
+          text-align: center;
+          width: 120px;
+          margin-left: -60px;
+          filter: drop-shadow(0 4px 16px #0008);
+          animation: emojiCoolFall 2.8s cubic-bezier(.4,1.5,.5,1) forwards;
+          opacity: 0.95;
+        }
+        .emoji-bounce-spin {
+          display: inline-block;
+          animation: emojiBounceSpin 1.2s cubic-bezier(.68,-0.55,.27,1.55) 1;
+          filter: drop-shadow(0 0 12px #fff8) drop-shadow(0 0 24px #a5b4fc);
+        }
+        .emoji-sender {
+          font-size: 1.1rem;
+          color: #fff;
+          text-shadow: 0 2px 8px #000a, 0 0 2px #a5b4fc;
+          font-weight: bold;
+          letter-spacing: 0.5px;
+          margin-top: 0.2em;
+          animation: emojiSenderFade 2.2s ease;
+        }
+        @keyframes emojiCoolFall {
+          0% {
+            transform: translateY(-60px) scale(1.3) rotate(-20deg);
+            opacity: 0.7;
+            filter: blur(2px) drop-shadow(0 0 16px #a5b4fc);
+          }
+          20% {
+            opacity: 1;
+            filter: blur(0px) drop-shadow(0 0 24px #a5b4fc);
+          }
+          60% {
+            transform: translateY(60vh) scale(1.7) rotate(12deg);
+            opacity: 1;
+            filter: blur(0px) drop-shadow(0 0 32px #a5b4fc);
+          }
+          90% {
+            filter: blur(1px) drop-shadow(0 0 8px #a5b4fc);
+          }
+          100% {
+            transform: translateY(85vh) scale(2.1) rotate(24deg);
+            opacity: 0;
+            filter: blur(4px) drop-shadow(0 0 0px #a5b4fc);
+          }
+        }
+        @keyframes emojiBounceSpin {
+          0% { transform: scale(0.7) rotate(-40deg);}
+          40% { transform: scale(1.3) rotate(20deg);}
+          70% { transform: scale(1.1) rotate(-10deg);}
+          100% { transform: scale(1) rotate(0);}
+        }
+        @keyframes emojiSenderFade {
+          0% { opacity: 0; transform: translateY(-10px);}
+          20% { opacity: 1; transform: translateY(0);}
+          90% { opacity: 1;}
+          100% { opacity: 0; transform: translateY(10px);}
+        }
+      `}</style>
+      {animatedEmojis.map((item) => (
+        <div
+          key={item.id}
+          className="emoji-fall-cool"
+          style={{
+            left: `${30 + Math.random() * 40}%`,
+            animationDuration: "5s",
+          }}
+        >
+          <div className="emoji-bounce-spin" style={{ fontSize: "1.25rem" }}>{item.emoji}</div>
+          <div className="emoji-sender flex items-center justify-center gap-2">
+            {item.avatar && (
+              <img
+                src={item.avatar}
+                alt={item.player}
+                className="w-5 h-5 rounded-full border border-white shadow"
+              />
+            )}
+            <span style={{ fontSize: "0.95rem" }}>{item.player}</span>
+          </div>
+        </div>
+      ))}
     </BackgroundContainer>
   );
 };

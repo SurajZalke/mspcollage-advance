@@ -119,7 +119,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
             {topPlayers[0] && (
               <motion.div
                 key={topPlayers[0].player_id}
-                className="relative flex flex-col items-center p-6 rounded-xl shadow-xl bg-gradient-to-r from-yellow-400 to-orange-500 border-4 border-yellow-200 z-50 w-64 h-64 justify-center"
+                className="relative flex flex-col items-center p-6 rounded-xl shadow-xl bg-gradient-to-r from-yellow-400 to-orange-500 border-4 border-yellow-200 z-50 w-48 h-48 sm:w-64 sm:h-64 justify-center"
                 initial={{ opacity: 0, y: -100, scale: 0.5 }}
                 animate={{
                   opacity: 1, y: 0, scale: 1,
@@ -132,7 +132,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
                   animate={{ opacity: 1, scale: 1.2, rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 0.8, ease: "easeOut", repeat: Infinity, repeatType: "reverse", repeatDelay: 1 }}
                 >👑</motion.span>
-                <Avatar className="w-24 h-24 border-4 border-white shadow-lg mb-2">
+                <Avatar className="w-16 h-16 sm:w-24 sm:h-24 border-4 border-white shadow-lg mb-2">
                   <AvatarImage src={topPlayers[0].avatar || ''} />
                   <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-4xl font-bold">
                     {typeof topPlayers[0].nickname === 'string' && topPlayers[0].nickname.length > 0
@@ -140,8 +140,8 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
                       : ''}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-3xl font-extrabold text-white drop-shadow-md text-center">{topPlayers[0].nickname}</span>
-                <span className="text-xl text-white text-opacity-90">Score: {topPlayers[0].score}</span>
+                <span className="text-xl sm:text-3xl font-extrabold text-white drop-shadow-md text-center">{topPlayers[0].nickname}</span>
+                <span className="text-base sm:text-xl text-white text-opacity-90">Score: {topPlayers[0].score}</span>
               </motion.div>
             )}
           </div>
@@ -151,7 +151,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
             {topPlayers[1] && (
               <motion.div
                 key={topPlayers[1].player_id}
-                className="relative flex flex-col items-center p-4 rounded-xl shadow-xl bg-gradient-to-r from-gray-300 to-gray-400 border-3 border-gray-200 z-40 w-56 h-56 justify-center"
+                className="relative flex flex-col items-center p-4 rounded-xl shadow-xl bg-gradient-to-r from-gray-300 to-gray-400 border-3 border-gray-200 z-40 w-40 h-40 sm:w-56 sm:h-56 justify-center"
                 initial={{ opacity: 0, y: -100, scale: 0.5 }}
                 animate={{
                   opacity: 1, y: 0, scale: 1,
@@ -164,7 +164,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
                   animate={{ opacity: 1, scale: 1.2, rotate: [0, -10, 10, 0] }}
                   transition={{ duration: 0.6, ease: "easeOut", repeat: Infinity, repeatType: "reverse", repeatDelay: 0.8 }}
                 >🏆</motion.span>
-                <Avatar className="w-20 h-20 border-3 border-white shadow-lg mb-2">
+                <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-3 border-white shadow-lg mb-2">
                   <AvatarImage src={topPlayers[1].avatar || ''} />
                   <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-3xl font-bold">
                     {typeof topPlayers[1].nickname === 'string' && topPlayers[1].nickname.length > 0
@@ -172,8 +172,8 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
                       : ''}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-2xl font-extrabold text-white drop-shadow-md text-center">{topPlayers[1].nickname}</span>
-                <span className="text-lg text-white text-opacity-90">Score: {topPlayers[1].score}</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-md text-center">{topPlayers[1].nickname}</span>
+                <span className="text-base sm:text-lg text-white text-opacity-90">Score: {topPlayers[1].score}</span>
               </motion.div>
             )}
 
@@ -181,7 +181,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
             {topPlayers[2] && (
               <motion.div
                 key={topPlayers[2].player_id}
-                className="relative flex flex-col items-center p-4 rounded-xl shadow-xl bg-gradient-to-r from-amber-600 to-amber-700 border-3 border-amber-500 z-30 w-56 h-56 justify-center"
+                className="relative flex flex-col items-center p-4 rounded-xl shadow-xl bg-gradient-to-r from-amber-600 to-amber-700 border-3 border-amber-500 z-30 w-40 h-40 sm:w-56 sm:h-56 justify-center"
                 initial={{ opacity: 0, y: -100, scale: 0.5 }}
                 animate={{
                   opacity: 1, y: 0, scale: 1,
@@ -194,7 +194,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
                   animate={{ opacity: 1, y: 0, rotate: [0, 20, -20, 0] }}
                   transition={{ duration: 0.7, ease: "easeOut", repeat: Infinity, repeatType: "reverse", repeatDelay: 0.6 }}
                 >🚀</motion.span>
-                <Avatar className="w-20 h-20 border-3 border-white shadow-lg mb-2">
+                <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-3 border-white shadow-lg mb-2">
                   <AvatarImage src={topPlayers[2].avatar || ''} />
                   <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-3xl font-bold">
                     {typeof topPlayers[2].nickname === 'string' && topPlayers[2].nickname.length > 0
@@ -202,8 +202,8 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
                       : ''}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-2xl font-extrabold text-white drop-shadow-md text-center">{topPlayers[2].nickname}</span>
-                <span className="text-lg text-white text-opacity-90">Score: {topPlayers[2].score}</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-md text-center">{topPlayers[2].nickname}</span>
+                <span className="text-base sm:text-lg text-white text-opacity-90">Score: {topPlayers[2].score}</span>
               </motion.div>
             )}
           </div>
@@ -249,7 +249,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
         <div className="mt-12 w-full max-w-7xl bg-[#1f2747] rounded-lg shadow-xl p-8">
           <h2 className="text-center text-4xl font-extrabold text-white mb-8">All Player Ranks</h2>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full text-sm sm:text-base divide-y divide-gray-700">
               <thead className="bg-[#2a3356]">
                 <tr>
                   <th scope="col" className="px-8 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">Rank</th>

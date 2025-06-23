@@ -39,6 +39,7 @@ export const useGameActions = (
       await update(gameRef, {
         ...activeGame,
         status: 'ended',
+        endedAt: new Date().toISOString(),
       });
 
       // No direct state update here, GameContext's onSnapshot will handle it
@@ -168,6 +169,40 @@ export const useGameActions = (
     }
   }, [activeGame, currentQuiz, endGame]);
 
+  const deductPlayerScore = useCallback(async (playerId: string, pointsToDeduct: number) => {
+    if (!activeGame) return;
+
+    const playerRef = ref(db, `games/${activeGame.id}/players/${playerId}`);
+    try {
+      const snapshot = await getDatabaseData(playerRef);
+      if (snapshot.exists()) {
+        const currentPlayer = snapshot.val() as Player;
+        const newScore = Math.max(0, currentPlayer.score - pointsToDeduct);
+        await update(playerRef, { score: newScore });
+        console.log(`Deducted ${pointsToDeduct} points from player ${playerId}. New score: ${newScore}`);
+      }
+    } catch (error) {
+      console.error('Error deducting player score:', error);
+    }
+  }, [activeGame]);
+
+  const removePlayer = useCallback(async (playerId: string) => {
+    if (!activeGame) return;
+
+    const gameRef = ref(db, `games/${activeGame.id}`);
+    try {
+      const snapshot = await getDatabaseData(gameRef);
+      if (snapshot.exists()) {
+        const gameData = snapshot.val() as GameRoom;
+        const updatedPlayers = gameData.players.filter(player => player.player_id !== playerId);
+        await update(gameRef, { players: updatedPlayers });
+        console.log(`Player ${playerId} removed from game ${activeGame.id}`);
+      }
+    } catch (error) {
+      console.error('Error removing player:', error);
+    }
+  }, [activeGame]);
+
   const setCorrectAnswer = useCallback(async (optionId: string, questionId: string | undefined) => {
     if (!activeGame || !currentQuestion || !currentPlayer) return;
 
@@ -272,6 +307,8 @@ export const useGameActions = (
     endGame,
     submitAnswer,
     nextQuestion,
-    setCorrectAnswer
+    setCorrectAnswer,
+    deductPlayerScore,
+    removePlayer
   };
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -556,8 +555,16 @@ setQuizzes(sampleQuizzes.map(quiz => ({
                       {gameHistory.map((game) => (
                         <tr key={game.id} className="border-b dark:border-gray-700">
                           <td className="p-4">{game.quizTitle}</td>
-                          <td className="p-4">{new Date(game.startedAt).toLocaleString()}</td>
-                          <td className="p-4">{game.endedAt ? new Date(game.endedAt).toLocaleString() : 'In Progress'}</td>
+                          <td className="p-4">
+  {game.startedAt && !isNaN(new Date(game.startedAt).getTime())
+    ? new Date(game.startedAt).toLocaleString()
+    : 'Not Started'}
+</td>
+                          <td className="p-4">
+  {game.endedAt && !isNaN(new Date(game.endedAt).getTime())
+    ? new Date(game.endedAt).toLocaleString()
+    : 'In Progress'}
+</td>
                           <td className="p-4">{game.players}</td>
                           <td className="p-4">{game.averageScore}</td>
                         </tr>
@@ -575,6 +582,15 @@ setQuizzes(sampleQuizzes.map(quiz => ({
         </Tabs>
       </main>
       </div>
+      <footer className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md py-4">
+        <div className="container mx-auto text-center text-gray-600 dark:text-gray-300">
+          &copy; {new Date().getFullYear()} QuizMaster. All rights reserved.
+        </div>
+        <Avatar className="w-8 h-8 mx-auto mt-2">
+          <AvatarImage src={currentUser.user_metadata?.avatar_url || ''} />
+          <AvatarFallback>{currentUser.user_metadata?.name?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+        </Avatar>
+      </footer>
     </BackgroundContainer>
   );
 };

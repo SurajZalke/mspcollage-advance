@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { GameRoom, Player, Quiz, Question } from '@/types';
 import { generateGameCode } from '@/utils/gameUtils';
@@ -157,7 +156,8 @@ export const useGameState = () => {
             avatar: currentUser?.user_metadata?.avatar_url || user.photoURL || null
           },
         },
-        startTime: null,
+        startedAt: new Date().toISOString(),
+        endedAt: null,
         endTime: null,
         scores: {},
         answers: {}
@@ -207,6 +207,36 @@ export const useGameState = () => {
     }
   }, [setActiveGame, setCurrentQuiz, setIsHost, setCurrentPlayer, toast]);
 
+  const endGame = async (gameId: string) => {
+    try {
+      await update(ref(db, `games/${gameId}`), {
+        endedAt: new Date().toISOString(), // Set end time here
+      });
+
+      // Optionally, you can also update the local state or perform other actions
+      setActiveGame(prevGame => {
+        if (!prevGame) return null;
+        return {
+          ...prevGame,
+          endedAt: new Date().toISOString(),
+          status: 'ended',
+        };
+      });
+
+      toast({
+        title: 'Game Ended',
+        description: 'The game has been successfully ended.',
+      });
+    } catch (error) {
+      console.error('Error ending game:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to end the game. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return {
     activeGame,
     setActiveGame,
@@ -224,6 +254,7 @@ export const useGameState = () => {
     questionEnded,
     setQuestionEnded,
     serverTimeOffset,
-    createGame
+    createGame,
+    endGame
   };
 };

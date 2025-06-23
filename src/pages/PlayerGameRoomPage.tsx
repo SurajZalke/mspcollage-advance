@@ -15,9 +15,13 @@ import WaitingRoom from "@/components/WaitingRoom";
 import CreatorAttribution from "@/components/CreatorAttribution";
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import LeaderboardDisplay from "@/components/LeaderboardDisplay";
+// First install emoji-mart: npm install emoji-mart @emoji-mart/data @emoji-mart/react
+import Picker from "@emoji-mart/react";
+import { ref, push, onValue } from "firebase/database";
+import { db } from "@/lib/firebaseConfig";
 
 const PlayerGameRoomPage: React.FC = () => {
-  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame, questionStartTime, questionEnded } = useGame();
+  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame, questionStartTime, questionEnded, deductPlayerScore, removePlayer } = useGame();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
@@ -115,6 +119,7 @@ const PlayerGameRoomPage: React.FC = () => {
   }, [refreshGameState, pollingActive]);
   
   const [gameStartedToastShown, setGameStartedToastShown] = useState(false);
+  const [tabSwitchPenaltyApplied, setTabSwitchPenaltyApplied] = useState(false);
 
   // Handle game status transitions
   useEffect(() => {
@@ -127,6 +132,40 @@ const PlayerGameRoomPage: React.FC = () => {
       setGameStartedToastShown(true);
     }
   }, [activeGame?.status, currentQuestion, toast, gameStartedToastShown]);
+
+  // Effect to handle tab switching penalty
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && activeGame?.status === 'active') {
+        if (!tabSwitchPenaltyApplied) {
+          setTabSwitchPenaltyApplied(true);
+          if (currentPlayer) {
+            deductPlayerScore(currentPlayer.player_id, 4);
+          }
+          toast({
+            title: "Warning!",
+            description: "You switched tabs during the game. 4 points have been deducted.",
+            variant: "destructive",
+          });
+        } else if (currentPlayer) {
+          deductPlayerScore(currentPlayer.player_id, 4);
+          removePlayer(currentPlayer.player_id);
+          toast({
+            title: "Removed from Game",
+            description: "You have been removed from the game for repeatedly switching tabs.",
+            variant: "destructive",
+          });
+          navigate('/join'); // Redirect player out of the game
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [activeGame?.status, currentPlayer, toast, tabSwitchPenaltyApplied]);
   
   const handleAnswerSubmit = (questionId: string, optionId: string) => {
 
@@ -146,11 +185,18 @@ const PlayerGameRoomPage: React.FC = () => {
   };
   
   const handleLeaveGame = () => {
-    navigate("/");
-    toast({
-      title: "Left game",
-      description: "You've successfully left the game",
-    });
+    const leaveGameConfirmation = window.confirm("Are you sure you want to leave the game?");
+    if (leaveGameConfirmation) {
+      <button onClick={() => removePlayer(currentPlayer.player_id)}>
+        Leave Game
+      </button>
+      removePlayer(currentPlayer.player_id);
+      navigate("/");
+      toast({
+        title: "Left game",
+        description: "You've successfully left the game",
+      });
+    }
   };
   
   const handleManualRefresh = () => {
@@ -171,6 +217,81 @@ const PlayerGameRoomPage: React.FC = () => {
     return answers.some(a => a.questionId === currentQuestion.id);
   };
   
+  // --- Emoji Chat State ---
+  const [emojiMessage, setEmojiMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiChat, setEmojiChat] = useState<any[]>([]);
+  const [animatedEmojis, setAnimatedEmojis] = useState<{
+    avatar: any;emoji: string, player: string, id: string
+}[]>([]);
+  const [emojiBan, setEmojiBan] = useState(false);
+  const [emojiTimestamps, setEmojiTimestamps] = useState<number[]>([]);
+
+  // Listen for emoji chat updates
+  useEffect(() => {
+    if (!activeGame?.id) return;
+    const chatRef = ref(db, `games/${activeGame.id}/emojiChat`);
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      setEmojiChat(Object.values(data));
+    });
+    return () => unsubscribe();
+  }, [activeGame?.id]);
+
+  // Send emoji to Firebase
+  const handleSendEmoji = async () => {
+    if (emojiBan || !emojiMessage || !activeGame?.id || !currentPlayer) return;
+
+    // Spam protection: max 5 emojis in 10 seconds
+    const now = Date.now();
+    const recent = emojiTimestamps.filter(ts => now - ts < 10000);
+    if (recent.length >= 5) {
+      setEmojiBan(true);
+      setTimeout(() => setEmojiBan(false), 60000); // Ban for 1 minute
+      setEmojiTimestamps([]);
+      toast({
+        title: "Emoji Ban",
+        description: "You sent too many emojis! Wait 1 minute before sending more.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEmojiTimestamps([...recent, now]);
+
+    await push(ref(db, `games/${activeGame.id}/emojiChat`), {
+      emoji: emojiMessage,
+      player: currentPlayer.nickname,
+      avatar: currentPlayer.avatar || "",
+      timestamp: now,
+    });
+    setEmojiMessage("");
+  };
+
+  // Listen for new emoji messages and trigger animation
+  useEffect(() => {
+    if (!activeGame?.id) return;
+    const chatRef = ref(db, `games/${activeGame.id}/emojiChat`);
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const arr = Object.entries(data).map(([id, msg]: any) => ({ ...msg, id }));
+      setEmojiChat(arr);
+
+      // Animate only the latest emoji
+      if (arr.length > 0) {
+        const last = arr[arr.length - 1];
+        setAnimatedEmojis((prev) => [
+          ...prev,
+          { avatar: last.avatar, emoji: last.emoji, player: last.player, id: last.id }
+        ]);
+        // Remove after animation duration (e.g., 2.5s)
+        setTimeout(() => {
+          setAnimatedEmojis((prev) => prev.filter(e => e.id !== last.id));
+        }, 2500);
+      }
+    });
+    return () => unsubscribe();
+  }, [activeGame?.id]);
+
   const renderContent = () => {
     const gameIdFromUrl = searchParams.get("gameId");
 
@@ -310,7 +431,7 @@ const PlayerGameRoomPage: React.FC = () => {
           {hasAnsweredCurrentQuestion() && (
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow text-center">
               <p className="text-gray-700 dark:text-gray-300">
-                Waiting for other players and the host to continue...
+               
               </p>
               <div className="flex justify-center space-x-2 mt-2">
                 <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
@@ -365,7 +486,150 @@ const PlayerGameRoomPage: React.FC = () => {
           {renderContent()}
         </div>
       </div>
+
+      {/* Emoji Sharing UI */}
+      <div className="mt-4 mb-2">
+        <div className="flex items-center">
+          <button
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="mr-2 px-2 py-1 rounded bg-gray-200"
+            title="Pick Emoji"
+          >
+            😊
+          </button>
+          {showEmojiPicker && (
+            <div className="absolute z-50">
+              <Picker
+                onEmojiSelect={emoji => {
+                  // emoji object has .native in emoji-mart v5+
+                  setEmojiMessage((emoji as any).native);
+                  setShowEmojiPicker(false);
+                }}
+                theme="dark"
+              />
+            </div>
+          )}
+          <input
+            type="text"
+            value={emojiMessage}
+            onChange={e => setEmojiMessage(e.target.value)}
+            placeholder="Send emoji..."
+            className="border rounded px-2 py-1 w-24"
+          />
+          <button
+            onClick={handleSendEmoji}
+            className="ml-2 px-3 py-1 bg-purple-500 text-white rounded"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+
+{animatedEmojis.map((item) => (
+  <div
+    key={item.id}
+    className="emoji-fall-cool"
+    style={{
+      left: `${30 + Math.random() * 40}%`,
+      animationDuration: "5s", // Slower animation (was 2.8s)
+    }}
+  >
+    <div className="emoji-bounce-spin" style={{ fontSize: "1.25rem" }}>{item.emoji}</div>
+    <div className="emoji-sender flex items-center justify-center gap-2">
+      {item.avatar && (
+        <img
+          src={item.avatar}
+          alt={item.player}
+          className="w-5 h-5 rounded-full border border-white shadow"
+        />
+      )}
+      <span style={{ fontSize: "0.95rem" }}>{item.player}</span>
+    </div>
+  </div>
+))}
+
+      {/* Emoji Fall Animation CSS */}
+      <style>{`
+.emoji-fall-cool {
+  position: fixed;
+  top: -40px;
+  font-size: 1.25rem;
+  z-index: 9999;
+  pointer-events: none;
+  text-align: center;
+  width: 48px;
+  margin-left: -24px;
+  filter: drop-shadow(0 2px 8px #0008);
+  animation: emojiCoolFall 5s cubic-bezier(.4,1.5,.5,1) forwards; /* Slower */
+  opacity: 0.95;
+}
+        }
+        .emoji-fall-cool {
+          position: fixed;
+          top: -60px;
+          font-size: 2.8rem;
+          z-index: 9999;
+          pointer-events: none;
+          text-align: center;
+          width: 120px;
+          margin-left: -60px;
+          filter: drop-shadow(0 4px 16px #0008);
+          animation: emojiCoolFall 2.8s cubic-bezier(.4,1.5,.5,1) forwards;
+          opacity: 0.95;
+        }
+        .emoji-bounce-spin {
+          display: inline-block;
+          animation: emojiBounceSpin 1.2s cubic-bezier(.68,-0.55,.27,1.55) 1;
+          filter: drop-shadow(0 0 12px #fff8) drop-shadow(0 0 24px #a5b4fc);
+        }
+        .emoji-sender {
+          font-size: 1.1rem;
+          color: #fff;
+          text-shadow: 0 2px 8px #000a, 0 0 2px #a5b4fc;
+          font-weight: bold;
+          letter-spacing: 0.5px;
+          margin-top: 0.2em;
+          animation: emojiSenderFade 2.2s ease;
+        }
+        @keyframes emojiCoolFall {
+          0% {
+            transform: translateY(-60px) scale(1.3) rotate(-20deg);
+            opacity: 0.7;
+            filter: blur(2px) drop-shadow(0 0 16px #a5b4fc);
+          }
+          20% {
+            opacity: 1;
+            filter: blur(0px) drop-shadow(0 0 24px #a5b4fc);
+          }
+          60% {
+            transform: translateY(60vh) scale(1.7) rotate(12deg);
+            opacity: 1;
+            filter: blur(0px) drop-shadow(0 0 32px #a5b4fc);
+          }
+          90% {
+            filter: blur(1px) drop-shadow(0 0 8px #a5b4fc);
+          }
+          100% {
+            transform: translateY(85vh) scale(2.1) rotate(24deg);
+            opacity: 0;
+            filter: blur(4px) drop-shadow(0 0 0px #a5b4fc);
+          }
+        }
+        @keyframes emojiBounceSpin {
+          0% { transform: scale(0.7) rotate(-40deg);}
+          40% { transform: scale(1.3) rotate(20deg);}
+          70% { transform: scale(1.1) rotate(-10deg);}
+          100% { transform: scale(1) rotate(0);}
+        }
+        @keyframes emojiSenderFade {
+          0% { opacity: 0; transform: translateY(-10px);}
+          20% { opacity: 1; transform: translateY(0);}
+          90% { opacity: 1;}
+          100% { opacity: 0; transform: translateY(10px);}
+        }
+      `}</style>
     </BackgroundContainer>
   );
 };
+
 export default PlayerGameRoomPage;

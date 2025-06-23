@@ -156,19 +156,4 @@
 /* Top 3 glowing borders */
 .leaderboard-top-glow { position: relative; z-index: 1; }
 .leaderboard-top-glow-0 { box-shadow: 0 0 24px 6px #FFD700, 0 0 48px 12px #fff70044; }
-.leaderboard-top-glow-1 { box-shadow: 0 0 18px 4px #C0C0C0, 0 0 32px 8px #b0b0b044; }
-.leaderboard-top-glow-2 { box-shadow: 0 0 14px 3px #CD7F32, 0 0 24px 6px #cd7f3244; }
-
-/* 1st place shimmer */
-.leaderboard-shimmer {
-  background: linear-gradient(90deg, #fff7b2 0%, #fff 50%, #fff7b2 100%);
-  background-size: 200% 100%;
-  animation: shimmerMove 2.2s linear infinite;
-  -webkit-background-clip: padding-box;
-  background-clip: padding-box;
-  -webkit-text-fill-color: inherit;
-}
-@keyframes shimmerMove {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
+.leaderboard-top-glow-1 { box-shadow: 0 0 18px 4px #C0C0C0, 0 0 32px 8px #b0b0b0; }

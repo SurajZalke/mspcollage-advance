@@ -177,7 +177,7 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
   const displayScores = shouldShowLeaderboard ? sortedPlayers.map(p => p.score) : frozenScores;
 
   return (
-    <Card className="quiz-card p-0 border border-glow-purple/30 shadow-glow-purple rounded-2xl bg-white/90 dark:bg-gray-900/80 max-w-2xl mx-auto">
+    <Card className="quiz-card p-0 border border-glow-purple/30 shadow-glow-purple rounded-2xl bg-white/90 dark:bg-gray-900/80 max-w-full md:max-w-2xl mx-auto px-2 sm:px-4">
       <CardHeader className="bg-[#232b4a] dark:bg-[#232b4a] rounded-t-2xl px-6 py-4 border-b border-glow-purple/20">
         <CardTitle className="text-3xl font-extrabold text-white text-center">Leaderboard</CardTitle>
         {markingType && (

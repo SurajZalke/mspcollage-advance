@@ -34,6 +34,8 @@ interface GameContextType {
   refreshGameState: (gameId?: string, playerId?: string) => Promise<void>;
   getAvailableGameCodes: () => Promise<string[]>;
   setCorrectAnswer: (questionId: string, correctOption: string) => Promise<void>;
+  deductPlayerScore: (playerId: string, pointsToDeduct: number) => Promise<void>;
+  removePlayer: (playerId: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -97,7 +99,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     endGame,
     submitAnswer,
     nextQuestion,
-    setCorrectAnswer
+    setCorrectAnswer,
+    deductPlayerScore,
+    removePlayer
   } = useGameActions(activeGame, setActiveGame, currentPlayer, currentQuestion, currentQuiz, questionStartTime, serverTimeOffset);
 
   const {
@@ -446,7 +450,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <GameContext.Provider value={{ ...value, serverTimeOffset } as GameContextType}>
+    <GameContext.Provider value={{ ...value, serverTimeOffset, deductPlayerScore, removePlayer } as GameContextType}>
       {children}
     </GameContext.Provider>
   );
