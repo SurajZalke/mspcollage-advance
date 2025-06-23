@@ -22,7 +22,9 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
   const [animateRows, setAnimateRows] = useState<{[id: string]: 'up'|'down'|null}>({});
   const prevPlayersRef = useRef<Player[]>(players);
 
-  const allPlayers = players.map(player => ({
+  // Extend Player with isHost for local use
+  type PlayerWithHost = Player & { isHost: boolean };
+  const allPlayers: PlayerWithHost[] = players.map(player => ({
     ...player,
     isHost: player.player_id === activeQuiz?.createdBy
   }));
@@ -140,13 +142,18 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
   const shouldShowLeaderboard = showScores && hasHostSubmitted;
 
   // Store the last revealed sortedPlayers and scores for freezing
-  const [frozenPlayers, setFrozenPlayers] = useState(sortedPlayers);
-  const [frozenScores, setFrozenScores] = useState(sortedPlayers.map(p => p.score));
+  const [frozenPlayers, setFrozenPlayers] = useState<Player[]>([]);
+  const [frozenScores, setFrozenScores] = useState<number[]>([]);
+  const hasFrozenRef = useRef(false);
 
   useEffect(() => {
-    if (shouldShowLeaderboard) {
+    if (shouldShowLeaderboard && !hasFrozenRef.current) {
       setFrozenPlayers(sortedPlayers);
       setFrozenScores(sortedPlayers.map(p => p.score));
+      hasFrozenRef.current = true;
+    }
+    if (!shouldShowLeaderboard) {
+      hasFrozenRef.current = false;
     }
   }, [shouldShowLeaderboard, sortedPlayers]);
 
@@ -204,8 +211,10 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                 </tr>
               ) : (
                 displayPlayers.map((player, index) => {
-                  const streak = getStreak(player);
-                  const animate = shouldShowLeaderboard ? animateRows[player.player_id] : null;
+                  // Cast player to PlayerWithHost to access isHost
+                  const playerWithHost = player as Player & { isHost?: boolean };
+                  const streak = getStreak(playerWithHost);
+                  const animate = shouldShowLeaderboard ? animateRows[playerWithHost.player_id] : null;
                   let streakNameClass = '';
                   let streakBadge = null;
                   let streakEffect = null;
@@ -237,25 +246,25 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                   const shimmer = shouldShowLeaderboard && index === 0 ? 'leaderboard-shimmer' : '';
                   return (
                     <tr
-                      key={player.player_id}
+                      key={playerWithHost.player_id}
                       className={`bg-[#232b4a] hover:bg-[#323c64] transition-all duration-500 ${rowAnim} ${topGlow} ${shimmer}`}
                     >
                       <td className="px-6 py-4 font-bold text-lg text-indigo-300 align-middle">{index + 1}</td>
                       <td className="px-6 py-4 align-middle">
                         <div className="flex items-center gap-3">
                           <Avatar className="w-9 h-9 border-2 border-gray-700 shadow-sm">
-                            <AvatarImage src={player.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${player.nickname}`} />
+                            <AvatarImage src={playerWithHost.avatar || `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${playerWithHost.nickname}`} />
                             <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white">
-                              {typeof player.nickname === 'string' && player.nickname.length > 0 
-                                ? player.nickname.charAt(0).toUpperCase() 
+                              {typeof playerWithHost.nickname === 'string' && playerWithHost.nickname.length > 0 
+                                ? playerWithHost.nickname.charAt(0).toUpperCase() 
                                 : '?'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className={`font-semibold text-gray-200 transition-all duration-500 ${streakNameClass}`}>{player.nickname}</span>
+                          <span className={`font-semibold text-gray-200 transition-all duration-500 ${streakNameClass}`}>{playerWithHost.nickname}</span>
                           {streakBadge}
                           {streakEffect}
                           {getRankIcon(index)}
-                          {player.isHost && (
+                          {playerWithHost.isHost && (
                             <span className="text-xs bg-purple-700 text-white px-3 py-1 rounded-full font-medium ml-2">Host</span>
                           )}
                         </div>

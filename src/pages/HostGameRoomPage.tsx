@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGame } from "@/contexts/GameContext";
@@ -18,6 +18,8 @@ import { ArrowLeft } from "lucide-react";
 import { ref, update, onValue, off } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
 
+const warningSound = new Audio('/sounds/warning.mp3');
+
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
   const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState, setCorrectAnswer, submitAnswer } = useGame();
@@ -29,6 +31,7 @@ const HostGameRoomPage: React.FC = () => {
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [emojis, setEmojis] = useState<{ id: string; emoji: string; playerId: string; timestamp: number }[]>([]);
   const [animatedEmojis, setAnimatedEmojis] = useState([]);
+  const playedRef = useRef(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -177,6 +180,19 @@ const HostGameRoomPage: React.FC = () => {
       description: "The correct answer has been recorded and revealed",
     });
   };
+
+  // Add a state for timeLeft
+  const [timeLeft, setTimeLeft] = useState<number>(30); // Default to 30 seconds or appropriate value
+
+  useEffect(() => {
+    if (timeLeft <= 10 && !playedRef.current) {
+      warningSound.play();
+      playedRef.current = true;
+    }
+    if (timeLeft > 10) {
+      playedRef.current = false;
+    }
+  }, [timeLeft]);
 
   if (!currentUser || isLoading) {
     return (

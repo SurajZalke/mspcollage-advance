@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Player, Quiz } from "@/types";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,7 +10,7 @@ import confetti from 'canvas-confetti';
 
 interface LeaderAnimationPageProps {
   // This component will likely receive player data and quiz data
-  // For now, we'll assume it gets it from location state or props
+  // For now, we'll assume it gets it from location state or prop
 }
 
 export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
@@ -25,6 +25,9 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
   const [isHost, setIsHost] = useState(false);
 
   const [showConfetti, setShowConfetti] = useState(false);
+
+  const mrDevSound = new Audio('/sounds/mrdeveloper.mp3');
+  const playedRef = useRef(false);
 
   useEffect(() => {
     if (location.state && location.state.players && location.state.activeQuiz && location.state.currentQuestionIndex !== undefined && location.state.isHost !== undefined) {
@@ -103,6 +106,19 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
     const totalQuestions = activeQuiz?.questions.length || 0;
     return `${correctAnswers} / ${totalQuestions}`;
   };
+
+  useEffect(() => {
+    if (
+      topPlayers[0]?.nickname === 'Mr.Developer' &&
+      !playedRef.current
+    ) {
+      mrDevSound.play();
+      playedRef.current = true;
+    }
+    if (topPlayers[0]?.nickname !== 'Mr.Developer') {
+      playedRef.current = false;
+    }
+  }, [topPlayers]);
 
   if (allSortedPlayers.length === 0) { // Check allSortedPlayers for loading state
     return <div className="flex items-center justify-center min-h-screen text-white text-2xl">Loading Leaderboard...</div>;

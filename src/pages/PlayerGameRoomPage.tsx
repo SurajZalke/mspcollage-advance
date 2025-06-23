@@ -20,6 +20,27 @@ import Picker from "@emoji-mart/react";
 import { ref, push, onValue } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
 
+const warningSound = new Audio('/sounds/warning.mp3');
+warningSound.preload = "auto";
+
+const useAudio = (url: string) => {
+  const [audio] = useState(() => new Audio(url));
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const handleCanPlayThrough = () => setLoaded(true);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
+    audio.load(); // Explicitly load the audio
+
+    return () => {
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
+    };
+  }, [audio]);
+
+  return { audio, loaded };
+};
+
+
 const PlayerGameRoomPage: React.FC = () => {
   const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame, questionStartTime, questionEnded, deductPlayerScore, removePlayer } = useGame();
   const navigate = useNavigate();
@@ -29,6 +50,8 @@ const PlayerGameRoomPage: React.FC = () => {
   const { toast } = useToast();
   const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
   const [confettiTriggered, setConfettiTriggered] = useState(false);
+  const { audio: warningSound, loaded: isSoundLoaded } = useAudio('/sounds/warning.mp3');
+
 
   useEffect(() => {
     if (activeGame?.status === 'finished' && !confettiTriggered) {
@@ -477,6 +500,56 @@ const PlayerGameRoomPage: React.FC = () => {
     );
   };
   
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const warningPlayedRef = useRef(false);
+
+  useEffect(() => {
+    if (!currentQuestion || !questionStartTime) {
+      setTimeLeft(null);
+      warningPlayedRef.current = false;
+      return;
+    }
+
+    const totalTime = currentQuestion.timeLimit || 30;
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - questionStartTime) / 1000);
+      const left = Math.max(totalTime - elapsed, 0);
+      setTimeLeft(left);
+
+      if (left === 10 && !warningPlayedRef.current) {
+        console.log("Playing warning sound at 10 seconds left");
+        if (isSoundLoaded) {
+          try {
+            warningSound.play();
+            warningPlayedRef.current = true;
+          } catch (error) {
+            console.error("Error playing warning sound:", error);
+          }
+        } else {
+          console.warn("Warning sound not loaded yet.");
+        }
+      }
+      if (left > 10) {
+        warningPlayedRef.current = false;
+      }
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, [currentQuestion, questionStartTime]);
+
+  useEffect(() => {
+    const unlock = () => {
+      if (isSoundLoaded) {
+        warningSound.play().catch(() => {});
+        warningSound.pause();
+        warningSound.currentTime = 0;
+      }
+      window.removeEventListener('pointerdown', unlock);
+    };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, [isSoundLoaded, warningSound]);
+
   return (
     <BackgroundContainer>
       <div className="min-h-screen flex flex-col items-center justify-start py-8 px-4 space-y-8">

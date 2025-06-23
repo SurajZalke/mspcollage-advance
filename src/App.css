@@ -157,3 +157,30 @@
 .leaderboard-top-glow { position: relative; z-index: 1; }
 .leaderboard-top-glow-0 { box-shadow: 0 0 24px 6px #FFD700, 0 0 48px 12px #fff70044; }
 .leaderboard-top-glow-1 { box-shadow: 0 0 18px 4px #C0C0C0, 0 0 32px 8px #b0b0b0; }
+/* Special glowing border for Mr.Developer */
+.mrdev-glow {
+  box-shadow: 0 0 20px 5px #ff00cc, 0 0 40px 10px #00eaff;
+  border: 2px solid #ff00cc;
+  animation: mrdev-glow-pulse 1.2s infinite alternate;
+}
+
+@keyframes mrdev-glow-pulse {
+  0% { box-shadow: 0 0 20px 5px #ff00cc, 0 0 40px 10px #00eaff; }
+  100% { box-shadow: 0 0 40px 10px #ff00cc, 0 0 60px 20px #00eaff; }
+}
+
+/* Confetti animation */
+.mrdev-confetti {
+  position: absolute;
+  left: 50%;
+  top: 10%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1000;
+  animation: confetti-fall 1.5s linear forwards;
+}
+
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(200px); }
+}

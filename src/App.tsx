@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import PlayerSetupPage from "./pages/PlayerSetupPage";
 import ProfileSetup from "./components/ProfileSetup";
 import { LeaderAnimationPage } from "./pages/LeaderAnimationPage";
+
 
 const queryClient = new QueryClient();
 
@@ -59,6 +59,9 @@ const App = () => {
                 <Route path="/join" element={<JoinGamePage />} />
                 <Route path="/player-setup" element={<PlayerSetupPage />} />
                 <Route path="/leader-animation" element={<LeaderAnimationPage />} />
+                <Route path="/mrdev-celebration" element={<LeaderAnimationPage />} />
+                
+                {/* Catch-all route for 404 Not Found */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </GameProvider>
