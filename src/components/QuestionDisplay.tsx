@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Question } from "@/types";
 import { Progress } from "@/components/ui/progress";
 import { useGame } from "@/contexts/GameContext";
+import { Howl } from 'howler';
 
 interface QuestionDisplayProps {
   question: Question;
@@ -16,6 +17,11 @@ interface QuestionDisplayProps {
   onHostSelect?: (optionId: string) => void;
   showCorrectAnswer?: boolean;
 }
+
+const warningSound = new Howl({
+  src: ['/sounds/warning.mp3'],
+  volume: 0.8,
+});
 
 const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   question, 
@@ -33,6 +39,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const { activeGame, currentPlayer } = useGame();
+  const [warningSoundPlayed, setWarningSoundPlayed] = useState(false);
 
   // Polling logic: count answers for each option for this question
   let pollCounts: Record<string, number> = {};
@@ -69,11 +76,24 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
     return () => clearInterval(interval);
   }, [showTimer, isAnswered, disableOptions, questionStartTime, question.timeLimit, serverTimeOffset]);
+
+  // Effect to play sound when 10 seconds remain
+  useEffect(() => {
+    if (timeLeft === 10 && !warningSoundPlayed) {
+      warningSound.play();
+      setWarningSoundPlayed(true);
+    }
+    // Reset warningSoundPlayed when question changes or timer resets
+    if (timeLeft > 10 || timeLeft === question.timeLimit) {
+      setWarningSoundPlayed(false);
+    }
+  }, [timeLeft, question.id, question.timeLimit, warningSoundPlayed]);
   
   // Reset state when question changes
   useEffect(() => {
     setSelectedOption(null);
     setIsAnswered(false);
+    setWarningSoundPlayed(false); // Ensure sound can play again for new question
     // Do not reset timeLeft here; let timer effect handle it from questionStartTime
   }, [question.id, question.timeLimit, questionStartTime]);
 

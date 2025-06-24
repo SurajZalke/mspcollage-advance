@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import { Howl, Howler } from 'howler';
 import { GameRoom, Player, Quiz, Question } from "@/types";
 import { useGameState } from "@/hooks/useGameState";
 import { useGameActions } from "@/hooks/useGameActions";
@@ -52,6 +53,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const navigate = useNavigate();
   const [gameSubscription, setGameSubscription] = useState<any>(null);
+  const backgroundSoundRef = useRef<Howl | null>(null);
   const {
     activeGame,
     setActiveGame,
@@ -162,6 +164,33 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setQuestionEnded(false);
     }
   }, [activeGame?.showScores]);
+
+  // Effect to manage background music playback
+  useEffect(() => {
+    if (activeGame?.status === "active") {
+      if (!backgroundSoundRef.current) {
+        backgroundSoundRef.current = new Howl({
+          src: ['/sounds/background.mp3'],
+          loop: true,
+          volume: 0.5,
+        });
+      }
+      if (!backgroundSoundRef.current.playing()) {
+        backgroundSoundRef.current.play();
+      }
+    } else {
+      if (backgroundSoundRef.current && backgroundSoundRef.current.playing()) {
+        backgroundSoundRef.current.stop();
+      }
+    }
+
+    return () => {
+      if (backgroundSoundRef.current) {
+        backgroundSoundRef.current.unload();
+        backgroundSoundRef.current = null;
+      }
+    };
+  }, [activeGame?.status]);
 
   // Effect to handle question timer ending for the host
   useEffect(() => {

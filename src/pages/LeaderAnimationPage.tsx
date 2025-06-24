@@ -3,10 +3,12 @@ import { Player, Quiz } from "@/types";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
+
 // @ts-ignore - Temporarily ignore type checking for framer-motion import
 // Note: Run "npm install framer-motion" or "yarn add framer-motion" to install the package
 
 import confetti from 'canvas-confetti';
+import { useIsMobile } from '../hooks/use-mobile';
 
 interface LeaderAnimationPageProps {
   // This component will likely receive player data and quiz data
@@ -25,9 +27,12 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
   const [isHost, setIsHost] = useState(false);
 
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showMrDeveloperAnimation, setShowMrDeveloperAnimation] = useState(false);
+  const mrDevAnimationPlayedRef = useRef(false);
 
-  const mrDevSound = new Audio('/sounds/mrdeveloper.mp3');
-  const playedRef = useRef(false);
+  const mrDevSound = useRef(new Audio('/sounds/mrdeveloper.mp3'));
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (location.state && location.state.players && location.state.activeQuiz && location.state.currentQuestionIndex !== undefined && location.state.isHost !== undefined) {
@@ -61,26 +66,139 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
       setTopPlayers(sortedPlayers.slice(0, NUM_ANIMATED_PLAYERS)); // Get top players for animation based on constant
       setAllSortedPlayers(sortedPlayers); // Store all sorted players for the table
 
-      // Trigger confetti after a delay
-      const confettiDelay = setTimeout(() => {
-        setShowConfetti(true);
-        confetti({
-          particleCount: 500, // More particles for a blast effect
-          spread: 180, // Wider spread for a sky shot
-          startVelocity: 60, // Higher velocity for particles to shoot up
-          decay: 0.9, // Slower decay to keep particles in air longer
-          scalar: 1.2, // Larger particles
-          shapes: ['circle', 'square'], // Mix of shapes
-          colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'] // Vibrant colors
-        });
-      }, 3000); // 3-second delay before confetti starts
+      // Check for Mr.Developer and trigger animation
+      if (sortedPlayers[0]?.nickname === 'Mr.Developer' && !mrDevAnimationPlayedRef.current) {
+        setShowMrDeveloperAnimation(true);
+        mrDevAnimationPlayedRef.current = true; // Ensure it plays only once per game session
+        const video = document.createElement('video');
+ // Start muted, user can unmute
+        video.style.position = 'fixed';
+        video.style.top = '50%';
+        video.style.left = '50%';
+        video.style.transform = 'translate(-50%, -50%)';
+        video.style.height = '100%';
+        video.style.width = '100%';
+        video.style.objectFit = 'contain';
+        video.style.zIndex = '9999';
+        video.style.backgroundColor = 'black';
 
-      return () => clearTimeout(confettiDelay);
+        // Preload both video and audio
+        video.src = isMobile ? '/dev-mobile.mp4' : '/dev.mp4';
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        video.controls = false;
+        video.playbackRate = 1.0;
+        
+        // Add event listeners for mobile-specific handling
+        video.addEventListener('loadeddata', () => {
+          document.body.appendChild(video);
+          // Ensure video is ready before attempting playback
+          const playVideo = async () => {
+            try {
+              await video.play();
+              // Preload and play audio
+              mrDevSound.current.preload = 'auto';
+              await mrDevSound.current.play();
+            } catch (error) {
+              console.error('Playback failed:', error);
+              setShowMrDeveloperAnimation(false);
+              setShowConfetti(true);
+              confetti({ particleCount: 500, spread: 180, startVelocity: 60, decay: 0.9, scalar: 1.2, shapes: ['circle', 'square'], colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'] });
+            }
+          };
+          playVideo();
+        });
+
+        // Preload audio
+        mrDevSound.current.preload = 'auto';
+
+        // Handle mobile suspension and resume
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible' && !video.ended) {
+            video.play().catch(console.error);
+            mrDevSound.current.play().catch(console.error);
+          }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Cleanup function
+        const cleanup = () => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          if (videoRef.current) {
+            videoRef.current.pause();
+            if (videoRef.current.parentNode) {
+              document.body.removeChild(videoRef.current);
+            }
+          }
+          mrDevSound.current.pause();
+          mrDevSound.current.currentTime = 0;
+        };
+
+        // Ensure styles are applied before playback starts
+         video.style.position = 'fixed';
+         video.style.top = '50%';
+         video.style.left = '50%';
+         video.style.transform = 'translate(-50%, -50%)';
+         video.style.height = '100%';
+         video.style.width = '100%';
+         video.style.objectFit = 'contain';
+         video.style.zIndex = '9999';
+         video.style.backgroundColor = 'black';
+
+         mrDevSound.current.play().catch(console.error);
+
+         const handleVideoEnd = () => {
+          if (video.parentNode) {
+            document.body.removeChild(video);
+          }
+          setShowMrDeveloperAnimation(false);
+          setShowConfetti(true);
+          confetti({
+            particleCount: 500,
+            spread: 180,
+            startVelocity: 60,
+            decay: 0.9,
+            scalar: 1.2,
+            shapes: ['circle', 'square'],
+            colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a']
+          });
+        };
+
+        video.addEventListener('ended', handleVideoEnd);
+        videoRef.current = video;
+
+        document.body.appendChild(video);
+
+         // Cleanup function for component unmount
+         return () => {
+           cleanup();
+           video.removeEventListener('ended', handleVideoEnd);
+         };
+      } else {
+        // If no Mr.Developer or animation already played, trigger confetti directly
+        const confettiDelay = setTimeout(() => {
+          setShowConfetti(true);
+          confetti({
+            particleCount: 500, // More particles for a blast effect
+            spread: 180, // Wider spread for a sky shot
+            startVelocity: 60, // Higher velocity for particles to shoot up
+            decay: 0.9, // Slower decay to keep particles in air longer
+            scalar: 1.2, // Larger particles
+            shapes: ['circle', 'square'], // Mix of shapes
+            colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'] // Vibrant colors
+          });
+        }, 3000); // 3-second delay before confetti starts
+
+        return () => clearTimeout(confettiDelay);
+      }
     } else {
       // If no data, redirect or show an error
       navigate('/'); // Redirect to home or a suitable page
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, mrDevSound]);
 
   useEffect(() => {
     if (activeQuiz && currentQuestionIndex !== undefined) {
@@ -107,32 +225,23 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
     return `${correctAnswers} / ${totalQuestions}`;
   };
 
-  useEffect(() => {
-    if (
-      topPlayers[0]?.nickname === 'Mr.Developer' &&
-      !playedRef.current
-    ) {
-      mrDevSound.play();
-      playedRef.current = true;
-    }
-    if (topPlayers[0]?.nickname !== 'Mr.Developer') {
-      playedRef.current = false;
-    }
-  }, [topPlayers]);
-
   if (allSortedPlayers.length === 0) { // Check allSortedPlayers for loading state
     return <div className="flex items-center justify-center min-h-screen text-white text-2xl">Loading Leaderboard...</div>;
   }
 
+  if (showMrDeveloperAnimation) {
+    return null; // Hide the page content while the video plays
+  }
+
   return (
-    <React.Fragment>
+    <>
       <div className="min-h-screen bg-[#1a1f36] flex flex-col items-center justify-center p-4 overflow-hidden">
         <h1 className="text-4xl font-extrabold text-white mb-8 drop-shadow-lg animate-fade-in">Top Leaders!</h1>
         <div className="w-full max-w-4xl flex flex-col items-center">
           {/* Pyramid Structure */}
           <div className="relative w-full flex justify-center mb-8">
             {/* 1st Rank Player (Top of Pyramid) */}
-            {topPlayers[0] && (
+            {topPlayers[0] && !showMrDeveloperAnimation && (
               <motion.div
                 key={topPlayers[0].player_id}
                 className="relative flex flex-col items-center p-6 rounded-xl shadow-xl bg-gradient-to-r from-yellow-400 to-orange-500 border-4 border-yellow-200 z-50 w-48 h-48 sm:w-64 sm:h-64 justify-center"
@@ -164,7 +273,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
 
           <div className="w-full flex justify-center items-end mb-8 space-x-8">
             {/* 2nd Rank Player (Left of 1st) */}
-            {topPlayers[1] && (
+            {topPlayers[1] && !showMrDeveloperAnimation && (
               <motion.div
                 key={topPlayers[1].player_id}
                 className="relative flex flex-col items-center p-4 rounded-xl shadow-xl bg-gradient-to-r from-gray-300 to-gray-400 border-3 border-gray-200 z-40 w-40 h-40 sm:w-56 sm:h-56 justify-center"
@@ -194,7 +303,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
             )}
 
             {/* 3rd Rank Player (Right of 1st) */}
-            {topPlayers[2] && (
+            {topPlayers[2] && !showMrDeveloperAnimation && (
               <motion.div
                 key={topPlayers[2].player_id}
                 className="relative flex flex-col items-center p-4 rounded-xl shadow-xl bg-gradient-to-r from-amber-600 to-amber-700 border-3 border-amber-500 z-30 w-40 h-40 sm:w-56 sm:h-56 justify-center"
@@ -319,7 +428,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
           )}
         </div>
       </div>
-    </React.Fragment>
+    </>
   );
 };
 

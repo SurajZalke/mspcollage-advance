@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { use3DTilt } from "@/utils/animationUtils";
 import { AlertCircle, Check, Loader, LogIn } from "lucide-react";
+import { Howl, Howler } from 'howler';
 
 interface PlayerJoinFormProps {
   initialGameCode?: string | null;
@@ -25,7 +26,80 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
   const { toast } = useToast();
   const { cardRef, handleMouseMove, resetTilt } = use3DTilt();
 
+  // Preload video and audio assets
+  useEffect(() => {
 
+
+    // Preload audio
+    const mrDevSoundPreload = new Howl({
+      src: ['/sounds/mrdeveloper.mp3'],
+      preload: true,
+      volume: 0,
+    });
+
+    const backgroundSoundPreload = new Howl({
+      src: ['/sounds/background.mp3'],
+      preload: true,
+      volume: 0,
+    });
+
+    const warningSoundPreload = new Howl({
+      src: ['/sounds/warning.mp3'],
+      preload: true,
+      volume: 0,
+    });
+
+    const videoPromises = [];
+
+    // Preload video PC
+    const videoPc = document.createElement('video');
+    videoPc.src = '/dev.mp4';
+    videoPc.load();
+    videoPromises.push(new Promise(resolve => {
+      videoPc.onloadeddata = () => resolve(true);
+      videoPc.onerror = () => resolve(false); // Resolve false on error
+    }));
+
+    // Preload video Mobile
+    const videoMobile = document.createElement('video');
+    videoMobile.src = '/dev-mobile.mp4';
+    videoMobile.load();
+    videoPromises.push(new Promise(resolve => {
+      videoMobile.onloadeddata = () => resolve(true);
+      videoMobile.onerror = () => resolve(false); // Resolve false on error
+    }));
+
+
+
+    const audioPromises = [
+      new Promise(resolve => mrDevSoundPreload.once('load', () => resolve(true))),
+      new Promise(resolve => backgroundSoundPreload.once('load', () => resolve(true))),
+      new Promise(resolve => warningSoundPreload.once('load', () => resolve(true))),
+    ];
+
+    // Combine all promises and set a timeout for 2 minutes
+    const allAssetsLoaded = Promise.all([...videoPromises, ...audioPromises]);
+
+    const timeout = setTimeout(() => {
+      console.warn('Assets did not fully preload within 2 minutes.');
+    }, 120000); // 2 minutes in milliseconds
+
+    allAssetsLoaded.then(() => {
+      clearTimeout(timeout);
+      console.log('All assets preloaded successfully!');
+    }).catch(error => {
+      clearTimeout(timeout);
+      console.error('Error preloading assets:', error);
+    });
+
+    return () => {
+      clearTimeout(timeout);
+      mrDevSoundPreload.unload();
+      backgroundSoundPreload.unload();
+      warningSoundPreload.unload();
+      // No need to remove video elements as they are not appended to DOM yet
+    };
+  }, []);
 
   // Handle initial game code
   useEffect(() => {
