@@ -10,15 +10,19 @@ interface GameHeaderProps {
   onRefresh: () => void;
   name?: string;
   avatarUrl?: string;
+  isWarningSoundEnabled: boolean;
+  setIsWarningSoundEnabled: (enabled: boolean) => void;
 }
 
-const GameHeader: React.FC<GameHeaderProps> = ({ connectionStatus, onRefresh }) => {
+const GameHeader: React.FC<GameHeaderProps> = ({ connectionStatus, onRefresh, isWarningSoundEnabled, setIsWarningSoundEnabled }) => {
   return (
     <header className="bg-white/10 dark:bg-gray-900/60 shadow backdrop-blur-md">
       <div className="container mx-auto p-4 flex justify-between items-center">
         <Logo />
         
         <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2 bg-gray-800 bg-opacity-75 p-2 rounded-lg shadow-lg">
+          </div>
           <div 
             className="flex items-center gap-1 cursor-pointer bg-black/20 px-2 py-1 rounded-md hover:bg-black/30 transition-colors" 
             onClick={onRefresh}

@@ -286,8 +286,13 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const handleQuestionChange = (index: number, field: keyof QuizQuestion, value: any) => {
     const newQuestions = [...questions];
-    const convertedValue = convertToUnicodeMath(String(value)); // Apply conversion, ensure value is string
-    newQuestions[index] = { ...newQuestions[index], [field]: convertedValue };
+    let processedValue = value;
+    if (field === 'text') {
+      processedValue = convertToUnicodeMath(String(value));
+    } else if (field === 'timeLimit' || field === 'Marks') {
+      processedValue = parseInt(value);
+    }
+    newQuestions[index] = { ...newQuestions[index], [field]: processedValue };
     setQuestions(newQuestions);
   };
 
@@ -471,7 +476,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         createdBy: currentUser?.uid || "",
         createdAt: new Date().toISOString(),
         totalQuestions: questions.length,
-        totalMarks: questions.length * 4,
+        totalMarks: questions.reduce((sum, question) => sum + question.Marks, 0),
         hasNegativeMarking: hasNegativeMarking, 
         negativeMarkingValue: hasNegativeMarking ? negativeMarkingValue : 0
       };
@@ -716,6 +721,16 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     className="dark:bg-gray-700 dark:border-gray-600"
                     min="10"
                     max="300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium dark:text-gray-200 mb-1">Points</label>
+                  <Input
+                    type="number"
+                    value={question.Marks}
+                    onChange={(e) => handleQuestionChange(qIndex, 'Marks', parseInt(e.target.value))}
+                    className="dark:bg-gray-700 dark:border-gray-600"
+                    min="1"
                   />
                 </div>
               </div>

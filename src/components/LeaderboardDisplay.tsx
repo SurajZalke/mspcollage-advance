@@ -201,7 +201,6 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Rank</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Player</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Score</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Points</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -270,7 +269,6 @@ const LeaderboardDisplay: React.FC<LeaderboardDisplayProps> = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 align-middle font-bold text-gray-200 text-lg">{displayScores[index]}</td>
-                      <td className="px-6 py-4 align-middle text-indigo-200 font-semibold text-base">Points</td>
                     </tr>
                   );
                 })

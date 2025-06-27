@@ -233,8 +233,9 @@ const HostGameRoomPage: React.FC = () => {
           connectionStatus={connectionStatus}
           onRefresh={handleManualRefresh}
           name={currentUser?.user_metadata?.name}
-          avatarUrl={currentUser?.user_metadata?.avatar_url}
-        />
+          avatarUrl={currentUser?.user_metadata?.avatar_url} isWarningSoundEnabled={false} setIsWarningSoundEnabled={function (enabled: boolean): void {
+            throw new Error("Function not implemented.");
+          } }        />
 
         <main className="container mx-auto p-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

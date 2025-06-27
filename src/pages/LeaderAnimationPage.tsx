@@ -31,6 +31,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
   const mrDevAnimationPlayedRef = useRef(false);
 
   const mrDevSound = useRef(new Audio('/sounds/mrdeveloper.mp3'));
+  mrDevSound.current.volume = 0.1; // Set initial volume to 10%
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isMobile = useIsMobile();
 
@@ -99,7 +100,9 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
             try {
               await video.play();
               // Preload and play audio
+              mrDevSound.current.volume = 0.1; // Ensure volume is set before playing
               mrDevSound.current.preload = 'auto';
+        mrDevSound.current.volume = 0.1; // Ensure volume is set before playing
               await mrDevSound.current.play();
             } catch (error) {
               console.error('Playback failed:', error);
@@ -118,7 +121,9 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
         const handleVisibilityChange = () => {
           if (document.visibilityState === 'visible' && !video.ended) {
             video.play().catch(console.error);
-            mrDevSound.current.play().catch(console.error);
+            mrDevSound.current.volume = 0.1; // Ensure volume is set before playing
+            mrDevSound.current.volume = 0.1; // Ensure volume is set before playing
+         mrDevSound.current.play().catch(console.error);
           }
         };
 

@@ -154,6 +154,79 @@
   animation: fadeIn 0.5s ease-out forwards;
 }
 
+@keyframes arrowCrazy {
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(10deg); }
+  50% { transform: translateY(0) rotate(-10deg); }
+  75% { transform: translateY(-5px) rotate(10deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.animate-arrow-crazy {
+  animation: arrowCrazy 0.7s ease-in-out infinite;
+}
+
+@keyframes arrowDown {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+  100% { transform: translateY(0); }
+}
+
+.animate-arrow-down {
+  animation: arrowDown 0.7s ease-in-out infinite;
+}
+
+@keyframes leaderboardRowIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-leaderboard-row-in {
+  animation: leaderboardRowIn 0.5s ease-out forwards;
+}
+
+.animate-delay-0 { animation-delay: 0s; }
+.animate-delay-1 { animation-delay: 0.05s; }
+.animate-delay-2 { animation-delay: 0.1s; }
+.animate-delay-3 { animation-delay: 0.15s; }
+.animate-delay-4 { animation-delay: 0.2s; }
+.animate-delay-5 { animation-delay: 0.25s; }
+.animate-delay-6 { animation-delay: 0.3s; }
+.animate-delay-7 { animation-delay: 0.35s; }
+.animate-delay-8 { animation-delay: 0.4s; }
+.animate-delay-9 { animation-delay: 0.45s; }
+.animate-delay-10 { animation-delay: 0.5s; }
+
+@keyframes topGlow {
+  0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.6); }
+  100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
+}
+
+.leaderboard-top-glow-0 {
+  animation: topGlow 2s infinite ease-in-out;
+  border-left: 3px solid #FFD700;
+}
+.leaderboard-top-glow-1 {
+  animation: topGlow 2s infinite ease-in-out;
+  border-left: 3px solid #C0C0C0;
+}
+.leaderboard-top-glow-2 {
+  animation: topGlow 2s infinite ease-in-out;
+  border-left: 3px solid #CD7F32;
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.leaderboard-shimmer {
+  background: linear-gradient(to right, #232b4a 0%, #3a456e 20%, #232b4a 40%, #232b4a 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
 @keyframes float3d {
   0% {
     transform: translateY(0) scale(1) rotateZ(-2deg);

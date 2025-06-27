@@ -61,6 +61,7 @@ const App = () => {
                 <Route path="/leader-animation" element={<LeaderAnimationPage />} />
                 <Route path="/mrdev-celebration" element={<LeaderAnimationPage />} />
                 
+                
                 {/* Catch-all route for 404 Not Found */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

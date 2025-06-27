@@ -16,6 +16,8 @@ interface QuestionDisplayProps {
   negativeValue?: number;
   onHostSelect?: (optionId: string) => void;
   showCorrectAnswer?: boolean;
+  isWarningSoundEnabled?: boolean;
+  warningSoundVolume?: number;
 }
 
 const warningSound = new Howl({
