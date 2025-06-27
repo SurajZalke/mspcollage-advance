@@ -122,7 +122,7 @@ const HomePage: React.FC = () => {
         </FadeInOnScroll>
 
         {/* Subjects Section */}
-        <FadeInOnScroll className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-2">
+        <FadeInOnScroll className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 mt-2">
           {/* Subject 1 */}
           <div className="bg-gray-800 rounded-lg p-6 shadow-md">
             <h4 className="text-xl font-bold mb-4">Mathematics</h4>
@@ -225,6 +225,33 @@ const HomePage: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-semibold">Prof.V.R.Dable</p>
+                  <p className="text-sm text-gray-400">20+ Years Experience</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Subject 5 */}
+          <div className="bg-gray-800 rounded-lg p-6 shadow-md">
+            <h4 className="text-xl font-bold mb-4">Our Supporter</h4>
+            <div className="space-y-6">
+              {/* Teacher 1 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-400">
+                  <img src="/english_teacher1.jpg" alt="English Teacher 1" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.Ganjre sir</p>
+                  <p className="text-sm text-gray-400">20+ Years Experience</p>
+                </div>
+              </div>
+              {/* Teacher 2 */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-400">
+                  <img src="/english_teacher2.jpg" alt="English Teacher 2" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="font-semibold">Prof.Waghmare sir</p>
                   <p className="text-sm text-gray-400">20+ Years Experience</p>
                 </div>
               </div>
