@@ -22,7 +22,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
     <Card className="quiz-card transition-all duration-300 hover:shadow-xl">
       <CardContent className="p-6">
         <div className="mb-4">
-          <span className="inline-block px-2 py-1 rounded-md text-xs font-medium bg-quiz-light text-quiz-dark">
+          <span className="inline-block px-2 py-1 rounded-md text-xs font-medium bg-purple-200 text-purple-800">
             Grade {quiz.grade} • {quiz.subject}
           </span>
         </div>
