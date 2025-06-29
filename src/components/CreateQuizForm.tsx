@@ -407,42 +407,123 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       } catch (error) {
         console.error("Error uploading image to Cloudinary:", error);
         toast({
-          title: "Image Upload Failed",
-          description: ``, 
-          variant: "default",
-        });
-
-        // Fallback to a new API if Cloudinary upload fails
-        try {
-          // Placeholder for new API upload logic
-          // You would replace this with actual API call, e.g., to your own backend or another service
-          console.log("Attempting upload for image:", file.name);
-          const fallbackUploadResult = await uploadToNewApi(file);
-          newQuestions[index] = { 
-            ...newQuestions[index], 
-            imageFile: file, 
-            imageUrl: fallbackUploadResult.url, // Assuming the new API returns a URL
-            publicId: fallbackUploadResult.id // Assuming the new API returns an ID
-          };
-          toast({
-            title: "Fallback Upload Success",
-            description: "Image uploaded successfully .",
+            title: "Image Upload Failed",
+            description: `Cloudinary upload failed. Attempting fallback.`, 
             variant: "default",
           });
 
-        } catch (fallbackError) {
-          console.error("Error during fallback image upload:", fallbackError);
-          toast({
-            title: "Fallback Upload Failed",
-            description: `Failed to upload image via fallback: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}.`, 
-            variant: "destructive",
-          });
-          newQuestions[index] = { ...newQuestions[index], imageFile: null, imageUrl: undefined, publicId: undefined };
+          // Fallback to a new API if Cloudinary upload fails
+          try {
+            console.log("Attempting first fallback upload for image:", file.name);
+            const formData1 = new FormData();
+            formData1.append('file', file);
+            formData1.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET1);
+
+            const response1 = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME1}/image/upload`, {
+              method: 'POST',
+              body: formData1,
+            });
+            const data1 = await response1.json();
+            if (data1.public_id) {
+              newQuestions[index] = { 
+                ...newQuestions[index], 
+                imageFile: file, 
+                imageUrl: data1.secure_url, 
+                publicId: data1.public_id 
+              };
+              toast({
+                title: "First Fallback Upload Success",
+                description: "Image uploaded successfully via first fallback.",
+                variant: "default",
+              });
+            } else {
+              throw new Error(`First fallback Cloudinary upload failed: ${data1.error ? data1.error.message : 'Unknown error'}`);
+            }
+          } catch (firstFallbackError) {
+            console.error("Error during first fallback image upload:", firstFallbackError);
+            toast({
+              title: "First Fallback Upload Failed",
+              description: `Failed to upload image via first fallback: ${firstFallbackError instanceof Error ? firstFallbackError.message : String(firstFallbackError)}. Attempting second fallback.`, 
+              variant: "destructive",
+            });
+
+            // Second fallback to another API if the first fallback also fails
+            try {
+              console.log("Attempting second fallback upload for image:", file.name);
+              const formData2 = new FormData();
+              formData2.append('file', file);
+              formData2.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET2);
+
+              const response2 = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME2}/image/upload`, {
+                method: 'POST',
+                body: formData2,
+              });
+              const data2 = await response2.json();
+              if (data2.public_id) {
+                newQuestions[index] = { 
+                  ...newQuestions[index], 
+                  imageFile: file, 
+                  imageUrl: data2.secure_url, 
+                  publicId: data2.public_id 
+                };
+                toast({
+                  title: "Second Fallback Upload Success",
+                  description: "Image uploaded successfully via second fallback.",
+                  variant: "default",
+                });
+              } else {
+                throw new Error(`Second fallback Cloudinary upload failed: ${data2.error ? data2.error.message : 'Unknown error'}`);
+              }
+            } catch (secondFallbackError) {
+              console.error("Error during second fallback image upload:", secondFallbackError);
+              toast({
+                title: "Second Fallback Upload Failed",
+                description: `Failed to upload image via second fallback: ${secondFallbackError instanceof Error ? secondFallbackError.message : String(secondFallbackError)}. Attempting third fallback.`, 
+                variant: "destructive",
+              });
+
+              // Third fallback to another API if the second fallback also fails
+              try {
+                console.log("Attempting third fallback upload for image:", file.name);
+                const formData3 = new FormData();
+                formData3.append('file', file);
+                formData3.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET3);
+
+                const response3 = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME3}/image/upload`, {
+                  method: 'POST',
+                  body: formData3,
+                });
+                const data3 = await response3.json();
+                if (data3.public_id) {
+                  newQuestions[index] = { 
+                    ...newQuestions[index], 
+                    imageFile: file, 
+                    imageUrl: data3.secure_url, 
+                    publicId: data3.public_id 
+                  };
+                  toast({
+                    title: "Third Fallback Upload Success",
+                    description: "Image uploaded successfully via third fallback.",
+                    variant: "default",
+                  });
+                } else {
+                  throw new Error(`Third fallback Cloudinary upload failed: ${data3.error ? data3.error.message : 'Unknown error'}`);
+                }
+              } catch (thirdFallbackError) {
+                console.error("Error during third fallback image upload:", thirdFallbackError);
+                toast({
+                  title: "Third Fallback Upload Failed",
+                  description: `Failed to upload image via third fallback: ${thirdFallbackError instanceof Error ? thirdFallbackError.message : String(thirdFallbackError)}.`, 
+                  variant: "destructive",
+                });
+                newQuestions[index] = { ...newQuestions[index], imageFile: null, imageUrl: undefined, publicId: undefined };
+              }
+            }
+          }
+          setQuestions(newQuestions);
         }
-        setQuestions(newQuestions);
       }
-    }
-  };
+    };
 
   const handleOptionChange = (questionIndex: number, optionId: string, value: string) => {
     const newQuestions = [...questions];

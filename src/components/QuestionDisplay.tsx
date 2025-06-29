@@ -150,7 +150,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               <img 
                 src={question.imageUrl} 
                 alt="Question" 
-                className="max-h-48 object-contain rounded-md"
+                className="max-h-96 w-full object-cover rounded-md"
               />
             </div>
           )}
