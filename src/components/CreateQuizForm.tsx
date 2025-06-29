@@ -566,9 +566,14 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
+  const containerClass = "flex justify-center items-start bg-transparent py-4";
+  const cardClass = isEdit
+  ? "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-4xl"
+  : "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto";
+
   return (
-  <div className="flex justify-center items-start bg-transparent py-4 overflow-y-auto max-h-screen min-h-screen">
-    <Card className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-4xl">
+  <div className={containerClass}>
+    <Card className={cardClass}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <h2 className="text-xl font-bold dark:text-white">

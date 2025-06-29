@@ -18,7 +18,7 @@ import BackgroundContainer from "@/components/BackgroundContainer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import CreateQuizForm from "@/components/CreateQuizForm";
 import ProfileSetup from "@/components/ProfileSetup";
-import { ref, get, remove } from "firebase/database";
+import { ref, get, remove, update } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
 import { Howl, Howler } from 'howler';
 
@@ -271,19 +271,15 @@ setQuizzes(sampleQuizzes.map(quiz => ({
     try {
       if (!currentUser?.uid) return;
 
-      // Reference to the specific quiz in Firebase
-      const quizRef = ref(db, `quizzes/${quizId}`);
-      
-      // Delete the quiz from Firebase
-      await remove(quizRef);
-      
-      // Update local state
-      const updatedQuizzes = quizzes.filter(quiz => quiz.id !== quizId);
-      setQuizzes(updatedQuizzes);
-      
+      // Remove from global quizzes
+      await remove(ref(db, `/quizzes/${quizId}`));
+      // Remove from current user's quizzes
+      await remove(ref(db, `/users/${currentUser.uid}/quizzes/${quizId}`));
+
+      setQuizzes(quizzes.filter(q => q.id !== quizId));
       toast({
         title: "Quiz Deleted",
-        description: "The quiz has been successfully deleted.",
+        description: "The quiz has been deleted from your account and the database.",
         variant: "default"
       });
     } catch (error) {

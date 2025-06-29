@@ -309,7 +309,7 @@ const EditQuizForm: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 text-white">
+    <div className="container mx-auto p-4 text-white overflow-auto">
       <h1 className="text-3xl font-bold mb-6 text-center">Edit Quiz</h1>
       <form onSubmit={handleSaveQuiz} className="space-y-6">
         <Card className="bg-gray-800 border-gray-700">

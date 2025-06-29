@@ -143,7 +143,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         )}
         
         <div className="space-y-4">
-          <h3 className="text-xl font-bold text-center">{question.text}</h3>
+          <h3 className="text-3xl font-bold text-center">{question.text}</h3>
           
           {question.imageUrl && (
             <div className="flex justify-center">
@@ -183,7 +183,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       `}>
         {optionLabel}
       </span>
-      <span className="flex-1 text-left break-words whitespace-pre-line text-base font-medium">
+      <span className="flex-1 text-left break-words whitespace-pre-line text-xl font-medium">
         {option.text}
       </span>
       {isCorrect && (
