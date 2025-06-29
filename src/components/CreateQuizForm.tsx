@@ -444,7 +444,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             toast({
               title: "First Fallback Upload Failed",
               description: `Failed to upload image via first fallback: ${firstFallbackError instanceof Error ? firstFallbackError.message : String(firstFallbackError)}. Attempting second fallback.`, 
-              variant: "destructive",
+              variant: "default",
             });
 
             // Second fallback to another API if the first fallback also fails
@@ -479,7 +479,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               toast({
                 title: "Second Fallback Upload Failed",
                 description: `Failed to upload image via second fallback: ${secondFallbackError instanceof Error ? secondFallbackError.message : String(secondFallbackError)}. Attempting third fallback.`, 
-                variant: "destructive",
+                variant: "default",
               });
 
               // Third fallback to another API if the second fallback also fails
