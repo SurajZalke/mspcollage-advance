@@ -180,13 +180,17 @@ setQuizzes(sampleQuizzes.map(quiz => ({
         }
 
         // Reference to the quizzes in Firebase
+        console.log('Loading quizzes for user:', currentUser.uid);
         const quizzesRef = ref(db, 'quizzes');
+        console.log('Quizzes ref:', quizzesRef);
         const snapshot = await get(quizzesRef);
+        console.log('Quizzes snapshot:', snapshot.val());
         
         let combinedQuizzes: Quiz[] = [];
         
         if (snapshot.exists()) {
           const firebaseData = snapshot.val() || {};
+          console.log('Firebase data:', firebaseData);
           const firebaseQuizzes = Object.entries(firebaseData).map(([key, quiz]: [string, any]): Quiz => {
             const questions = Array.isArray(quiz.questions) ? quiz.questions.map((q: any) => ({
               id: q.id || key + '_q' + Math.random().toString(36).substr(2, 9),
@@ -672,4 +676,6 @@ setQuizzes(sampleQuizzes.map(quiz => ({
 };
 
 export default HostDashboardPage;
+
+
 

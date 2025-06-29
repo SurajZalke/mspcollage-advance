@@ -7,8 +7,13 @@ import { useToast } from "@/components/ui/use-toast";
 interface AuthContextType {
   currentUser: (User & { user_metadata?: {
     id?: string; // Make id optional as it might not be present initially or directly from Firebase Auth
-    name?: string; avatar_url?: string; bio?: string 
-} }) | null;
+    name?: string; avatar_url?: string; bio?: string;
+    email?: string;
+    password?: string;
+    subject?: string;
+    grade?: string;
+    quizIds?: string[];
+    } }) | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
   signup: (name: string, email: string, password: string) => Promise<User>;
@@ -18,7 +23,7 @@ interface AuthContextType {
   // refreshSession: () => Promise<void>; // Firebase handles sessions differently
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

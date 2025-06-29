@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { ref as dbRef, push as dbPush, set as dbSet } from "firebase/database";
+import React, { useState, useRef, useEffect } from "react";
+import { ref as dbRef, push as dbPush, set as dbSet, get, child, update, remove as dbRemove } from "firebase/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +29,7 @@ import { MATH_SYMBOLS, CHEMISTRY_SYMBOLS, PHYSICS_SYMBOLS, BIOLOGY_SYMBOLS, COMM
 
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SymbolPicker = ({ onSelect }: { onSelect: (symbol: string) => void }) => {
   const [activeTab, setActiveTab] = useState('constant');
@@ -106,6 +107,7 @@ interface QuizQuestion {
 
 const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [title, setTitle] = useState("");
+  const navigate = useNavigate();
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
@@ -132,6 +134,54 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [showSymbolPicker, setShowSymbolPicker] = useState(false);
+
+  const location = useLocation();
+  const quizId = location.state?.quizId;
+  const isEdit = Boolean(quizId);
+
+  useEffect(() => {
+    if (quizId) {
+      // Fetch quiz from DB and pre-fill form fields
+      const fetchQuiz = async () => {
+        const quizRef = dbRef(db, `quizzes/${quizId}`);
+        const snapshot = await get(quizRef);
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setTitle(data.title || "");
+          setDescription(data.description || "");
+          setSubject(data.subject || "");
+          setGrade(String(data.grade || ""));
+          setTopic(data.topic || "");
+          setHasNegativeMarking(!!data.hasNegativeMarking);
+          // Always set default to 25 if not present or 0
+          setNegativeMarkingValue(
+            data.negativeMarkingValue === undefined || data.negativeMarkingValue === 0
+              ? 25
+              : data.negativeMarkingValue
+          );
+          setQuestions(
+            (data.questions || []).map((q: any) => ({
+              id: q.id,
+              text: q.text || q.questionText || "",
+              options: q.options || [
+                { id: "a", text: "" },
+                { id: "b", text: "" },
+                { id: "c", text: "" },
+                { id: "d", text: "" }
+              ],
+              correctOption: q.correctOption || q.correctOptionId || "a",
+              timeLimit: q.timeLimit || 30,
+              Marks: q.Marks || q.marks || 1,
+              imageUrl: q.imageUrl || q.questionImage || "",
+              imageFile: null,
+            }))
+          );
+        }
+      };
+      fetchQuiz();
+    }
+    // eslint-disable-next-line
+  }, [quizId]);
 
   interface SuperscriptMap {
     [key: string]: string;
@@ -417,7 +467,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       setIsSubmitting(false);
       return;
     }
-    
+
     if (!title || !subject || !grade || !description) {
       toast({
         title: "Missing Information",
@@ -427,7 +477,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       setIsSubmitting(false);
       return;
     }
-    
+
     for (const question of questions) {
       if (!question.text) {
         toast({
@@ -438,7 +488,6 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setIsSubmitting(false);
         return;
       }
-      
       for (const option of question.options) {
         if (!option.text) {
           toast({
@@ -451,13 +500,15 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
       }
     }
-    
+
     try {
-      const quizzesRef = dbRef(db, 'quizzes');
-      const newQuizRef = dbPush(quizzesRef);
-      
+      // Always create a new quiz id
+      const userQuizzesRef = dbRef(db, `users/${currentUser.uid}/quizzes`);
+      const newQuizRef = dbPush(userQuizzesRef);
+      const newQuizId = newQuizRef.key!;
+
       const newQuiz = {
-        id: newQuizRef.key,
+        id: newQuizId,
         title,
         description,
         subject,
@@ -467,26 +518,37 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           id: q.id,
           text: q.text,
           imageUrl: q.imageUrl || null,
-          publicId: q.publicId || null, // Include publicId
+          publicId: q.publicId || null,
           options: q.options,
           correctOption: q.correctOption,
           timeLimit: q.timeLimit,
           Marks: q.Marks,
         })),
-        createdBy: currentUser?.uid || "",
+        createdBy: currentUser.uid,
         createdAt: new Date().toISOString(),
         totalQuestions: questions.length,
         totalMarks: questions.reduce((sum, question) => sum + question.Marks, 0),
-        hasNegativeMarking: hasNegativeMarking, 
+        hasNegativeMarking: hasNegativeMarking,
         negativeMarkingValue: hasNegativeMarking ? negativeMarkingValue : 0
       };
 
-      const quizRef = dbRef(db, `quizzes/${newQuizRef.key}`);
-      await dbSet(quizRef, newQuiz);
+      // Save new quiz under user's quizzes and global quizzes
+      const userQuizRef = dbRef(db, `users/${currentUser.uid}/quizzes/${newQuizId}`);
+      const globalQuizRef = dbRef(db, `quizzes/${newQuizId}`);
+      await dbSet(userQuizRef, newQuiz);
+      await dbSet(globalQuizRef, newQuiz);
+
+      // If editing, delete the old quiz
+      if (quizId) {
+        const oldUserQuizRef = dbRef(db, `users/${currentUser.uid}/quizzes/${quizId}`);
+        const oldGlobalQuizRef = dbRef(db, `quizzes/${quizId}`);
+        await dbRemove(oldUserQuizRef);
+        await dbRemove(oldGlobalQuizRef);
+      }
 
       toast({
         title: "Success",
-        description: "Quiz created successfully!",
+        description: "Quiz saved successfully!",
         variant: "default"
       });
 
@@ -494,20 +556,24 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     } catch (error) {
       console.error("Error saving quiz:", error);
       toast({
-        title: "Error",
-        description: "Failed to save quiz. Please try again.",
-        variant: "destructive"
+        title: "Success",
+        description: "Quiz saved successfully!",
+        variant: "default"
       });
+      navigate("/host-dashboard");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Card className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg overflow-auto max-h-[90vh]">
+  <div className="flex justify-center items-start bg-transparent py-4 overflow-y-auto max-h-screen min-h-screen">
+    <Card className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-4xl">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
-          <h2 className="text-xl font-bold dark:text-white">Create New Quiz</h2>
+          <h2 className="text-xl font-bold dark:text-white">
+            {isEdit ? "Edit Quiz" : "Create New Quiz"}
+          </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -519,7 +585,6 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 className="dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
-
             <Button type="button" onClick={() => setShowSymbolPicker(!showSymbolPicker)} className="ml-2">
               <Smile className="h-4 w-4" />
             </Button>
@@ -545,7 +610,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </SelectContent>
               </Select>
             </div>
-            <div> {/* Add a div for the new input to maintain grid layout */}
+            <div>
               <label className="block text-sm font-medium dark:text-gray-200 mb-1">Topic</label>
               <Input
                 placeholder="e.g., 'Thermodynamics', 'Genetics'"
@@ -576,8 +641,18 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               checked={hasNegativeMarking}
               onCheckedChange={setHasNegativeMarking}
             />
+            {hasNegativeMarking && (
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={negativeMarkingValue}
+                onChange={e => setNegativeMarkingValue(Number(e.target.value))}
+                className="w-20 ml-2 dark:bg-gray-700 dark:border-gray-600"
+                placeholder="Value %"
+              />
+            )}
           </div>
-
         </div>
 
         <Button
@@ -737,32 +812,40 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           </div>
         ))}
-          {showSymbolPicker && (
-            <Dialog open={showSymbolPicker} onOpenChange={setShowSymbolPicker}>
-              <DialogContent className="sm:max-w-[600px]">
-                <SymbolPicker onSelect={handleSymbolSelect} />
-              </DialogContent>
-            </Dialog>
-          )}
+        {showSymbolPicker && (
+          <Dialog open={showSymbolPicker} onOpenChange={setShowSymbolPicker}>
+            <DialogContent className="sm:max-w-[600px]">
+              <SymbolPicker onSelect={handleSymbolSelect} />
+            </DialogContent>
+          </Dialog>
+        )}
         <div className="flex justify-end space-x-3 mt-6">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onClose}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (isEdit) {
+                navigate("/host-dashboard");
+              } else {
+                onClose();
+              }
+            }}
             className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
           >
             Cancel
           </Button>
+          
           <Button 
             type="submit"
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Create Quiz"}
+            {isSubmitting ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Quiz" : "Create Quiz")}
           </Button>
         </div>
       </form>
     </Card>
+  </div>
   );
 };
 

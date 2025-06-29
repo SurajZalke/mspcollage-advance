@@ -65,6 +65,7 @@ export interface QuestionOption {
 }
 
 export interface GameRoom {
+  gameCode: any;
   negativeMarkingValue: number;
   settings: any;
   winner: any;

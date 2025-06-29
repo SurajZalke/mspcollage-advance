@@ -68,4 +68,11 @@ export const scienceSubjects = [
   }
 ];
 
+export const gameUtils = {
+  gradeLevels: [
+    'Grade 11',
+    'Grade 12',
+  ],
+};
+
 export const sampleQuizzes = [];

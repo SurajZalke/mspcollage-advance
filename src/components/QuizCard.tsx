@@ -1,9 +1,9 @@
-
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Quiz } from "@/types";
 import { Trash2, Play } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface QuizCardProps {
   quiz: Quiz;
@@ -12,6 +12,12 @@ interface QuizCardProps {
 }
 
 const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
+  const navigate = useNavigate();
+
+  const handleEdit = (quizId: string) => {
+    navigate("/create-quiz", { state: { quizId } });
+  };
+
   return (
     <Card className="quiz-card transition-all duration-300 hover:shadow-xl">
       <CardContent className="p-6">
@@ -47,12 +53,19 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
                 Delete
               </Button>
             )}
-            <Button 
+            <Button
               className="quiz-btn-primary flex items-center gap-2"
               onClick={() => onStart(quiz.id)}
             >
               <Play className="h-4 w-4" />
               Start Quiz
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => handleEdit(quiz.id)}
+            >
+              Edit
             </Button>
           </div>
         </div>

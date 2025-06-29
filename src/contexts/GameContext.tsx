@@ -304,6 +304,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (gameData.quiz) {
         setCurrentQuiz(gameData.quiz);
         console.log('refreshGameState: currentQuiz state updated to:', gameData.quiz);
+        console.log('refreshGameState: currentQuiz questions:', gameData.quiz.questions);
+
       }
 
       // Determine the current player's ID based on authentication status or existing player state

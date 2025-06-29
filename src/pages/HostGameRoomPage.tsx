@@ -15,7 +15,7 @@ import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 import TrophyAnimation from "@/components/TrophyAnimation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { ref, update, onValue, off } from "firebase/database";
+import { ref, update, onValue, off, get } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
 
 const warningSound = new Audio('/sounds/warning.mp3');
