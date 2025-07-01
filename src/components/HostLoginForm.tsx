@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { AlertCircle, LogIn, Eye, EyeOff } from "lucide-react";
+<meta name="google-site-verification" content="pkmknusJfsYMLKfeycQLKDeW4-r8vtXU_1U9YYePvQU" />
 
 const HostLoginForm: React.FC = () => {
   const [email, setEmail] = useState("");

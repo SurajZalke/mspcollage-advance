@@ -8,6 +8,13 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, Play, Settings, Users } from "lucide-react";
 import CreatorAttribution from "@/components/CreatorAttribution";
 import FadeInOnScroll from '@/components/FadeInOnScroll';
+// Google site verification should be in a meta tag in the HTML head, not in the TSX file
+<>
+  // Google site verification should be in a meta tag in the HTML head, not in the TSX file
+  <title>MSP Collage Advance - Home</title><><meta name="google-site-verification" content="pkmknusJfsYMLKfeycQLKDeW4-r8vtXU_1U9YYePvQU" />
+    <meta name="description" content="MSP Collage Advance is a smart student platform with modern tools, learning features, and official updates for MSP students." />
+    <meta name="keywords" content="MSP Collage Advance, Student Platform, College App, Study Tool" />
+  </><><meta name="google-site-verification" content="pkmknusJfsYMLKfeycQLKDeW4-r8vtXU_1U9YYePvQU" /><meta name="description" content="MSP Collage Advance is a smart student platform with modern tools, learning features, and official updates for MSP students." /><meta name="keywords" content="MSP Collage Advance, Student Platform, College App, Study Tool" /></></>
 
 const HomePage: React.FC = () => {
   const { currentUser } = useAuth();

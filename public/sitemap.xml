@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Home Page -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Join Game -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/join</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Host Login -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/host-login</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Host Signup -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/host-signup</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Host Dashboard (protected, optional to list) -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/host-dashboard</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Host Game Room -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/host-game-room</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Game Room -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/game-room</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Profile Setup -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/profile-setup</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Player Setup -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/player-setup</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Leader Animation -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/leader-animation</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Celebration Route -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/mrdev-celebration</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Create Quiz (optional - consider access level) -->
+  <url>
+    <loc>https://mspcollage-advance.netlify.app/create-quiz</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+</urlset>

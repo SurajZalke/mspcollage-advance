@@ -8,7 +8,7 @@ import { Howl } from 'howler';
 
 interface QuestionDisplayProps {
   question: Question;
-  onAnswer?: (questionId: string, optionId: string) => void; // Made optional
+  onAnswer?: (questionId: string, optionId: string) => void;
   showTimer?: boolean;
   isHostView?: boolean;
   disableOptions?: boolean;
@@ -37,7 +37,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   showCorrectAnswer
 }) => {
   const [timeLeft, setTimeLeft] = useState(question.timeLimit);
-  const { questionStartTime, serverTimeOffset } = useGame(); // Get questionStartTime and serverTimeOffset from GameContext
+  const { questionStartTime, serverTimeOffset } = useGame();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const { activeGame, currentPlayer } = useGame();
@@ -61,7 +61,6 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   useEffect(() => {
     if (!showTimer || isAnswered || disableOptions || !questionStartTime) return;
 
-    // Always calculate remaining time from server-synced questionStartTime with serverTimeOffset
     const calculateTimeLeft = () => {
       const now = Date.now() + serverTimeOffset;
       const elapsed = Math.floor((now - questionStartTime) / 1000);
@@ -85,21 +84,17 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       warningSound.play();
       setWarningSoundPlayed(true);
     }
-    // Reset warningSoundPlayed when question changes or timer resets
     if (timeLeft > 10 || timeLeft === question.timeLimit) {
       setWarningSoundPlayed(false);
     }
   }, [timeLeft, question.id, question.timeLimit, warningSoundPlayed]);
   
-  // Reset state when question changes
   useEffect(() => {
     setSelectedOption(null);
     setIsAnswered(false);
-    setWarningSoundPlayed(false); // Ensure sound can play again for new question
-    // Do not reset timeLeft here; let timer effect handle it from questionStartTime
+    setWarningSoundPlayed(false);
   }, [question.id, question.timeLimit, questionStartTime]);
 
-  // Synchronize isAnswered with showCorrectAnswer from GameContext
   useEffect(() => {
     if (showCorrectAnswer) {
       setIsAnswered(true);
@@ -108,10 +103,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   
   const handleSelectOption = (optionId: string) => {
     if (isAnswered || disableOptions) return;
-    
     setSelectedOption(optionId);
     setIsAnswered(true);
-    
     if (isHostView && onHostSelect) {
       onHostSelect(optionId);
     } else if (onAnswer) {
@@ -143,7 +136,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         )}
         
         <div className="space-y-4">
-          <h3 className="text-3xl font-bold text-center">{question.text}</h3>
+          <h3 className="text-3xl font-bold text-center whitespace-pre-line">{question.text}</h3>
           
           {question.imageUrl && (
             <div className="flex justify-center">
@@ -156,42 +149,41 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           )}
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {question.options.map((option, idx) => {
+              const optionLabel = String.fromCharCode(65 + idx);
+              const selected = selectedOption === option.id;
+              const disabled = isAnswered || disableOptions;
+              const isCorrect = showCorrectAnswer && option.id === question.correctOption;
 
-
-{question.options.map((option, idx) => {
-  const optionLabel = String.fromCharCode(65 + idx);
-  const selected = selectedOption === option.id;
-  const disabled = isAnswered || disableOptions;
-  const isCorrect = showCorrectAnswer && option.id === question.correctOption;
-
-  return (
-    <div
-      key={option.id}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-3 cursor-pointer transition-all
-        ${isCorrect
-          ? "bg-green-600/80 border-2 border-green-500 text-white"
-          : selected
-            ? "bg-purple-400/30 border border-purple-400"
-            : "bg-gray-800/60"}
-        ${disabled ? "opacity-60 pointer-events-none" : ""}
-      `}
-      style={{ minHeight: "48px" }}
-      onClick={() => !disabled && handleSelectOption(option.id)}
-    >
-      <span className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-bold mr-2
-        ${isCorrect ? "bg-green-500 text-white" : "bg-gray-700 text-white"}
-      `}>
-        {optionLabel}
-      </span>
-      <span className="flex-1 text-left break-words whitespace-pre-line text-xl font-medium">
-        {option.text}
-      </span>
-      {isCorrect && (
-        <span className="ml-2 text-green-200 text-xl font-bold">&#10003;</span>
-      )}
-    </div>
-  );
-})}
+              return (
+                <div
+                  key={option.id}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-3 cursor-pointer transition-all
+                    ${isCorrect
+                      ? "bg-green-600/80 border-2 border-green-500 text-white"
+                      : selected
+                        ? "bg-purple-400/30 border border-purple-400"
+                        : "bg-gray-800/60"}
+                    ${disabled ? "opacity-60 pointer-events-none" : ""}
+                  `}
+                  style={{ minHeight: "48px" }}
+                  onClick={() => !disabled && handleSelectOption(option.id)}
+                >
+                  <span className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-bold mr-2
+                    ${isCorrect ? "bg-green-500 text-white" : "bg-gray-700 text-white"}
+                  `}>
+                    {optionLabel}
+                  </span>
+                  {/* FIX: preserve line breaks in option text */}
+                  <span className="flex-1 text-left break-words whitespace-pre-line text-xl font-medium">
+                    {option.text}
+                  </span>
+                  {isCorrect && (
+                    <span className="ml-2 text-green-200 text-xl font-bold">&#10003;</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {/* Polling bar: only show after time ends or host submits answer */}
           {showCorrectAnswer && (
@@ -221,7 +213,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           )}
           {showCorrectAnswer && (
             <div className="mt-4 text-lg font-semibold">
-              Correct Answer: {question.options.find(opt => opt.id === question.correctOption)?.text}
+              Correct Answer: <span className="whitespace-pre-line">{question.options.find(opt => opt.id === question.correctOption)?.text}</span>
             </div>
           )}
           Marks: {question.Marks} {isAnswered && "• Question submitted"}
