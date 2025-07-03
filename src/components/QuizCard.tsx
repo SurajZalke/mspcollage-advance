@@ -20,7 +20,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
 
   return (
     <Card className="quiz-card transition-all duration-300 hover:shadow-xl">
-      <CardContent className="p-6">
+      <CardContent className="p-6 relative">
         <div className="mb-4">
           <span className="inline-block px-2 py-1 rounded-md text-xs font-medium bg-purple-200 text-purple-800">
             Grade {quiz.grade} • {quiz.subject}
@@ -32,6 +32,13 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
           <span>{quiz.questions.length} Questions</span>
           <span>Topic: {quiz.topic}</span>
         </div>
+        <Button
+          variant="outline"
+          className="absolute top-2 right-2 flex items-center gap-2"
+          onClick={() => handleEdit(quiz.id)}
+        >
+          Edit
+        </Button>
       </CardContent>
       <CardFooter className="pt-0 px-6 pb-6">
         <div className="flex justify-between items-center w-full">
@@ -59,13 +66,6 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
             >
               <Play className="h-4 w-4" />
               Start Quiz
-            </Button>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={() => handleEdit(quiz.id)}
-            >
-              Edit
             </Button>
           </div>
         </div>
