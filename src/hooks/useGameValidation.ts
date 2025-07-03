@@ -50,9 +50,7 @@ export const useGameValidation = () => {
       return Promise.resolve({ valid: false, message: "This game has already ended. Please join another game." });
     }
     
-    if (game.status === "active") {
-      return Promise.resolve({ valid: false, message: "This game is already in progress. Please join another game." });
-    }
+    
     
     if (game.status === "waiting") {
       return Promise.resolve({ valid: true });

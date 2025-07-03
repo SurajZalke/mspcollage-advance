@@ -19,61 +19,95 @@ const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) 
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
-  const copyCodeToClipboard = async () => {
+  const triggerConfetti = () => {
+    const duration = 1000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.65 },
+        colors: ['#9333ea', '#6366f1', '#4f46e5']
+      });
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.65 },
+        colors: ['#9333ea', '#6366f1', '#4f46e5']
+      });
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+    frame();
+  };
+
+  const handleCopy = async (text: string, successMessage: string, errorMessage: string) => {
     try {
       if (!navigator.clipboard || !navigator.clipboard.writeText) {
         throw new Error("Clipboard API not available or not in a secure context.");
       }
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
-      
-      // Enhanced confetti effect
-      const duration = 1000;
-      const end = Date.now() + duration;
-      
-      const frame = () => {
-        confetti({
-          particleCount: 2,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0, y: 0.65 },
-          colors: ['#9333ea', '#6366f1', '#4f46e5']
-        });
-        
-        confetti({
-          particleCount: 2,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1, y: 0.65 },
-          colors: ['#9333ea', '#6366f1', '#4f46e5']
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      };
-      
-      frame();
-      
+      triggerConfetti();
       toast({
         title: "Copied!",
-        description: "Game code copied to clipboard",
+        description: successMessage,
         duration: 2000,
       });
-      
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy game code:", err);
+      console.error(errorMessage, err);
       toast({
         title: "Error",
-        description: `Failed to copy game code: ${(err as Error).message}`,
+        description: `${errorMessage}: ${(err as Error).message}`,
         variant: "destructive",
       });
     }
   };
 
+  const copyCodeToClipboard = () => handleCopy(code, "Game code copied to clipboard", "Failed to copy game code");
+
   // Generate QR code URL using a free service
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/join?code=${code}`;
+  const joinLink = `${window.location.origin}/join?code=${code}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${joinLink}`;
+
+  const shareJoinLink = async () => {
+    const shareData = {
+      title: 'Join My Quiz Game!',
+      text: `Come join my quiz game! Use code ${code} or click the link:`, 
+      url: joinLink,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast({
+          title: "Shared!",
+          description: "Join link shared successfully",
+          duration: 2000,
+        });
+      } else {
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareData.title + '\n' + shareData.text + ' ' + shareData.url)}`;
+        window.open(whatsappUrl, '_blank');
+        toast({
+          title: "Opened WhatsApp!",
+          description: "Please share the link manually",
+          duration: 2000,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to share join link:", err);
+      toast({
+        title: "Error",
+        description: `Failed to share join link: ${(err as Error).message}`,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <>
@@ -123,9 +157,12 @@ const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) 
             </div>
           </div>
           <div className="flex justify-center gap-2 mt-3">
-            <span className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm text-white shadow animate-pulse-scale">
-              Share this code with players!
-            </span>
+            <Button
+              onClick={shareJoinLink}
+              className="quiz-btn-primary animate-pulse-scale"
+            >
+              Share Join Link
+            </Button>
           </div>
           <Button 
             variant="outline" 

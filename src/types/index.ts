@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 
 export interface User {
   id: string;
@@ -48,6 +49,8 @@ export interface Quiz {
 }
 
 export interface Question {
+  questionText: any;
+  correctAnswer: ReactNode;
   playerAnswerId: any;
   id: string;
   text: string;

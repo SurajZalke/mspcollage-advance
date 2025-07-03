@@ -97,8 +97,43 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
   };
 
   // Generate QR code URL using a free service
+  const joinLink = gameCode ? `${window.location.origin}/join?code=${gameCode}` : '';
   const qrCodeUrl = gameCode ? 
-    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/join?code=${gameCode}` : '';
+    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${joinLink}` : '';
+
+  const shareJoinLink = async () => {
+    if (!joinLink) return;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join my Quiz Game!',
+          text: 'Click this link to join the game:',
+          url: joinLink,
+        });
+        toast({
+          title: 'Link shared!',
+          description: 'The join link has been shared successfully.',
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+        toast({
+          title: 'Share failed', 
+          description: 'Could not share the link. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } else {
+      // Fallback for browsers that do not support Web Share API
+      // For example, open WhatsApp Web with a pre-filled message
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Join my Quiz Game! Click this link to join: ' + joinLink)}`;
+      window.open(whatsappUrl, '_blank');
+      toast({
+        title: 'Opening WhatsApp...', 
+        description: 'Your browser does not support direct sharing. Opening WhatsApp to share the link.',
+      });
+    }
+  };
 
   return (
     <div 
@@ -130,7 +165,8 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
         )}
       </div>
       
-      {/* Prominent game code display with animation for host */}
+
+
       {isHost && gameCode && (
         <Card className="mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 shadow-lg border-none overflow-hidden">
           <div className="text-center relative">
@@ -138,7 +174,7 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
               <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl animate-pulse"></div>
             </div>
-            <h3 className="text-lg font-medium mb-2 relative z-10">Share this code with players</h3>
+            <h3 className="text-lg font-medium mb-2 relative z-10">Game Code <span className="text-yellow-300">🔥</span></h3>
             <div className="flex items-center justify-center gap-3 relative z-10">
               <div className="text-3xl font-bold tracking-wider bg-white/20 px-6 py-2 rounded-md">
                 {gameCode.split('').map((char, idx) => (
@@ -167,15 +203,19 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
                 )}
               </Button>
             </div>
+            <p className="text-sm text-white/80 mt-1">Click to copy</p>
+            <hr className="my-4 border-white/30" />
+            <h3 className="text-lg font-medium mb-2 relative z-10">Players Joined</h3>
+            <p className="text-3xl font-bold relative z-10">{players.length} <span className="text-green-400 text-xl">●</span></p>
             <div className="flex justify-center gap-2 mt-3 relative z-10">
               <Button 
                 variant="secondary" 
                 size="sm" 
                 className="bg-white/20 hover:bg-white/30 transition-colors"
-                onClick={copyCodeToClipboard}
+                onClick={shareJoinLink}
               >
                 <Share className="h-4 w-4 mr-1" />
-                Share Code
+                Share Join Link
               </Button>
               <Button 
                 variant="secondary" 
@@ -184,13 +224,12 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
                 onClick={() => setShowQR(true)}
               >
                 <QrCode className="h-4 w-4 mr-1" />
-                Show QR
+                Show QR Code
               </Button>
             </div>
           </div>
         </Card>
       )}
-
       <div className="bg-white dark:bg-gray-800/50 rounded-lg border dark:border-gray-700 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200">

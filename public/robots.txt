@@ -12,7 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
-User-agent: *
-Allow: /
-Sitemap: https://mspcollage-advance.netlify.app/sitemap.xml
 
+Sitemap: https://mspcollage-advance.netlify.app/sitemap.xml

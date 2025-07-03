@@ -251,8 +251,7 @@ const HostGameRoomPage: React.FC = () => {
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
                   nickname={currentUser?.user_metadata?.name}
-                  avatarUrl={currentUser?.user_metadata?.avatar_url}
-                />
+                  avatarUrl={currentUser?.user_metadata?.avatar_url}   />
 
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">
