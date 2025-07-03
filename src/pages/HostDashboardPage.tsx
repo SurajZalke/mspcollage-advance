@@ -21,6 +21,18 @@ import ProfileSetup from "@/components/ProfileSetup";
 import { ref, get, remove, update } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
 import { Howl, Howler } from 'howler';
+import { GameResultsActions } from "@/components/GameResultsActions";
+
+interface GameHistory {
+  id: string;
+  quizTitle: string;
+  startedAt: string;
+  endedAt: string;
+  playerCount: number;
+  averageScore: number;
+  players: Record<string, any>;
+  quiz: Quiz | null;
+}
 
 const HostDashboardPage: React.FC = () => {
   const { currentUser, logout, loading } = useAuth();
@@ -38,7 +50,7 @@ const HostDashboardPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [gameHistory, setGameHistory] = useState<any[]>([]);
+  const [gameHistory, setGameHistory] = useState<GameHistory[]>([]);
 
   // Preload video and audio assets
   useEffect(() => {
@@ -140,8 +152,10 @@ const HostDashboardPage: React.FC = () => {
               quizTitle: game.quiz?.title || 'Untitled Quiz',
               startedAt: game.startedAt || '',
               endedAt: game.endedAt || '',
-              players: Object.keys(game.players || {}).length,
-              averageScore: calculateAverageScore(game.players || {})
+              playerCount: Object.keys(game.players || {}).length,
+              averageScore: calculateAverageScore(game.players || {}),
+              players: game.players || {},
+              quiz: game.quiz || null
             }))
             .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
           setGameHistory(userGames);
@@ -625,6 +639,7 @@ setQuizzes(sampleQuizzes.map(quiz => ({
                         <th className="p-4">Ended</th>
                         <th className="p-4">Players</th>
                         <th className="p-4">Avg. Score</th>
+                        <th className="p-4">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -632,17 +647,24 @@ setQuizzes(sampleQuizzes.map(quiz => ({
                         <tr key={game.id} className="border-b dark:border-gray-700">
                           <td className="p-4">{game.quizTitle}</td>
                           <td className="p-4">
-  {game.startedAt && !isNaN(new Date(game.startedAt).getTime())
-    ? new Date(game.startedAt).toLocaleString()
-    : 'Not Started'}
-</td>
+                            {game.startedAt && !isNaN(new Date(game.startedAt).getTime())
+                              ? new Date(game.startedAt).toLocaleString()
+                              : 'Not Started'}
+                          </td>
                           <td className="p-4">
-  {game.endedAt && !isNaN(new Date(game.endedAt).getTime())
-    ? new Date(game.endedAt).toLocaleString()
-    : 'In Progress'}
-</td>
-                          <td className="p-4">{game.players}</td>
+                            {game.endedAt && !isNaN(new Date(game.endedAt).getTime())
+                              ? new Date(game.endedAt).toLocaleString()
+                              : 'In Progress'}
+                          </td>
+                          <td className="p-4">{game.playerCount}</td>
                           <td className="p-4">{game.averageScore}</td>
+                          <td className="p-4">
+                            <GameResultsActions
+                              players={Object.values(game.players)}
+                              quiz={game.quiz}
+                              totalQuestions={game.quiz?.questions?.length || 0}
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -672,6 +694,3 @@ setQuizzes(sampleQuizzes.map(quiz => ({
 };
 
 export default HostDashboardPage;
-
-
-
