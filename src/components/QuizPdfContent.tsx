@@ -35,87 +35,89 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
         color: '#000',
       }}
     >
- {/* Header Title */}
-<div
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '20px',
-  }}
->
-  <img
-    src="/msplogo.jpg"
-    alt="MSP College Manora Logo"
-    style={{ width: '50px', height: '50px', marginRight: '10px' }}
-  />
-  <h1 style={{ fontSize: '30px', color: '#232b4a', fontWeight: 'bold', margin: 0 }}>
-    MSP College Manora
-  </h1>
-</div>
+      {/* Header */}
+      <div style={{ position: 'relative', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <img
+            src="/msplogo.jpg"
+            alt="MSP College Manora Logo"
+            style={{ width: '50px', height: '50px', marginRight: '10px' }}
+          />
+          <h1 style={{ fontSize: '30px', color: '#232b4a', fontWeight: 'bold', margin: 0 }}>
+            MSP College Manora
+          </h1>
+        </div>
+        <div style={{ position: 'absolute', top: 0, right: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+            <img
+              src="/developer.png"
+              alt="Creator Photo"
+              style={{
+                width: '25px',
+                height: '25px',
+                borderRadius: '50%',
+                marginRight: '6px',
+              }}
+            />
+            <span style={{ fontSize: '9px', color: '#555' }}>
+              Created by Mr Suraj Zalke ❣️
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <img
+              src={hostAvatarUrl || '/msplogo.jpg'}
+              alt="Host Avatar"
+              style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                marginRight: '4px',
+              }}
+            />
+            <span style={{ fontSize: '8px', color: '#777' }}>Host: {hostName}</span>
+          </div>
+        </div>
+      </div>
 
-{/* Quiz Title */}
-<h1 style={{ fontSize: '24px', marginBottom: '10px', color: '#333', textAlign: 'center' }}>
-  {quiz.title}
-</h1>
-<p style={{ marginBottom: '15px', color: '#666', textAlign: 'center' }}>{quiz.description}</p>
+      {/* Quiz Info */}
+      <h1 style={{ fontSize: '24px', marginBottom: '10px', color: '#333', textAlign: 'center' }}>
+        {quiz.title}
+      </h1>
+      <p style={{ marginBottom: '15px', color: '#666', textAlign: 'center' }}>{quiz.description}</p>
 
-{/* Quiz Info + Creator/Host Panel */}
-<div style={{ position: 'relative', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-  <div>
-    <p><strong>Subject:</strong> {quiz.subject}</p>
-    <p><strong>Grade:</strong> {quiz.grade}</p>
-    <p><strong>Topic:</strong> {quiz.topic}</p>
-    <p><strong>Total Questions:</strong> {quiz.questions.length}</p>
-    {quiz.hasNegativeMarking && (
-      <p><strong>Negative Marking:</strong> {quiz.negativeMarkingValue}%</p>
-    )}
-  </div>
-
-  {/* Creator & Host Panel */}
-  <div style={{ position: 'absolute', top: 0, right: 0, textAlign: 'right' }}>
-    {/* Creator */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '6px' }}>
-      <img
-        src="/developer.png"
-        alt="Creator"
+      <div
         style={{
-          width: '24px',
-          height: '24px',
-          borderRadius: '50%',
-          marginRight: '6px',
-          objectFit: 'cover',
+          marginBottom: '20px',
+          borderBottom: '1px solid #eee',
+          paddingBottom: '10px',
         }}
-      />
-      <span style={{ fontSize: '9.5px', color: '#444', fontWeight: 500 }}>
-        Created by Mr Suraj Zalke ❣️
-      </span>
-    </div>
+      >
+        <p>
+          <strong>Subject:</strong> {quiz.subject}
+        </p>
+        <p>
+          <strong>Grade:</strong> {quiz.grade}
+        </p>
+        <p>
+          <strong>Topic:</strong> {quiz.topic}
+        </p>
+        <p>
+          <strong>Total Questions:</strong> {quiz.questions.length}
+        </p>
+        {quiz.hasNegativeMarking && (
+          <p>
+            <strong>Negative Marking:</strong> {quiz.negativeMarkingValue}%
+          </p>
+        )}
+      </div>
 
-    {/* Host */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-      <img
-        src={hostAvatarUrl || "/msplogo.jpg"}
-        alt="Host Avatar"
-        style={{
-          width: '24px',
-          height: '24px',
-          borderRadius: '50%',
-          marginRight: '6px',
-          objectFit: 'cover',
-        }}
-      />
-      <span style={{ fontSize: '9.5px', color: '#666' }}>
-        Host: {hostName}
-      </span>
-    </div>
-  </div>
-</div>
-
-      {/* Page 1 (Q1 to Q4) */}
+      {/* First Page – Q1 to Q4 */}
       <div style={{ pageBreakAfter: 'always' }}>
         {pageOneQuestions.map((question, index) => (
-          <div key={question.id} style={{ marginBottom: '20px', pageBreakInside: 'avoid' }}>
+          <div
+            key={question.id}
+            style={{ marginBottom: '20px', pageBreakInside: 'avoid' }}
+          >
             <h2 style={{ fontSize: '16px', color: '#000' }}>
               {index + 1}. {question.text}
             </h2>
@@ -141,13 +143,13 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
             </ul>
             <p style={{ fontWeight: 'bold', color: '#28a745' }}>
               Correct Answer:{' '}
-              {question.options.find(opt => opt.id === question.correctOption)?.text || 'N/A'}
+              {question.options.find((opt) => opt.id === question.correctOption)?.text || 'N/A'}
             </p>
           </div>
         ))}
       </div>
 
-      {/* Remaining pages (7 per page) */}
+      {/* Remaining Pages – Q5+ (7 per page) */}
       {remainingChunks.map((chunk, chunkIndex) => {
         const isFullPage = chunk.length === 7;
 
@@ -162,6 +164,7 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
               justifyContent: isFullPage ? 'space-between' : 'flex-start',
               height: '1122px',
               paddingBottom: '20px',
+              gap: isFullPage ? '10px' : '20px',
             }}
           >
             {chunk.map((question, qIndex) => {
@@ -194,14 +197,21 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
                   )}
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {question.options.map((option) => (
-                      <li key={option.id} style={{ marginBottom: '4px', lineHeight: '1.2' }}>
+                      <li
+                        key={option.id}
+                        style={{
+                          marginBottom: '4px',
+                          lineHeight: '1.2',
+                          breakInside: 'avoid',
+                        }}
+                      >
                         {option.text}
                       </li>
                     ))}
                   </ul>
                   <p style={{ fontWeight: 'bold', color: '#28a745' }}>
                     Correct Answer:{' '}
-                    {question.options.find(opt => opt.id === question.correctOption)?.text || 'N/A'}
+                    {question.options.find((opt) => opt.id === question.correctOption)?.text || 'N/A'}
                   </p>
                 </div>
               );
