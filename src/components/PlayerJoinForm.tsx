@@ -188,7 +188,7 @@ const PlayerJoinForm: React.FC<PlayerJoinFormProps> = ({ initialGameCode = null 
             state: { gameId: result.gameId, playerId: result.playerId },
           });
           window.location.reload(); // Reload the page after navigation
-        }, 2000); // 200 milliseconds = 2 seconds
+        }, 100); // 200 milliseconds = 2 seconds
       } else {
         throw new Error(result.message || "Failed to join game");
       }

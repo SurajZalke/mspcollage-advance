@@ -68,7 +68,7 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
       setAllSortedPlayers(sortedPlayers); // Store all sorted players for the table
 
       // Check for Mr.Developer and trigger animation
-      if (sortedPlayers[0]?.nickname === 'Mr.Developer' && !mrDevAnimationPlayedRef.current) {
+      if ((sortedPlayers[0]?.nickname === 'Mr.Suraj Zalke' || sortedPlayers[0]?.nickname === 'Mr.Sanket Ingole')  || sortedPlayers[0]?.nickname !== 'Mr.Aryan' && !showMrDeveloperAnimation) {
         setShowMrDeveloperAnimation(true);
         mrDevAnimationPlayedRef.current = true; // Ensure it plays only once per game session
         const video = document.createElement('video');
