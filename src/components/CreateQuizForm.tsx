@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ref as dbRef, push as dbPush, set as dbSet, get, child, update, remove as dbRemove } from "firebase/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,28 +25,317 @@ import { fill } from '@cloudinary/url-gen/actions/resize';
 import { byRadius } from '@cloudinary/url-gen/actions/roundCorners';
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity';
 
-import { MATH_SYMBOLS, CHEMISTRY_SYMBOLS, PHYSICS_SYMBOLS, BIOLOGY_SYMBOLS, COMMON_FORMULAS, CONSTANTS, ADVANCED_MATH, ADVANCED_PHYSICS, ADVANCED_CHEMISTRY, ADVANCED_BIOLOGY, CONSTANT_SYMBOLS } from '@/utils/constants';
+import {
+  MATH_SYMBOLS,
+  CHEMISTRY_SYMBOLS,
+  PHYSICS_SYMBOLS,
+  BIOLOGY_SYMBOLS,
+  COMMON_FORMULAS,
+  CONSTANTS,
+  ADVANCED_MATH,
+  ADVANCED_PHYSICS,
+  ADVANCED_CHEMISTRY,
+  ADVANCED_BIOLOGY,
+  CONSTANT_SYMBOLS,
+  GREEK_SYMBOLS,
+  SUPERSCRIPT_NUMBERS,
+  SUBSCRIPT_NUMBERS,
+  SUPERSCRIPT_LETTERS,
+  SUBSCRIPT_LETTERS,
+} from '@/utils/constants';
 
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
 import { useLocation, useNavigate } from "react-router-dom";
 
 const SymbolPicker = ({ onSelect }: { onSelect: (symbol: string) => void }) => {
-  const [activeTab, setActiveTab] = useState('constant');
+  const [activeTab, setActiveTab] = useState('math');
 
-  const tabs = [
-    { id: 'constant', label: 'Basic Symbols', symbols: CONSTANT_SYMBOLS },
-    { id: 'constants', label: 'Constants', symbols: CONSTANTS },
-    { id: 'advanced_math', label: 'Advanced Math', symbols: ADVANCED_MATH },
-    { id: 'advanced_physics', label: 'Advanced Physics', symbols: ADVANCED_PHYSICS },
-    { id: 'advanced_chemistry', label: 'Advanced Chemistry', symbols: ADVANCED_CHEMISTRY },
-    { id: 'advanced_biology', label: 'Advanced Biology', symbols: ADVANCED_BIOLOGY },
-    { id: 'math', label: 'Basic Math', symbols: MATH_SYMBOLS },
-    { id: 'chemistry', label: 'Basic Chemistry', symbols: CHEMISTRY_SYMBOLS },
-    { id: 'physics', label: 'Basic Physics', symbols: PHYSICS_SYMBOLS },
-    { id: 'biology', label: 'Basic Biology', symbols: BIOLOGY_SYMBOLS },
-    { id: 'formulas', label: 'Common Formulas', symbols: COMMON_FORMULAS },
-  ];
+  const tabs = useMemo(() => [
+    {
+      id: 'math',
+      label: 'Math',
+      sections: [
+        {
+          title: 'Basic Operations',
+          symbols: [
+            { symbol: '±', name: 'Plus-Minus' },
+            { symbol: '×', name: 'Multiplication' },
+            { symbol: '÷', name: 'Division' },
+            { symbol: '≠', name: 'Not Equal' },
+            { symbol: '≈', name: 'Approximately' },
+            { symbol: '∞', name: 'Infinity' },
+            { symbol: '∑', name: 'Summation' },
+            { symbol: '∫', name: 'Integral' },
+            { symbol: '√', name: 'Square Root' },
+            { symbol: '∏', name: 'Product' },
+          ],
+        },
+        {
+          title: 'Calculus & Logic',
+          symbols: [
+            { symbol: '∂', name: 'Partial Derivative' },
+            { symbol: '∇', name: 'Nabla/Del' },
+            { symbol: '∆', name: 'Delta/Change' },
+            { symbol: '∈', name: 'Element Of' },
+            { symbol: '∉', name: 'Not Element Of' },
+            { symbol: '⊂', name: 'Subset Of' },
+            { symbol: '⊃', name: 'Superset Of' },
+            { symbol: '∪', name: 'Union' },
+            { symbol: '∩', name: 'Intersection' },
+            { symbol: '∀', name: 'For All' },
+            { symbol: '∃', name: 'There Exists' },
+            { symbol: '∄', name: 'Does Not Exist' },
+            { symbol: '∅', name: 'Empty Set' },
+            { symbol: '∝', name: 'Proportional To' },
+          ],
+        },
+        {
+          title: 'Superscript Numbers',
+          symbols: SUPERSCRIPT_NUMBERS,
+        },
+        {
+          title: 'Subscript Numbers',
+          symbols: SUBSCRIPT_NUMBERS,
+        },
+        {
+          title: 'Superscript Letters',
+          symbols: SUPERSCRIPT_LETTERS,
+        },
+        {
+          title: 'Subscript Letters',
+          symbols: SUBSCRIPT_LETTERS,
+        },
+      ],
+    },
+    {
+      id: 'greek',
+      label: 'Greek',
+      sections: [
+        {
+          title: 'Uppercase',
+          symbols: [
+            { symbol: 'Α', name: 'Alpha (Uppercase)' },
+            { symbol: 'Β', name: 'Beta (Uppercase)' },
+            { symbol: 'Γ', name: 'Gamma (Uppercase)' },
+            { symbol: 'Δ', name: 'Delta (Uppercase)' },
+            { symbol: 'Ε', name: 'Epsilon (Uppercase)' },
+            { symbol: 'Ζ', name: 'Zeta (Uppercase)' },
+            { symbol: 'Η', name: 'Eta (Uppercase)' },
+            { symbol: 'Θ', name: 'Theta (Uppercase)' },
+            { symbol: 'Ι', name: 'Iota (Uppercase)' },
+            { symbol: 'Κ', name: 'Kappa (Uppercase)' },
+            { symbol: 'Λ', name: 'Lambda (Uppercase)' },
+            { symbol: 'Μ', name: 'Mu (Uppercase)' },
+            { symbol: 'Ν', name: 'Nu (Uppercase)' },
+            { symbol: 'Ξ', name: 'Xi (Uppercase)' },
+            { symbol: 'Ο', name: 'Omicron (Uppercase)' },
+            { symbol: 'Π', name: 'Pi (Uppercase)' },
+            { symbol: 'Ρ', name: 'Rho (Uppercase)' },
+            { symbol: 'Σ', name: 'Sigma (Uppercase)' },
+            { symbol: 'Τ', name: 'Tau (Uppercase)' },
+            { symbol: 'Υ', name: 'Upsilon (Uppercase)' },
+            { symbol: 'Φ', name: 'Phi (Uppercase)' },
+            { symbol: 'Χ', name: 'Chi (Uppercase)' },
+            { symbol: 'Ψ', name: 'Psi (Uppercase)' },
+            { symbol: 'Ω', name: 'Omega (Uppercase)' },
+          ],
+        },
+        {
+          title: 'Lowercase',
+          symbols: [
+            { symbol: 'α', name: 'Alpha (Lowercase)' },
+            { symbol: 'β', name: 'Beta (Lowercase)' },
+            { symbol: 'γ', name: 'Gamma (Lowercase)' },
+            { symbol: 'δ', name: 'Delta (Lowercase)' },
+            { symbol: 'ε', name: 'Epsilon (Lowercase)' },
+            { symbol: 'ζ', name: 'Zeta (Lowercase)' },
+            { symbol: 'η', name: 'Eta (Lowercase)' },
+            { symbol: 'θ', name: 'Theta (Lowercase)' },
+            { symbol: 'ι', name: 'Iota (Lowercase)' },
+            { symbol: 'κ', name: 'Kappa (Lowercase)' },
+            { symbol: 'λ', name: 'Lambda (Lowercase)' },
+            { symbol: 'μ', name: 'Mu (Lowercase)' },
+            { symbol: 'ν', name: 'Nu (Lowercase)' },
+            { symbol: 'ξ', name: 'Xi (Lowercase)' },
+            { symbol: 'ο', name: 'Omicron (Lowercase)' },
+            { symbol: 'π', name: 'Pi (Lowercase)' },
+            { symbol: 'ρ', name: 'Rho (Lowercase)' },
+            { symbol: 'σ', name: 'Sigma (Lowercase)' },
+            { symbol: 'τ', name: 'Tau (Lowercase)' },
+            { symbol: 'υ', name: 'Upsilon (Lowercase)' },
+            { symbol: 'φ', name: 'Phi (Lowercase)' },
+            { symbol: 'χ', name: 'Chi (Lowercase)' },
+            { symbol: 'ψ', name: 'Psi (Lowercase)' },
+            { symbol: 'ω', name: 'Omega (Lowercase)' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'chemistry',
+      label: 'Chemistry',
+      sections: [
+        {
+          title: 'Common Compounds',
+          symbols: [
+            { symbol: 'H₂O', name: 'Water' },
+            { symbol: 'CO₂', name: 'Carbon Dioxide' },
+            { symbol: 'NaCl', name: 'Sodium Chloride' },
+            { symbol: 'H₂SO₄', name: 'Sulfuric Acid' },
+            { symbol: 'HCl', name: 'Hydrochloric Acid' },
+            { symbol: 'NaOH', name: 'Sodium Hydroxide' },
+            { symbol: 'CH₄', name: 'Methane' },
+            { symbol: 'C₂H₅OH', name: 'Ethanol' },
+            { symbol: 'NH₃', name: 'Ammonia' },
+            { symbol: 'O₃', name: 'Ozone' },
+            { symbol: 'CaCO₃', name: 'Calcium Carbonate' },
+            { symbol: 'Fe₂O₃', name: 'Iron(III) Oxide' },
+            { symbol: 'KMnO₄', name: 'Potassium Permanganate' },
+            { symbol: 'AgNO₃', name: 'Silver Nitrate' },
+          ],
+        },
+        {
+          title: 'Reaction Symbols',
+          symbols: [
+            { symbol: '→', name: 'Reaction Arrow' },
+            { symbol: '⇌', name: 'Equilibrium' },
+            { symbol: 'Δ', name: 'Heat' },
+            { symbol: '↑', name: 'Gas Evolution' },
+            { symbol: '↓', name: 'Precipitation' },
+            { symbol: '⇅', name: 'Resonance' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'physics',
+      label: 'Physics',
+      sections: [
+        {
+          title: 'Greek Letters',
+          symbols: [
+            { symbol: 'λ', name: 'Wavelength' },
+            { symbol: 'μ', name: 'Micro' },
+            { symbol: 'Ω', name: 'Ohm' },
+            { symbol: 'π', name: 'Pi' },
+            { symbol: 'θ', name: 'Theta' },
+            { symbol: 'ρ', name: 'Density' },
+            { symbol: 'σ', name: 'Sigma' },
+            { symbol: 'τ', name: 'Tau' },
+            { symbol: 'φ', name: 'Phi' },
+            { symbol: 'ν', name: 'Frequency' },
+            { symbol: 'α', name: 'Alpha' },
+            { symbol: 'β', name: 'Beta' },
+            { symbol: 'γ', name: 'Gamma' },
+          ],
+        },
+        {
+          title: 'Physical Constants & Variables',
+          symbols: [
+            { symbol: 'ε₀', name: 'Permittivity of Free Space' },
+            { symbol: 'μ₀', name: 'Permeability of Free Space' },
+            { symbol: '∆x', name: 'Displacement' },
+            { symbol: '∆v', name: 'Change in Velocity' },
+            { symbol: '∆t', name: 'Time Interval' },
+            { symbol: '∆E', name: 'Change in Energy' },
+            { symbol: '∆P', name: 'Change in Momentum' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'biology',
+      label: 'Biology',
+      sections: [
+        {
+          title: 'Basic Symbols',
+          symbols: [
+            { symbol: '♂', name: 'Male' },
+            { symbol: '♀', name: 'Female' },
+            { symbol: '→', name: 'Leads to' },
+            { symbol: '⇌', name: 'Reversible Process' },
+          ],
+        },
+        {
+          title: 'Biomolecules & Concepts',
+          symbols: [
+            { symbol: 'ATP', name: 'Adenosine Triphosphate' },
+            { symbol: 'DNA', name: 'Deoxyribonucleic Acid' },
+            { symbol: 'RNA', name: 'Ribonucleic Acid' },
+            { symbol: 'ADP', name: 'Adenosine Diphosphate' },
+            { symbol: 'NADH', name: 'Nicotinamide Adenine Dinucleotide' },
+            { symbol: 'CO₂', name: 'Carbon Dioxide' },
+            { symbol: 'O₂', name: 'Oxygen' },
+            { symbol: 'H₂O', name: 'Water' },
+            { symbol: 'C₆H₁₂O₆', name: 'Glucose' },
+            { symbol: 'pH', name: 'pH Scale' },
+            { symbol: '∆G', name: 'Change in Gibbs Free Energy' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'formulas',
+      label: 'Formulas',
+      sections: [
+        {
+          title: 'Common Formulas',
+          symbols: COMMON_FORMULAS,
+        },
+      ],
+    },
+    {
+      id: 'constants',
+      label: 'Constants',
+      sections: [
+        {
+          title: 'Physical Constants',
+          symbols: CONSTANTS,
+        },
+      ],
+    },
+    {
+      id: 'advanced-math',
+      label: 'Advanced Math',
+      sections: [
+        {
+          title: 'Advanced Math Symbols',
+          symbols: ADVANCED_MATH,
+        },
+      ],
+    },
+    {
+      id: 'advanced-physics',
+      label: 'Advanced Physics',
+      sections: [
+        {
+          title: 'Advanced Physics Symbols',
+          symbols: ADVANCED_PHYSICS,
+        },
+      ],
+    },
+    {
+      id: 'advanced-chemistry',
+      label: 'Advanced Chemistry',
+      sections: [
+        {
+          title: 'Advanced Chemistry Symbols',
+          symbols: ADVANCED_CHEMISTRY,
+        },
+      ],
+    },
+    {
+      id: 'advanced-biology',
+      label: 'Advanced Biology',
+      sections: [
+        {
+          title: 'Advanced Biology Symbols',
+          symbols: ADVANCED_BIOLOGY,
+        },
+      ],
+    },
+  ], []);
 
   return (
     <div className="p-4 max-h-[400px] overflow-y-auto">
@@ -62,25 +351,32 @@ const SymbolPicker = ({ onSelect }: { onSelect: (symbol: string) => void }) => {
           </Button>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        {tabs.find(tab => tab.id === activeTab)?.symbols.map((item) => (
-          <Button
-            key={item.symbol}
-            variant="outline"
-            onClick={() => onSelect(item.symbol)}
-            className="p-2 h-auto hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center justify-center gap-1"
-            title={item.name}
-          >
-            <span className="text-lg">{item.symbol}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400 truncate w-full text-center">
-              {item.name}
-            </span>
-            {('unit' in item) && (
-              <span className="text-xs text-blue-500 dark:text-blue-400">
-                {String(item.unit)}
-              </span>
-            )}
-          </Button>
+      <div className="space-y-4">
+        {tabs.find(tab => tab.id === activeTab)?.sections.map((section, sectionIndex) => (
+          <div key={sectionIndex}>
+            <h3 className="text-md font-semibold mb-2">{section.title}</h3>
+            <div className="grid grid-cols-6 gap-2">
+              {section.symbols.map((item) => (
+                <Button
+                  key={item.symbol}
+                  variant="outline"
+                  onClick={() => onSelect(item.symbol)}
+                  className="p-2 h-auto hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center justify-center gap-1 text-wrap"
+                  title={item.name}
+                >
+                  <span className="text-md break-all text-center">{item.symbol}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 break-all text-center">
+                    {item.name}
+                  </span>
+                  {('unit' in item) && (
+                    <span className="text-xs text-blue-500 dark:text-blue-400">
+                      {String(item.unit)}
+                    </span>
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
