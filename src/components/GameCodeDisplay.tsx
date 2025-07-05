@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 interface GameCodeDisplayProps {
   code: string;
   playerCount: number;
+  className?: string;
 }
 
 const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ code, playerCount }) => {

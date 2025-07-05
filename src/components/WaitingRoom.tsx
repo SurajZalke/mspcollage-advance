@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Player } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Users, RefreshCw, Clock, Copy, CheckCircle, Share, QrCode } from "lucide-react";
+import { Users, RefreshCw, Clock, Copy, CheckCircle, Share, QrCode, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,7 @@ interface WaitingRoomProps {
   isHost: boolean;
   nickname?: string;
   avatarUrl?: string;
+  onRemovePlayer?: (playerId: string) => Promise<void>;
 }
 
 const WaitingRoom: React.FC<WaitingRoomProps> = ({
@@ -34,7 +35,8 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
   gameCode,
   isHost,
   nickname,
-  avatarUrl
+  avatarUrl,
+  onRemovePlayer // Destructure onRemovePlayer here
 }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -134,6 +136,10 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
       });
     }
   };
+
+
+
+
 
   return (
     <div 
@@ -290,6 +296,18 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
                         Ready
                       </span>
                     </TableCell>
+                      <TableCell className="text-right">
+                        {isHost && onRemovePlayer && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onRemovePlayer(player.player_id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

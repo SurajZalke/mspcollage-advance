@@ -9,9 +9,10 @@ interface PlayerStatesProps {
   players: Player[];
   currentQuestionId?: string;
   hasHostSubmitted?: boolean;
+  onRemovePlayer?: (playerId: string) => void;
 }
 
-const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId, hasHostSubmitted }) => {
+const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId, hasHostSubmitted, onRemovePlayer }) => {
 
 
   const [showResults, setShowResults] = useState(false);
@@ -54,6 +55,7 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId,
               <TableHead>Status</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Correct</TableHead>
+              {onRemovePlayer && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,6 +106,17 @@ const PlayerStates: React.FC<PlayerStatesProps> = ({ players, currentQuestionId,
                       <span className="text-gray-400">Hidden</span>
                     )}
                   </TableCell>
+                  {onRemovePlayer && (
+                    <TableCell key={`${player.id}-actions`}>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => onRemovePlayer(player.id)}
+                      >
+                        Remove
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}

@@ -84,6 +84,8 @@ export interface GameRoom {
   startTime: Date | null;
   endTime: Date | null;
   hostSubmitted?: boolean;
+  removedPlayers?: { [playerId: string]: boolean };
+  removedNicknames?: { [nickname: string]: boolean };
 }
 
 export interface ScienceSubject {

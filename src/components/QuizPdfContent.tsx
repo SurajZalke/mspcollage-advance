@@ -35,9 +35,16 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
         color: '#000',
       }}
     >
-      {/* Header */}
-      <div style={{ position: 'relative', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      {/* Header Title */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          marginBottom: '20px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <img
             src="/msplogo.jpg"
             alt="MSP College Manora Logo"
@@ -47,68 +54,82 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
             MSP College Manora
           </h1>
         </div>
-        <div style={{ position: 'absolute', top: 0, right: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-            <img
-              src="/developer.png"
-              alt="Creator Photo"
-              style={{
-                width: '25px',
-                height: '25px',
-                borderRadius: '50%',
-                marginRight: '6px',
-              }}
-            />
-            <span style={{ fontSize: '9px', color: '#555' }}>
-              Created by Mr Suraj Zalke ❣️
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <img
-              src={hostAvatarUrl || '/msplogo.jpg'}
-              alt="Host Avatar"
-              style={{
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                marginRight: '4px',
-              }}
-            />
-            <span style={{ fontSize: '8px', color: '#777' }}>Host: {hostName}</span>
-          </div>
-        </div>
+
+        {/* Quiz Title */}
+        <h1 style={{ fontSize: '24px', marginBottom: '10px', color: '#333', textAlign: 'center' }}>
+          {quiz.title}
+        </h1>
+        <p style={{ marginBottom: '15px', color: '#666', textAlign: 'center' }}>{quiz.description}</p>
       </div>
 
-      {/* Quiz Info */}
-      <h1 style={{ fontSize: '24px', marginBottom: '10px', color: '#333', textAlign: 'center' }}>
-        {quiz.title}
-      </h1>
-      <p style={{ marginBottom: '15px', color: '#666', textAlign: 'center' }}>{quiz.description}</p>
-
+      {/* Quiz Info + Creator/Host Panel */}
       <div
         style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
           marginBottom: '20px',
           borderBottom: '1px solid #eee',
           paddingBottom: '10px',
         }}
       >
-        <p>
-          <strong>Subject:</strong> {quiz.subject}
-        </p>
-        <p>
-          <strong>Grade:</strong> {quiz.grade}
-        </p>
-        <p>
-          <strong>Topic:</strong> {quiz.topic}
-        </p>
-        <p>
-          <strong>Total Questions:</strong> {quiz.questions.length}
-        </p>
-        {quiz.hasNegativeMarking && (
-          <p>
-            <strong>Negative Marking:</strong> {quiz.negativeMarkingValue}%
-          </p>
-        )}
+        <div>
+          <p><strong>Subject:</strong> {quiz.subject}</p>
+          <p><strong>Grade:</strong> {quiz.grade}</p>
+          <p><strong>Topic:</strong> {quiz.topic}</p>
+          <p><strong>Total Questions:</strong> {quiz.questions.length}</p>
+          {quiz.hasNegativeMarking && (
+            <p><strong>Negative Marking:</strong> {quiz.negativeMarkingValue}%</p>
+          )}
+        </div>
+
+        {/* Creator & Host Panel */}
+        <div style={{ textAlign: 'right' }}>
+          {/* Creator */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              marginBottom: '6px',
+            }}
+          >
+            <img
+              src="/developer.png"
+              alt="Creator"
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                marginRight: '6px',
+                objectFit: 'cover',
+              }}
+            />
+            <span style={{ fontSize: '9.5px', color: '#444', fontWeight: 500 }}>
+              Created by Mr Suraj Zalke ❣️
+            </span>
+          </div>
+
+          {/* Host */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}
+          >
+            <img
+              src={hostAvatarUrl || "/msplogo.jpg"}
+              alt="Host Avatar"
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                marginRight: '6px',
+                objectFit: 'cover',
+              }}
+            />
+            <span style={{ fontSize: '9.5px', color: '#666' }}>
+              Host: {hostName}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* First Page – Q1 to Q4 */}
@@ -163,7 +184,7 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
               flexDirection: 'column',
               justifyContent: isFullPage ? 'space-between' : 'flex-start',
               height: '1122px',
-              paddingBottom: '20px',
+              paddingBottom: '40px',
               gap: isFullPage ? '10px' : '20px',
             }}
           >
@@ -177,6 +198,11 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
                     breakInside: 'avoid',
                     pageBreakInside: 'avoid',
                     marginBottom: isFullPage ? 0 : '20px',
+                    ...(globalIndex >= 13 &&
+                      (globalIndex - 13) % 7 === 0 &&
+                      quiz.questions.length > 25
+                      ? { marginBottom: '80px' }
+                      : {}),
                   }}
                 >
                   <h2 style={{ fontSize: '16px', color: '#000', marginBottom: '10px' }}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Player } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGame } from "@/contexts/GameContext";
 import BackgroundContainer from "@/components/BackgroundContainer";
@@ -184,6 +185,86 @@ const HostGameRoomPage: React.FC = () => {
   // Add a state for timeLeft
   const [timeLeft, setTimeLeft] = useState<number>(30); // Default to 30 seconds or appropriate value
 
+  const handleRemovePlayer = async (playerId: string): Promise<void> => {
+    console.log("Attempting to remove player with ID:", playerId);
+    if (!activeGame?.id || !currentUser?.uid) {
+      console.log("Cannot remove player - missing activeGame ID or currentUser UID");
+      return;
+    }
+
+    const gameRef = ref(db, `games/${activeGame.id}`);
+    const playersRef = ref(db, `games/${activeGame.id}/players`);
+    const removedPlayersRef = ref(db, `games/${activeGame.id}/removedPlayers`);
+
+    console.log("Current activeGame ID:", activeGame.id);
+    console.log("Current user ID:", currentUser.uid);
+    console.log("Full player ID being removed:", playerId);
+
+    try {
+      console.log("Fetching current players from Firebase...");
+      const snapshot = await get(playersRef);
+      const currentPlayers = snapshot.val() as { [key: string]: Player } || {};
+      console.log("Players before removal:", currentPlayers);
+      console.log("Player IDs in database:", Object.keys(currentPlayers));
+
+      if (currentPlayers[playerId]) {
+        console.log("Found player to remove:", currentPlayers[playerId]);
+        
+        // Get current removed players list
+        const removedSnapshot = await get(removedPlayersRef);
+        const removedPlayers = removedSnapshot.val() as { [key: string]: boolean } || {};
+        
+        // Remove the player from the players object
+        const updatedPlayers = { ...currentPlayers };
+        delete updatedPlayers[playerId];
+        
+        // Add player to removedPlayers list
+        const updatedRemovedPlayers = { ...removedPlayers, [playerId]: true };
+
+        console.log("Players after removal (local update):", updatedPlayers);
+        console.log("Attempting to update Firebase with new players object and removedPlayers...");
+        const playerToRemove = activeGame.players.find(p => p.player_id === playerId);
+      if (playerToRemove) {
+        await update(gameRef, {
+          players: updatedPlayers,
+          [`removedPlayers/${playerId}`]: true,
+          [`removedNicknames/${playerToRemove.nickname}`]: true,
+        });
+      } else {
+        await update(gameRef, {
+          players: updatedPlayers,
+          [`removedPlayers/${playerId}`]: true,
+        });
+      }
+        console.log("Firebase update successful.");
+        
+        // Verify the update
+        const updatedSnapshot = await get(playersRef);
+        const updatedPlayersCheck = updatedSnapshot.val() || {};
+        console.log("Players after Firebase update:", updatedPlayersCheck);
+        
+        toast({
+        title: "Player Removed",
+        description: `Player name ${playerToRemove?.nickname ? `(${playerToRemove.nickname})` : ''} has been removed and cannot rejoin this game.`,
+      });
+      } else {
+        console.log("Player not found in database");
+        toast({
+          title: "Error",
+          description: "Player not found.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error removing player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove player.",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     if (timeLeft <= 10 && !playedRef.current) {
       warningSound.play();
@@ -233,13 +314,17 @@ const HostGameRoomPage: React.FC = () => {
           connectionStatus={connectionStatus}
           onRefresh={handleManualRefresh}
           name={currentUser?.user_metadata?.name}
-          avatarUrl={currentUser?.user_metadata?.avatar_url} isWarningSoundEnabled={false} setIsWarningSoundEnabled={function (enabled: boolean): void {
+          avatarUrl={currentUser?.user_metadata?.avatar_url}
+          isWarningSoundEnabled={false}
+          setIsWarningSoundEnabled={function (enabled: boolean): void {
             throw new Error("Function not implemented.");
-          } }        />
+          }}
+          players={activeGame?.players}
+        />
 
         <main className="container mx-auto p-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-3 space-y-6">
               {activeGame?.status === "waiting" ? (
                 <WaitingRoom 
                   players={activeGame.players}
@@ -251,7 +336,8 @@ const HostGameRoomPage: React.FC = () => {
                   handleMouseMove={handleMouseMove}
                   resetTilt={resetTilt}
                   nickname={currentUser?.user_metadata?.name}
-                  avatarUrl={currentUser?.user_metadata?.avatar_url}   />
+                  avatarUrl={currentUser?.user_metadata?.avatar_url}
+                  onRemovePlayer={handleRemovePlayer}   />
 
               ) : activeGame?.status === "active" ? (
                 <div className="space-y-6">
@@ -271,7 +357,7 @@ const HostGameRoomPage: React.FC = () => {
                   </div>
                   
                   {activeGame?.status === "active" && currentQuestion && (
-                    <div className="w-full max-w-4xl mx-auto">
+                    <div className="w-full mx-auto">
                       <QuestionDisplay
                         question={{
                           ...currentQuestion,
@@ -290,16 +376,17 @@ const HostGameRoomPage: React.FC = () => {
                       players={activeGame.players}
                       currentQuestionId={currentQuestion?.id}
                       hasHostSubmitted={hasSubmittedAnswer}
+                      onRemovePlayer={handleRemovePlayer}
                     />
                   )}
                   
                   {activeGame?.status === "active" && activeGame.players && activeGame.players.length > 0 && (
                     <LeaderboardDisplay
-                    players={activeGame.players}
-                    activeQuiz={activeGame.quiz}
-                    showScores={true}
-                    hasHostSubmitted={activeGame.hostSubmitted}
-                  />
+                      players={activeGame.players}
+                      activeQuiz={activeGame.quiz}
+                      showScores={true}
+                      hasHostSubmitted={activeGame.hostSubmitted}
+                    />
                   )}
                   
                   {currentQuestion && hasSubmittedAnswer && (
@@ -341,38 +428,7 @@ const HostGameRoomPage: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="space-y-6">
-              {activeGame && (
-                <>
-                  <div className="transform hover:scale-[1.02] transition-all duration-300">
-                    <GameCodeDisplay
-                      code={activeGame.code}
-                      playerCount={activeGame.players.length}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TrophyAnimation winners={[]} />
-                    <span className="text-xl font-bold text-quiz-dark dark:text-white">
-                      {activeGame.winner?.name}
-                    </span>
-                  </div>
-                  <div className="transform hover:scale-[1.02] transition-all duration-300">
-                    <div className="quiz-card p-6 text-center">
-                      <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">
-                        Quiz Status
-                      </h2>
-                      <p className="text-gray-600 dark:text-gray-300 mb-4">
-                        {activeGame.status === "waiting"
-                          ? "Waiting for players to join"
-                          : activeGame.status === "active"
-                          ? "Quiz in progress"
-                          : "Quiz ended"}
-                      </p>
-                    </div>
-                </div>
-                </>
-              )}
-            </div>
+
           </div>
         </main>
         <CreatorAttribution />

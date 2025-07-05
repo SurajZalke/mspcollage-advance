@@ -124,7 +124,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const unsubscribe = onValue(gameRef, async (snapshot) => {
         console.log('onValue listener triggered for game:', activeGame.id);
         if (snapshot.exists()) {
-          console.log('Game snapshot exists, calling refreshGameState.');
+          const latestGameData = snapshot.val();
+          console.log('Game snapshot exists, calling refreshGameState with latest data:', latestGameData);
           await refreshGameState();
 
         } else {
@@ -280,6 +281,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const gameData = gameSnapshot.val() as GameRoom;
       console.log('refreshGameState: Fetched gameData:', gameData);
+      console.log('refreshGameState: Players in fetched gameData:', gameData.players);
 
       // Ensure gameData.players is an array
       // Ensure gameData.players is an array, converting from object if necessary
@@ -322,6 +324,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn(`Player with ID ${currentUserId} not found in refreshed game data players list.`);
           setCurrentPlayer(null);
           setIsHost(false);
+          console.log('Player removed, navigating to home page.');
+          navigate('/'); // Navigate to home page if player is removed
         }
       } else {
         // No current user (authenticated or guest) found, clear player state
@@ -382,6 +386,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           success: false,
           message: 'Game not found or has expired. Please check the code and try again.',
         };
+      }
+
+      // Check if player is in removedPlayers list (by player_id)
+      if (gameData.removedPlayers && auth.currentUser?.uid && gameData.removedPlayers[auth.currentUser.uid]) {
+        return { gameId: null, playerId: null, success: false, message: "You have been removed from this game." };
+      }
+
+      // Check if nickname is in removedNicknames list
+      if (gameData.removedNicknames && gameData.removedNicknames[nickname]) {
+        return { gameId: null, playerId: null, success: false, message: `The nickname '${nickname}' has been removed from this game.` };
       }
 
       // Check if nickname is taken

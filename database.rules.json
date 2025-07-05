@@ -22,8 +22,8 @@
          "players": { 
            "$playerId": {
              ".read": true,
-             ".write": "auth != null || (!data.exists() && newData.exists())" 
-           } 
+           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid"
+         } 
          } 
        } 
      }, 
