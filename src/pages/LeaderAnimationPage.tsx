@@ -68,10 +68,16 @@ export const LeaderAnimationPage: React.FC<LeaderAnimationPageProps> = () => {
       setAllSortedPlayers(sortedPlayers); // Store all sorted players for the table
 
       // Check for Mr.Developer and trigger animation
-      if ((sortedPlayers[0]?.nickname === 'Mr.Suraj Zalke' || sortedPlayers[0]?.nickname === 'Mr.Sanket Ingole')  || sortedPlayers[0]?.nickname !== 'Mr.Aryan' && !showMrDeveloperAnimation) {
+      if (sortedPlayers[0]?.nickname === 'Mr.Suraj Zalke' && !showMrDeveloperAnimation) {
         setShowMrDeveloperAnimation(true);
         mrDevAnimationPlayedRef.current = true; // Ensure it plays only once per game session
         const video = document.createElement('video');
+        videoRef.current = video;
+        video.addEventListener('ended', () => {
+          setShowConfetti(true);
+          confetti({ particleCount: 500, spread: 180, startVelocity: 60, decay: 0.9, scalar: 1.2, shapes: ['circle', 'square'], colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'] });
+        });
+
  // Start muted, user can unmute
         video.style.position = 'fixed';
         video.style.top = '50%';

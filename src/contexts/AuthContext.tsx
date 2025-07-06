@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from "@/lib/firebaseConfig";
-import { User, onAuthStateChanged, AuthError, Auth, updateProfile as updateProfileFirebase, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { User, onAuthStateChanged, AuthError, Auth, updateProfile as updateProfileFirebase, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { ref, get, set, onValue, update, serverTimestamp } from "firebase/database";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -21,6 +21,9 @@ interface AuthContextType {
   isLoggedIn: () => boolean;
   updateProfile: (data: { name?: string; avatar_url?: string; bio?: string }) => Promise<void>;
   // refreshSession: () => Promise<void>; // Firebase handles sessions differently
+  resetPassword: (email: string) => Promise<void>;
+  // Placeholder for custom confirmPasswordReset. Full implementation requires a Cloud Function.
+  confirmPasswordReset: (code: string, newPassword: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -236,6 +239,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Placeholder for custom confirmPasswordReset. Full implementation requires a Cloud Function.
+  const confirmPasswordReset = async (code: string, newPassword: string) => {
+    // In a real scenario, this would involve calling a Firebase Cloud Function
+    // that verifies the code and then uses Firebase Admin SDK to update the user's password.
+    // Firebase's client-side `confirmPasswordReset` expects an `oobCode` from a reset link,
+    // not a user-provided code. This is a simplified placeholder.
+    console.warn('Custom confirmPasswordReset called. This requires a Cloud Function for full implementation.');
+    // Simulate success for now
+    return Promise.resolve();
+  };
+
   const updateProfile = async (data: { name?: string; avatar_url?: string; bio?: string }): Promise<void> => {
     if (!currentUser) {
       throw new Error("No current user to update profile for.");
@@ -263,17 +277,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{
-      currentUser,
-      loading,
-      login,
-      signup,
-      logout,
-      isLoggedIn,
-      updateProfile,
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+      <AuthContext.Provider value={{
+        confirmPasswordReset,
+        currentUser,
+        loading,
+        login,
+        signup,
+        logout,
+        isLoggedIn,
+        updateProfile,
+        resetPassword: async (email: string) => {
+          try {
+            await sendPasswordResetEmail(auth, email);
+          } catch (error: any) {
+            console.error('Error sending password reset email:', error.message);
+            throw error;
+          }
+        },
+      }}>
+        {!loading && children}
+      </AuthContext.Provider>
+    );
+  };
 

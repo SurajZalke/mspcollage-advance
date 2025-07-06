@@ -1,7 +1,7 @@
 
 export const connectorConfig = {
   connector: 'default',
-  service: 'msp-collage-advance',
+  service: 'mspcollage-advance',
   location: 'us-central1'
 };
 

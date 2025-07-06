@@ -5,6 +5,7 @@ import { Question } from "@/types";
 import { Progress } from "@/components/ui/progress";
 import { useGame } from "@/contexts/GameContext";
 import { Howl } from 'howler';
+import { toast } from 'sonner';
 
 interface QuestionDisplayProps {
   question: Question;
@@ -119,6 +120,16 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     return "bg-red-500";
   };
   
+  // --- DEBUG: Log option image URLs to verify data ---
+  useEffect(() => {
+    if (question?.options) {
+      question.options.forEach((option, idx) => {
+        // eslint-disable-next-line no-console
+        console.log(`Option ${String.fromCharCode(65 + idx)} imageUrl:`, option.imageUrl);
+      });
+    }
+  }, [question]);
+
   return (
     <Card className={`quiz-card ${isHostView ? "host-view" : ""}`}>
       <CardContent className="pt-6 space-y-6">
@@ -139,12 +150,32 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           <h3 className="text-3xl font-bold text-center whitespace-pre-line">{question.text}</h3>
           
           {question.imageUrl && (
-            <div className="flex justify-center">
-              <img 
-                src={question.imageUrl} 
-                alt="Question" 
-                className="max-h-96 w-full object-cover rounded-md"
-              />
+            <div className="flex justify-center my-4">
+              <div className="max-w-3xl w-full overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800 p-2">
+                <img 
+                  src={question.imageUrl.includes('cloudinary.com') ? 
+                    question.imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_600,c_limit/') : 
+                    question.imageUrl} 
+                  alt="Question" 
+                  className="max-h-96 w-auto mx-auto object-contain rounded-md"
+                  loading="lazy"
+                  crossOrigin="anonymous"
+                  style={{ display: 'block' }}
+                  referrerPolicy="no-referrer"
+                  onError={e => {
+                    const imgElement = e.currentTarget as HTMLImageElement;
+                    const originalSrc = question.imageUrl;
+                    let newSrc = originalSrc;
+                    if (originalSrc && originalSrc.includes('cloudinary.com') && !originalSrc.includes('/upload/f_auto')) {
+                      newSrc = originalSrc.replace('/upload/', '/upload/f_auto,q_auto,w_600,c_limit/');
+                    }
+                    if (originalSrc && !originalSrc.includes('?v=')) {
+                      newSrc = `${newSrc}?v=${new Date().getTime()}`;
+                      imgElement.src = newSrc;
+                    }
+                  }}
+                />
+              </div>
             </div>
           )}
           
@@ -154,6 +185,14 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               const selected = selectedOption === option.id;
               const disabled = isAnswered || disableOptions;
               const isCorrect = showCorrectAnswer && option.id === question.correctOption;
+
+              // --- FIX: Always render an image if imageUrl is present, fallback to placeholder if not ---
+              let imgSrc = "";
+              if (typeof option.imageUrl === "string" && option.imageUrl.trim() !== "") {
+                imgSrc = option.imageUrl.includes('cloudinary.com')
+                  ? option.imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_300,c_limit/')
+                  : option.imageUrl;
+              }
 
               return (
                 <div
@@ -174,10 +213,35 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                   `}>
                     {optionLabel}
                   </span>
-                  {/* FIX: preserve line breaks in option text */}
-                  <span className="flex-1 text-left break-words whitespace-pre-line text-xl font-medium">
-                    {option.text}
-                  </span>
+                  <div className="flex-1 text-left break-words">
+                    <span className="whitespace-pre-line text-xl font-medium">
+                      {option.text}
+                    </span>
+                    {imgSrc && (
+                      <div className="mt-2 overflow-hidden rounded-md bg-gray-50 dark:bg-gray-900 p-1">
+                        <img 
+                          src={imgSrc}
+                          alt={`Option ${optionLabel}`} 
+                          className="max-h-32 w-auto mx-auto object-contain rounded-md"
+                          loading="lazy"
+                          crossOrigin="anonymous"
+                          style={{ display: 'block' }}
+                          referrerPolicy="no-referrer"
+                          onError={e => {
+                            const imgElement = e.currentTarget as HTMLImageElement;
+                            let newSrc = option.imageUrl;
+                            if (newSrc && newSrc.includes('cloudinary.com') && !newSrc.includes('/upload/f_auto')) {
+                              newSrc = newSrc.replace('/upload/', '/upload/f_auto,q_auto,w_300,c_limit/');
+                            }
+                            if (newSrc && !newSrc.includes('?v=')) {
+                              newSrc = `${newSrc}?v=${new Date().getTime()}`;
+                              imgElement.src = newSrc;
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                   {isCorrect && (
                     <span className="ml-2 text-green-200 text-xl font-bold">&#10003;</span>
                   )}
@@ -185,7 +249,6 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               );
             })}
           </div>
-          {/* Polling bar: only show after time ends or host submits answer */}
           {showCorrectAnswer && (
             <div className="mt-6">
               <h4 className="text-lg font-bold text-white mb-2">Answer Polling</h4>
@@ -213,7 +276,38 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           )}
           {showCorrectAnswer && (
             <div className="mt-4 text-lg font-semibold">
-              Correct Answer: <span className="whitespace-pre-line">{question.options.find(opt => opt.id === question.correctOption)?.text}</span>
+              <div>Correct Answer: <span className="whitespace-pre-line">{question.options.find(opt => opt.id === question.correctOption)?.text}</span></div>
+              {(() => {
+                const correctOption = question.options.find(opt => opt.id === question.correctOption);
+                return correctOption && typeof correctOption.imageUrl === "string" && correctOption.imageUrl.trim() !== "" ? (
+                  <div className="mt-2 flex justify-center">
+                    <div className="overflow-hidden rounded-md bg-gray-50 dark:bg-gray-900 p-1 max-w-xs">
+                      <img 
+                        src={correctOption.imageUrl.includes('cloudinary.com') ? 
+                          correctOption.imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_300,c_limit/') : 
+                          correctOption.imageUrl} 
+                        alt="Correct Answer" 
+                        className="max-h-32 w-auto mx-auto object-contain rounded-md"
+                        loading="lazy"
+                        crossOrigin="anonymous"
+                        style={{ display: 'block' }}
+                        referrerPolicy="no-referrer"
+                        onError={e => {
+                          const imgElement = e.currentTarget as HTMLImageElement;
+                          let newSrc = correctOption.imageUrl;
+                          if (newSrc && newSrc.includes('cloudinary.com') && !newSrc.includes('/upload/f_auto')) {
+                            newSrc = newSrc.replace('/upload/', '/upload/f_auto,q_auto,w_300,c_limit/');
+                          }
+                          if (newSrc && !newSrc.includes('?v=')) {
+                            newSrc = `${newSrc}?v=${new Date().getTime()}`;
+                            imgElement.src = newSrc;
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           )}
           Marks: {question.Marks} {isAnswered && "• Question submitted"}

@@ -1,19 +1,76 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+import * as nodemailer from "nodemailer";
 
-// Commented out unused import
-// import {onRequest} from "firebase-functions/v2/https";
+admin.initializeApp();
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+interface SendPasswordResetCodeRequest {
+  email: string;
+}
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+export const sendPasswordResetCode = functions.https.onCall(async (request, context) => {
+  const { email } = request.data as SendPasswordResetCodeRequest;
+  // Check if user exists
+  const userSnap = await admin.firestore().collection("users").where("email", "==", email).get();
+  if (userSnap.empty) {
+    throw new functions.https.HttpsError("not-found", "Email not found");
+  }
+
+  // Generate code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Save code with expiry
+  await admin.firestore().collection("passwordResetCodes").doc(email).set({
+    code,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  });
+
+  // Send code via email (configure your transporter)
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: functions.config().smtp.user,
+      pass: functions.config().smtp.pass,
+    },
+  });
+
+  await transporter.sendMail({
+    from: functions.config().smtp.user,
+    to: email,
+    subject: "Your Verification Code",
+    text: `Your verification code is: ${code}`,
+  });
+
+  return { success: true };
+});
+
+interface ConfirmPasswordResetRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+export const confirmPasswordReset = functions.https.onCall(async (request, context) => {
+  const { email, code, newPassword } = request.data as ConfirmPasswordResetRequest;
+  const doc = await admin.firestore().collection("passwordResetCodes").doc(email).get();
+  const dataDoc = doc.data();
+  if (!doc.exists || !dataDoc) {
+    throw new functions.https.HttpsError("not-found", "No code sent");
+  }
+
+  if (dataDoc.code !== code) {
+    throw new functions.https.HttpsError("invalid-argument", "Invalid code");
+  }
+  if (Date.now() > dataDoc.expiresAt) {
+    throw new functions.https.HttpsError("deadline-exceeded", "Code expired");
+  }
+
+  // Update password in Firebase Auth
+  const userRecord = await admin.auth().getUserByEmail(email);
+  await admin.auth().updateUser(userRecord.uid, { password: newPassword });
+
+  // Delete the code
+  await admin.firestore().collection("passwordResetCodes").doc(email).delete();
+
+  return { success: true };
+});

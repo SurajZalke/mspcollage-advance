@@ -55,6 +55,70 @@ const HostDashboardPage: React.FC = () => {
   // Preload video and audio assets
   useEffect(() => {
 
+    const cleanupOldGames = async () => {
+      if (!currentUser?.uid) return;
+
+      try {
+        const gamesRef = ref(db, 'games');
+        const snapshot = await get(gamesRef);
+        if (snapshot.exists()) {
+          const gamesData = snapshot.val();
+          const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+
+          for (const gameId in gamesData) {
+            const game = gamesData[gameId];
+            if (game.hostId === currentUser.uid) {
+              const startedAtTimestamp = new Date(game.startedAt).getTime();
+              // Case 1: Game has ended and is older than 3 days
+              if (game.endedAt) {
+                const endedAtTimestamp = new Date(game.endedAt).getTime();
+                if (endedAtTimestamp < threeDaysAgo) {
+                  console.log(`Deleting old ended game: ${gameId} (ended on ${game.endedAt})`);
+                  await remove(ref(db, `games/${gameId}`));
+                }
+              } else if (startedAtTimestamp < threeDaysAgo) {
+                // Case 2: Game has not ended but started more than 3 days ago
+                console.log(`Deleting old unended game: ${gameId} (started on ${game.startedAt})`);
+                await remove(ref(db, `games/${gameId}`));
+              }
+            }
+          }
+          // After cleanup, reload game history to reflect changes
+          const loadGameHistory = async () => {
+            if (!currentUser?.uid) return;
+            try {
+              const gamesRef = ref(db, 'games');
+              const snapshot = await get(gamesRef);
+              if (snapshot.exists()) {
+                const gamesData = snapshot.val();
+                const userGames = Object.entries(gamesData)
+                  .filter(([_, game]: [string, any]) => game.hostId === currentUser.uid)
+                  .map(([id, game]: [string, any]) => ({
+                    id,
+                    quizTitle: game.quiz?.title || 'Untitled Quiz',
+                    startedAt: game.startedAt || '',
+                    endedAt: game.endedAt || '',
+                    playerCount: Object.keys(game.players || {}).length,
+                    averageScore: calculateAverageScore(game.players || {}),
+                    players: game.players || {},
+                    quiz: game.quiz || null
+                  }))
+                  .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+                setGameHistory(userGames);
+              }
+            } catch (error) {
+              console.error('Error loading game history:', error);
+            }
+          };
+          loadGameHistory();
+        }
+      } catch (error) {
+        console.error('Error cleaning up old games:', error);
+      }
+    };
+
+    cleanupOldGames();
+
 
     // Preload audio
     const mrDevSoundPreload = new Howl({
@@ -281,30 +345,71 @@ setQuizzes(sampleQuizzes.map(quiz => ({
     }
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const handleDeleteQuiz = async (quizId: string) => {
+  // Helper function to extract public ID from Cloudinary URL
+ const extractPublicIdFromUrl = (url: string) => {
+   if (!url) return null;
+   const matches = url.match(/\/v\d+\/(.+)\./);
+   return matches ? matches[1] : null;
+ };
+
+ // Updated handleDeleteQuiz function
+ const handleDeleteQuiz = async (quizId: string) => {
     try {
-      if (!currentUser?.uid) return;
-
-      // Remove from global quizzes
-      await remove(ref(db, `/quizzes/${quizId}`));
-      // Remove from current user's quizzes
-      await remove(ref(db, `/users/${currentUser.uid}/quizzes/${quizId}`));
-
-      setQuizzes(quizzes.filter(q => q.id !== quizId));
-      toast({
-        title: "Quiz Deleted",
-        description: "The quiz has been deleted from your account and the database.",
-        variant: "default"
-      });
-    } catch (error) {
-      console.error("Error deleting quiz:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete quiz. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
+       if (!currentUser?.uid) return;
+ 
+       const quiz = quizzes.find(q => q.id === quizId);
+       if (!quiz) return;
+ 
+       // Extract image URLs from quiz questions
+       const imageUrls = quiz.questions
+         ?.filter(q => q.imageUrl)
+         ?.map(q => q.imageUrl)
+         ?.filter(Boolean) || [];
+ 
+       // Delete images from Cloudinary via backend API
+       if (imageUrls.length > 0) {
+         try {
+           const response = await fetch(`/api/quiz/${quizId}`, {
+             method: 'DELETE',
+             headers: {
+               'Content-Type': 'application/json',
+             },
+             body: JSON.stringify({ imageUrls })
+           });
+ 
+           if (!response.ok) {
+             console.warn('Failed to delete some images from Cloudinary');
+           } else {
+             const result = await response.json();
+             console.log(`Deleted ${result.deletedImages} images from Cloudinary`);
+           }
+         } catch (imageError) {
+           console.error('Error deleting images:', imageError);
+           // Continue with quiz deletion even if image deletion fails
+         }
+       }
+ 
+       // Delete quiz from Firebase
+       await remove(ref(db, `/quizzes/${quizId}`));
+       await remove(ref(db, `/users/${currentUser.uid}/quizzes/${quizId}`));
+ 
+       // Update local state
+       setQuizzes(quizzes.filter(q => q.id !== quizId));
+       
+       toast({
+         title: "Quiz Deleted",
+         description: `Quiz and ${imageUrls.length} associated images have been deleted.`,
+         variant: "default"
+       });
+     } catch (error) {
+       console.error("Error deleting quiz:", error);
+       toast({
+         title: "Error",
+         description: "Failed to delete quiz. Please try again.",
+         variant: "destructive"
+       });
+     }
+   };
 
   const handleClearGameData = async () => {
     if (!currentUser?.uid) return;

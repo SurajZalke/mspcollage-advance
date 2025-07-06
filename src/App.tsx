@@ -21,7 +21,6 @@ import NotFound from "./pages/NotFound";
 import PlayerSetupPage from "./pages/PlayerSetupPage";
 import ProfileSetup from "./components/ProfileSetup";
 import { LeaderAnimationPage } from "./pages/LeaderAnimationPage";
-import EditQuizWrapper from "./components/EditQuizForm";
 import CreateQuizForm from "@/components/CreateQuizForm";
 
 const queryClient = new QueryClient();
@@ -61,7 +60,7 @@ const App = () => {
                 <Route path="/player-setup" element={<PlayerSetupPage />} />
                 <Route path="/leader-animation" element={<LeaderAnimationPage />} />
                 <Route path="/mrdev-celebration" element={<LeaderAnimationPage />} />
-                <Route path="/edit-quiz/:quizId" element={<EditQuizWrapper />} />
+
                 <Route path="/create-quiz" element={<CreateQuizForm onClose={function (): void {
                   throw new Error("Function not implemented.");
                 } } />} />

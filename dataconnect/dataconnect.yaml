@@ -1,5 +1,5 @@
 specVersion: "v1"
-serviceId: "msp-collage-advance"
+serviceId: "mspcollage-advance"
 location: "us-central1"
 schema:
   source: "./schema"
@@ -7,6 +7,6 @@ schema:
     postgresql:
       database: "fdcdb"
       cloudSql:
-        instanceId: "msp-collage-advance-fdc"
+        instanceId: "mspcollage-advance-fdc"
       # schemaValidation: "COMPATIBLE"
 connectorDirs: ["./connector"]

@@ -65,6 +65,9 @@ export interface Question {
 export interface QuestionOption {
   id: string;
   text: string;
+  imageUrl?: string;
+  imageFile?: File | null;
+  publicId?: string; // For Cloudinary image management
 }
 
 export interface GameRoom {

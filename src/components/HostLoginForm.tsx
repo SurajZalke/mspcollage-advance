@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { AlertCircle, LogIn, Eye, EyeOff } from "lucide-react";
+import PasswordResetForm from './PasswordResetForm'; // Import the new component
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 <meta name="google-site-verification" content="pkmknusJfsYMLKfeycQLKDeW4-r8vtXU_1U9YYePvQU" />
 
 const HostLoginForm: React.FC = () => {
@@ -16,7 +18,9 @@ const HostLoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, isLoggedIn } = useAuth();
+  const [showPasswordReset, setShowPasswordReset] = useState(false); // State to control dialog visibility
+  const [resetEmail, setResetEmail] = useState(''); // State to store email for reset
+  const { login, isLoggedIn, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,6 +73,30 @@ const HostLoginForm: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Forgot Password",
+        description: "Please enter your email address to reset your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResetEmail(email); // Store email for the reset form
+    setShowPasswordReset(true); // Open the dialog
+
+    try {
+      setIsLoading(true);
+      await resetPassword(email);
+    } catch (error) {
+      // Error handling is already done in AuthContext, but we can add more specific UI feedback here if needed
+      console.error("HostLoginForm: Forgot password failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Card className="quiz-card w-full max-w-md mx-auto">
       <CardContent className="pt-6">
@@ -112,6 +140,15 @@ const HostLoginForm: React.FC = () => {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
+            <div className="text-right text-sm">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-quiz-primary hover:underline font-medium"
+              >
+                Forgot Password?
+              </button>
+            </div>
           </div>
           
           <Button
@@ -143,6 +180,24 @@ const HostLoginForm: React.FC = () => {
           </div>
         </form>
       </CardContent>
+
+      <Dialog open={showPasswordReset} onOpenChange={setShowPasswordReset}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter the verification code sent to your email and your new password.
+            </DialogDescription>
+          </DialogHeader>
+          <PasswordResetForm
+            email={resetEmail}
+            onResetSuccess={() => {
+              setShowPasswordReset(false);
+              setResetEmail('');
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
