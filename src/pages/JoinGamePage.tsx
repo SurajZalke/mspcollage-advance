@@ -5,7 +5,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import Logo from "@/components/Logo";
 import BackgroundContainer from "@/components/BackgroundContainer";
-import CreatorAttribution from "@/components/CreatorAttribution";
+import { lazy, Suspense } from "react";
+const CreatorAttribution = lazy(() => import("@/components/CreatorAttribution"));
 import PlayerJoinForm from "@/components/PlayerJoinForm";
 
 const JoinGamePage: React.FC = () => {
@@ -52,7 +53,9 @@ const JoinGamePage: React.FC = () => {
             <PlayerJoinForm initialGameCode={gameCode} />
           </div>
         </main>
-        <CreatorAttribution />
+        <Suspense fallback={<div></div>}>
+          <CreatorAttribution />
+        </Suspense>
       </div>
     </BackgroundContainer>
   );

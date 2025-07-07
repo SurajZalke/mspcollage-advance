@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
 import Logo from "@/components/Logo";
@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import confetti from 'canvas-confetti';
 import WaitingRoom from "@/components/WaitingRoom";
-import CreatorAttribution from "@/components/CreatorAttribution";
+const CreatorAttribution = React.lazy(() => import("@/components/CreatorAttribution"));
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
-import LeaderboardDisplay from "@/components/LeaderboardDisplay";
+import LeaderboardDisplay from "../components/LeaderboardDisplay";
+import ScoreboardPage from "@/pages/ScoreboardPage";
 // First install emoji-mart: npm install emoji-mart @emoji-mart/data @emoji-mart/react
 import Picker from "@emoji-mart/react";
 import { ref, push, onValue } from "firebase/database";
@@ -51,26 +52,47 @@ const PlayerGameRoomPage: React.FC = () => {
   const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
   const [confettiTriggered, setConfettiTriggered] = useState(false);
   const { audio: warningSound, loaded: isSoundLoaded } = useAudio('/sounds/warning.mp3');
-
+  const [showScoreboard, setShowScoreboard] = useState(false);
 
   useEffect(() => {
     if (activeGame?.status === 'finished' && !confettiTriggered) {
-      // Trigger confetti animation
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
       });
-      // Set a timeout to clear confetti after some time
-      setTimeout(() => {
-        confetti.clear();
-      }, 5000);
-
-      // Set showLeaderboardAnimation to true to display the leaderboard
+      setTimeout(() => confetti.clear(), 5000);
       setShowLeaderboardAnimation(true);
-      setConfettiTriggered(true); // Mark confetti as triggered
+      setConfettiTriggered(true);
     }
-  }, [activeGame?.status, confettiTriggered]);
+
+    // Show scoreboard immediately when question ends
+    if (questionEnded) {
+      setShowScoreboard(true);
+    }
+  }, [activeGame?.status, confettiTriggered, questionEnded]);
+
+  // Timer for scoreboard display and transition to leaderboard
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    // If host moves past scoreboard, hide it immediately for player
+    if (showScoreboard && activeGame && !activeGame.showScores) {
+      setShowScoreboard(false);
+      clearTimeout(timer); // Clear any pending timer
+      return;
+    }
+
+    if (showScoreboard) {
+      timer = setTimeout(() => {
+        setShowScoreboard(false);
+        if (activeGame?.status === 'finished') {
+          setShowLeaderboardAnimation(true);
+        }
+      }, 10000);
+    }
+    return () => clearTimeout(timer);
+  }, [showScoreboard, activeGame?.status, activeGame?.showScores]);
 
 
 
@@ -340,6 +362,10 @@ const PlayerGameRoomPage: React.FC = () => {
     console.log("PlayerGameRoomPage: Current activeGame status:", activeGame.status);
     console.log("PlayerGameRoomPage: activeGame.players:", activeGame.players);
     console.log("PlayerGameRoomPage: activeGame.quiz:", activeGame.quiz);
+
+    if (showScoreboard && activeGame?.players) {
+      return <ScoreboardPage players={activeGame.players} currentQuestion={currentQuestion} currentQuiz={activeGame.quiz} />;
+    }
 
     if (activeGame.status === "ended") {
 
@@ -701,6 +727,9 @@ const PlayerGameRoomPage: React.FC = () => {
           100% { opacity: 0; transform: translateY(10px);}
         }
       `}</style>
+      <Suspense fallback={<div>Loading Creator Attribution...</div>}>
+        <CreatorAttribution />
+      </Suspense>
     </BackgroundContainer>
   );
 };

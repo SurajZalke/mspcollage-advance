@@ -96,18 +96,28 @@ export const useGameActions = (
 
     try {
       // Fetch current player data to get existing answers
-      const snapshot = await getDatabaseData(playerAnswersRef);
-      const existingAnswers = snapshot.val();
+      const playerSnapshot = await getDatabaseData(playerRef);
+      const playerCurrentData = playerSnapshot.val() as Player;
+      const existingAnswers = playerCurrentData.answers || [];
 
       // Append the new answer to the existing answers array
-      const updatedAnswers = existingAnswers ? [...existingAnswers, newAnswer] : [newAnswer];
+      const updatedAnswers = [...existingAnswers, newAnswer];
 
-      // Update player score and status
+      // Calculate new streak
+      let newStreak = playerCurrentData.streak || 0;
+      if (isCorrect) {
+        newStreak++;
+      } else {
+        newStreak = 0;
+      }
+
+      // Update player score, status, and streak
       await update(playerRef, {
         score: currentPlayer.score + scoreChange,
-        status: 'answered'
+        status: 'answered',
+        streak: newStreak,
+        answers: updatedAnswers // Update answers directly on player object
       });
-      await set(playerAnswersRef, updatedAnswers);
 
       // If the current player is the host, update hostSubmitted flag
       if (currentPlayer.player_id === activeGame.hostId) {

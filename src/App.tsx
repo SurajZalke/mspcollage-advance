@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { GameProvider } from "./contexts/GameContext";
-import { useEffect } from "react";
-import CreatorAttribution from "./components/CreatorAttribution";
+import { useEffect, lazy, Suspense } from "react";
+const CreatorAttribution = lazy(() => import("./components/CreatorAttribution"));
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Pages
@@ -22,6 +22,7 @@ import PlayerSetupPage from "./pages/PlayerSetupPage";
 import ProfileSetup from "./components/ProfileSetup";
 import { LeaderAnimationPage } from "./pages/LeaderAnimationPage";
 import CreateQuizForm from "@/components/CreateQuizForm";
+import ScoreboardPage from "./pages/ScoreboardPage";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,9 @@ const App = () => {
                 <Route path="/player-setup" element={<PlayerSetupPage />} />
                 <Route path="/leader-animation" element={<LeaderAnimationPage />} />
                 <Route path="/mrdev-celebration" element={<LeaderAnimationPage />} />
+                <Route path="/scoreboard" element={<ProtectedRoute><ScoreboardPage players={[]} onNext={function (): void {
+                  throw new Error("Function not implemented.");
+                } } /></ProtectedRoute>} />
 
                 <Route path="/create-quiz" element={<CreateQuizForm onClose={function (): void {
                   throw new Error("Function not implemented.");
@@ -71,7 +75,9 @@ const App = () => {
               </Routes>
             </GameProvider>
           </AuthProvider>
-          <CreatorAttribution />
+          <Suspense fallback={<div>Loading...</div>}>
+            <CreatorAttribution />
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

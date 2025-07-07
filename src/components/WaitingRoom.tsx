@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import CreatorAttribution from "./CreatorAttribution";
+import { lazy, Suspense } from "react";
+const CreatorAttribution = lazy(() => import("./CreatorAttribution"));
 import confetti from 'canvas-confetti';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -372,7 +373,9 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
         </DialogContent>
       </Dialog>
       
-      <CreatorAttribution />
+      <Suspense fallback={<div></div>}>
+        <CreatorAttribution />
+      </Suspense>
     </div>
   );
 };

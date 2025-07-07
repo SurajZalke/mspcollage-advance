@@ -4,7 +4,8 @@ import { Player } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGame } from "@/contexts/GameContext";
 import BackgroundContainer from "@/components/BackgroundContainer";
-import CreatorAttribution from "@/components/CreatorAttribution";
+import { lazy, Suspense } from "react";
+const CreatorAttribution = lazy(() => import("@/components/CreatorAttribution"));
 import { useToast } from "@/components/ui/use-toast";
 import GameHeader from "@/components/GameHeader";
 import GameControls from "@/components/GameControls";
@@ -12,12 +13,12 @@ import PlayerStates from "@/components/PlayerStates";
 import WaitingRoom from "@/components/WaitingRoom";
 import QuestionDisplay from "@/components/QuestionDisplay";
 import GameCodeDisplay from "@/components/GameCodeDisplay";
-import LeaderboardDisplay from "@/components/LeaderboardDisplay";
 import TrophyAnimation from "@/components/TrophyAnimation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ref, update, onValue, off, get } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
+import ScoreboardPage from "@/pages/ScoreboardPage";
 
 const warningSound = new Audio('/sounds/warning.mp3');
 
@@ -33,6 +34,21 @@ const HostGameRoomPage: React.FC = () => {
   const [emojis, setEmojis] = useState<{ id: string; emoji: string; playerId: string; timestamp: number }[]>([]);
   const [animatedEmojis, setAnimatedEmojis] = useState([]);
   const playedRef = useRef(false);
+  const [showScoreboard, setShowScoreboard] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showScoreboard) {
+      timer = setTimeout(() => {
+        setShowScoreboard(false);
+        // Check if it's the last question
+        if (activeGame && currentQuiz && activeGame.currentQuestionIndex === currentQuiz.questions.length - 1) {
+          endGame(); // End the game to trigger navigation to leaderboard
+        }
+      }, 10000); // 10 seconds
+    }
+    return () => clearTimeout(timer);
+  }, [showScoreboard, activeGame, currentQuiz, endGame]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -40,26 +56,29 @@ const HostGameRoomPage: React.FC = () => {
       navigate("/host-login");
       return;
     }
-    
-    if (currentUser && !activeGame) {
-      const storedGameId = localStorage.getItem('activeGameId');
-      const storedIsHost = localStorage.getItem('isHost') === 'true';
 
-      if (storedGameId && storedIsHost) {
-        console.log("User logged in, no active game in context, but found stored host game. Attempting to refresh.");
-        setIsLoading(true); // Set loading to true before refresh
-        refreshGameState(storedGameId, currentUser.uid).finally(() => {
-          setIsLoading(false); // Set loading to false after refresh completes
-        });
-      } else {
-        console.log("User logged in but no active game and not hosting, redirecting to dashboard");
-        setIsLoading(false); // No game to load, so set loading to false
-        navigate("/host-dashboard");
-      }
-    } else if (activeGame) {
-      setIsLoading(false); // Active game is already loaded, so set loading to false
+    // If activeGame is already loaded, set loading to false
+    if (activeGame) {
+      setIsLoading(false);
+      return;
     }
-  }, [currentUser, activeGame, isHost, navigate]);
+
+    // If no active game in context, try to refresh from stored session
+    const storedGameId = localStorage.getItem('activeGameId');
+    const storedIsHost = localStorage.getItem('isHost') === 'true';
+
+    if (storedGameId && storedIsHost) {
+      console.log("User logged in, no active game in context, but found stored host game. Attempting to refresh.");
+      setIsLoading(true); // Set loading to true before refresh
+      refreshGameState(storedGameId, currentUser.uid).finally(() => {
+        setIsLoading(false); // Set loading to false after refresh completes
+      });
+    } else {
+      console.log("User logged in but no active game and not hosting, redirecting to dashboard");
+      setIsLoading(false); // No game to load, so set loading to false
+      navigate("/host-dashboard");
+    }
+  }, [currentUser, activeGame, isHost, navigate, refreshGameState]);
 
   useEffect(() => {
     if (activeGame?.status === "ended") {
@@ -176,6 +195,8 @@ const HostGameRoomPage: React.FC = () => {
     const gameRef = ref(db, `games/${activeGame.id}`);
     await update(gameRef, { showScores: true });
     
+    setShowScoreboard(true); // Show scoreboard
+    
     toast({
       title: "Answer Selected",
       description: "The correct answer has been recorded and revealed",
@@ -275,6 +296,20 @@ const HostGameRoomPage: React.FC = () => {
     }
   }, [timeLeft]);
 
+  useEffect(() => {
+    // Synchronize local showScoreboard state with activeGame.showScores
+    if (activeGame?.showScores) {
+      setShowScoreboard(true);
+    } else {
+      setShowScoreboard(false);
+    }
+  }, [activeGame?.showScores]);
+
+  useEffect(() => {
+    // No automatic transition to next question
+    // Host will manually click 'Next Question' or 'Return to Waiting Room'
+  }, []);
+
   if (!currentUser || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -301,7 +336,9 @@ const HostGameRoomPage: React.FC = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Go to Dashboard
           </Button>
-          <CreatorAttribution />
+          <Suspense fallback={<div></div>}>
+        <CreatorAttribution />
+      </Suspense>
         </div>
       </div>
     );
@@ -325,7 +362,27 @@ const HostGameRoomPage: React.FC = () => {
         <main className="container mx-auto p-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-3 space-y-6">
-              {activeGame?.status === "waiting" ? (
+              {showScoreboard ? (
+                <><ScoreboardPage
+                  players={activeGame?.players || []}
+                  currentQuestion={currentQuestion}
+                  currentQuiz={currentQuiz} /><div className="flex justify-center space-x-4 mt-4">
+                    <Button
+                      onClick={() => {
+                        setShowScoreboard(false);
+                        if (activeGame && currentQuiz && activeGame.currentQuestionIndex === currentQuiz.questions.length - 1) {
+                          endGame();
+                        } else {
+                          nextQuestion();
+                        }
+                        setHasSubmittedAnswer(false);
+                      } }
+                      className="quiz-btn-primary"
+                    >
+                      {activeGame && currentQuiz && activeGame.currentQuestionIndex === currentQuiz.questions.length - 1 ? "End Game" : "Next Question"}
+                    </Button>
+                  </div></>
+              ) : activeGame?.status === "waiting" ? (
                 <WaitingRoom 
                   players={activeGame.players}
                   onStartGame={startGame}
@@ -380,15 +437,6 @@ const HostGameRoomPage: React.FC = () => {
                     />
                   )}
                   
-                  {activeGame?.status === "active" && activeGame.players && activeGame.players.length > 0 && (
-                    <LeaderboardDisplay
-                      players={activeGame.players}
-                      activeQuiz={activeGame.quiz}
-                      showScores={true}
-                      hasHostSubmitted={activeGame.hostSubmitted}
-                    />
-                  )}
-                  
                   {currentQuestion && hasSubmittedAnswer && (
                     <Button
                       onClick={() => {
@@ -409,16 +457,6 @@ const HostGameRoomPage: React.FC = () => {
                   <p className="text-gray-600 dark:text-gray-300 mb-4">
                     The quiz session has been completed
                   </p>
-                  {activeGame && (
-                    <div className="mb-6">
-                      <LeaderboardDisplay
-                        players={activeGame.players}
-                        activeQuiz={activeGame.quiz}
-                        showScores={true}
-                        hasHostSubmitted={true}
-                      />
-                    </div>
-                  )}
                   <Button 
                     className="quiz-btn-primary animate-pulse-scale"
                     onClick={() => navigate("/host-dashboard")}

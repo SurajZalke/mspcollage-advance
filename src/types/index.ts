@@ -23,6 +23,7 @@ export interface Player {
   answers: PlayerAnswer[];
   avatar?: string;
   status?: 'waiting' | 'answered';
+  streak?: number;
 }
 
 export interface PlayerAnswer {
@@ -63,6 +64,7 @@ export interface Question {
 }
 
 export interface QuestionOption {
+  correct: any;
   id: string;
   text: string;
   imageUrl?: string;

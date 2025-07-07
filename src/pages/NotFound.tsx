@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import BackgroundContainer from "@/components/BackgroundContainer";
-import CreatorAttribution from "@/components/CreatorAttribution";
+import { lazy, Suspense } from "react";
+const CreatorAttribution = lazy(() => import("@/components/CreatorAttribution"));
 
 const NotFound: React.FC = () => {
   return (
@@ -23,7 +24,9 @@ const NotFound: React.FC = () => {
           </Button>
         </Link>
       </div>
-      <CreatorAttribution />
+      <Suspense fallback={<div></div>}>
+        <CreatorAttribution />
+      </Suspense>
     </BackgroundContainer>
   );
 };
