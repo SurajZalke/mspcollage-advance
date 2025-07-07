@@ -80,7 +80,7 @@ interface ScoreboardPageProps {
        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10"> 
          <h1 className="text-4xl font-bold bg-white rounded-lg px-8 py-2 shadow-lg text-purple-800">Scoreboard</h1> 
        </div> 
-       <div className="w-full max-w-2xl mt-32 space-y-4 p-4 z-10"> 
+       <div className="w-full max-w-2xl mt-24 md:mt-32 space-y-4 p-2 md:p-4 z-10"> 
          {currentQuestion && ( 
            <div className="bg-white rounded-lg p-6 shadow-lg mb-8"> 
              <h2 className="text-2xl font-bold text-purple-800 mb-4">{currentQuestion.text}</h2> 
@@ -120,18 +120,18 @@ interface ScoreboardPageProps {
                    mass: 1,        // Added mass for more realistic spring physics
                    delay: idx * 0.05, // Slightly reduced delay for faster animation
                  }} 
-               className={`flex items-center justify-between px-6 py-4 rounded-2xl shadow-xl mb-2 text-2xl font-semibold transform transition-all duration-300 hover:scale-[1.02] ${ 
+               className={`flex items-center justify-between px-4 py-3 md:px-6 md:py-4 rounded-2xl shadow-xl mb-2 text-xl md:text-2xl font-semibold transform transition-all duration-300 hover:scale-[1.02] ${ 
                  rankColors[idx] || rankColors[3] 
-               }`} 
+               }`}  
              > 
                <div className="flex items-center gap-4">
-                 <span className="text-3xl font-black w-10 text-center">{idx + 1}</span>
+                 <span className="text-2xl md:text-3xl font-black w-8 md:w-10 text-center">{idx + 1}</span>
                  {idx === 0 && (
                    <motion.span
                      initial={{ opacity: 0, rotate: 0 }}
                      animate={{ opacity: 1, rotate: [0, 20, -20, 0] }}
                      transition={{ delay: 0.5, duration: 0.8, repeat: Infinity, repeatDelay: 2 }}
-                     className="text-4xl mr-2"
+                     className="text-3xl md:text-4xl mr-2"
                    >
                      🏆
                    </motion.span>
@@ -141,7 +141,7 @@ interface ScoreboardPageProps {
                      initial={{ opacity: 0, scale: 0 }}
                      animate={{ opacity: 1, scale: 1 }}
                      transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                     className="text-3xl mr-2"
+                     className="text-2xl md:text-3xl mr-2"
                    >
                      🔥
                    </motion.span>
@@ -151,10 +151,10 @@ interface ScoreboardPageProps {
                    <img
                      src={player.avatar}
                      alt={player.nickname}
-                     className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                     className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white object-cover"
                    />
                  ) : (
-                   <span className="text-3xl">👤</span> // Generic avatar if none
+                   <span className="text-2xl md:text-3xl">👤</span> // Generic avatar if none
                  )}
                  <span>{player.nickname}</span>
                  {currentQuestion && player.answers?.some(a => a.questionId === currentQuestion.id && a.selectedOption === currentQuestion.correctOption) && (
@@ -162,7 +162,7 @@ interface ScoreboardPageProps {
                      initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
                      transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.3 }}
-                     className="text-green-400 text-3xl ml-2"
+                     className="text-green-400 text-2xl md:text-3xl ml-2"
                    >
                      ✅
                    </motion.span>
@@ -172,20 +172,20 @@ interface ScoreboardPageProps {
                      initial={{ opacity: 0, scale: 0.5 }}
                      animate={{ opacity: 1, scale: 1 }}
                      transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
-                     className="ml-2 text-xl font-bold text-red-500"
+                     className="ml-2 text-lg md:text-xl font-bold text-red-500"
                    >
                      🔥 {player.streak}x
                    </motion.span>
                  )}
                </div>
                <div className="flex items-center gap-2">
-                 <span className="text-xl font-bold">{player.score}</span>
+                 <span className="text-lg md:text-xl font-bold">{player.score}</span>
                  {getScoreChange(player) > 0 && (
                    <motion.span
                      initial={{ opacity: 0, y: 10 }}
                      animate={{ opacity: 1, y: 0 }}
                      transition={{ duration: 0.5 }}
-                     className="text-green-400 text-lg"
+                     className="text-green-400 text-base md:text-lg"
                    >
                      +{getScoreChange(player)}
                    </motion.span>
@@ -195,7 +195,7 @@ interface ScoreboardPageProps {
                      initial={{ opacity: 0, y: 10 }}
                      animate={{ opacity: 1, y: 0 }}
                      transition={{ duration: 0.5 }}
-                     className="text-green-400 text-lg"
+                     className="text-green-400 text-base md:text-lg"
                    >
                      ⬆️{Math.abs(getRankChange(player, idx))}
                    </motion.span>
