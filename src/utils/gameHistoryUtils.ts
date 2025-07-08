@@ -18,19 +18,10 @@ export const saveSharedUrlGameHistory = async (quizId: string, quizTitle: string
     const playerRef = ref(db, `gameHistory/${quizId}/players/${currentPlayerId}`);
 
     // Update quiz details if they don't exist or are different
-    const quizSnapshot = await get(quizRef);
-    if (!quizSnapshot.exists()) {
-      await update(quizRef, {
-        quizTitle: quizTitle,
-        createdBy: createdBy,
-        createdAt: Date.now(), // Add createdAt timestamp
-      });
-    } else {
-      await update(quizRef, {
-        quizTitle: quizTitle,
-        createdBy: createdBy,
-      });
-    }
+    await update(quizRef, {
+      quizTitle: quizTitle,
+      createdBy: createdBy,
+    });
     const playerSnapshot = await get(playerRef);
 
     if (!playerSnapshot.exists()) {
