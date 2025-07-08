@@ -51,6 +51,14 @@ const HostDashboardPage: React.FC = () => {
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [gameHistory, setGameHistory] = useState<GameHistory[]>([]);
+  const [sharedQuizHistory, setSharedQuizHistory] = useState<Record<string, SharedGameHistoryEntry[]>>({});
+
+  interface SharedGameHistoryEntry {
+    quizId: string;
+    quizTitle: string;
+    players: Record<string, any>;
+    createdBy: string;
+  }
 
   // Preload video and audio assets
   useEffect(() => {
@@ -119,6 +127,64 @@ const HostDashboardPage: React.FC = () => {
 
     cleanupOldGames();
 
+    const loadSharedQuizHistory = async () => {
+      try {
+        const gameHistoryRef = ref(db, 'gameHistory');
+        const snapshot = await get(gameHistoryRef);
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const groupedHistory: Record<string, SharedGameHistoryEntry[]> = {};
+
+          for (const quizId in data) {
+            const quizData = data[quizId];
+            const quizTitle = quizData.quizTitle || 'Untitled Quiz';
+            const createdBy = quizData.createdBy;
+            const players = quizData.players || {};
+
+            if (currentUser && createdBy === currentUser.uid && Object.keys(players).length > 0) {
+              if (!groupedHistory[quizId]) {
+                groupedHistory[quizId] = [];
+              }
+              groupedHistory[quizId].push({
+                quizId,
+                quizTitle,
+                players,
+                createdBy: createdBy
+              });
+            }
+          }
+          setSharedQuizHistory(groupedHistory);
+        }
+      } catch (error) {
+        console.error('Error loading shared quiz history:', error);
+      }
+    };
+
+    loadSharedQuizHistory();
+
+    const cleanupOldSharedQuizHistory = async () => {
+      try {
+        const gameHistoryRef = ref(db, 'gameHistory');
+        const snapshot = await get(gameHistoryRef);
+        if (snapshot.exists()) {
+          const gameHistory = snapshot.val();
+          const twentyDaysAgo = Date.now() - (20 * 24 * 60 * 60 * 1000);
+
+          for (const quizId in gameHistory) {
+            const quizData = gameHistory[quizId];
+            if (quizData.createdAt && quizData.createdAt < twentyDaysAgo) {
+              console.log(`Deleting old shared quiz history for quizId: ${quizId}`);
+              await remove(ref(db, `gameHistory/${quizId}`));
+            }
+          }
+          console.log('Old shared quiz history cleanup complete.');
+        }
+      } catch (error) {
+        console.error('Error cleaning up old shared quiz history:', error);
+      }
+    };
+
+    cleanupOldSharedQuizHistory();
 
     // Preload audio
     const mrDevSoundPreload = new Howl({
@@ -484,7 +550,78 @@ setQuizzes(sampleQuizzes.map(quiz => ({
     }
   };
 
-  const handleLogout = () => {
+  const handleClearSharedQuizHistory = async () => {
+    if (!currentUser?.uid) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to clear shared quiz history.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const gameHistoryRef = ref(db, 'gameHistory');
+      const snapshot = await get(gameHistoryRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        for (const quizId in data) {
+          const quizData = data[quizId];
+          if (quizData.createdBy === currentUser.uid) {
+            await remove(ref(db, `gameHistory/${quizId}`));
+          }
+        }
+        toast({
+          title: 'Success',
+          description: 'Shared quiz history cleared successfully!',
+        });
+        setSharedQuizHistory({}); // Clear local state
+      }
+    } catch (error) {
+      console.error('Error clearing shared quiz history:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear shared quiz history. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleClearSharedQuizPlayers = async () => {
+    if (!currentUser?.uid) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to clear shared quiz players.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      for (const quizId in sharedQuizHistory) {
+        const quizData = sharedQuizHistory[quizId][0]; // Assuming one entry per quizId
+        if (quizData.createdBy === currentUser.uid) {
+            console.log(`Attempting to remove gameHistory/${quizId}/players`);
+            await remove(ref(db, `gameHistory/${quizId}/players`));
+            console.log(`Successfully removed gameHistory/${quizId}/players`);
+          }
+      }
+      toast({
+        title: 'Success',
+        description: 'Shared quiz players cleared successfully!',
+      });
+      setSharedQuizHistory({}); // Reset shared quiz history state
+    } catch (error) {
+      console.error('Error clearing shared quiz players:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear shared quiz players. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleLogout = async () => {
     logout();
     navigate("/");
   };
@@ -636,6 +773,10 @@ setQuizzes(sampleQuizzes.map(quiz => ({
               <Users className="w-4 h-4 mr-2" />
               Game History
             </TabsTrigger>
+            <TabsTrigger value="shared-quiz-history" className="dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white">
+              <Users className="w-4 h-4 mr-2" />
+              Shared Quiz History
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="my-quizzes">
@@ -778,6 +919,65 @@ setQuizzes(sampleQuizzes.map(quiz => ({
               ) : (
                 <p className="text-gray-600 dark:text-gray-300">
                   You haven't hosted any games yet. Start a quiz to see your game history.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="shared-quiz-history">
+            <div className="mb-4">
+              <Button
+                variant="destructive"
+                onClick={handleClearSharedQuizPlayers}
+                className="dark:bg-red-600 dark:hover:bg-red-700 flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear Shared Quiz Players
+              </Button>
+            </div>
+            <div className="quiz-card p-6 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold text-quiz-dark dark:text-white mb-4">Shared Quiz History</h2>
+              {Object.keys(sharedQuizHistory).length > 0 ? (
+                <div className="space-y-6">
+                  {Object.entries(sharedQuizHistory).map(([quizId, entries]) => (
+                    <div key={quizId} className="border dark:border-gray-700 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-quiz-dark dark:text-white mb-2">Quiz: {entries[0].quizTitle}</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b dark:border-gray-700">
+                              <th className="p-2">Player Nickname</th>
+                              <th className="p-2">Score</th>
+                              <th className="p-2">Completed At</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.values(entries[0].players).map((player: any) => (
+                              <tr key={player.id} className="border-b dark:border-gray-700 last:border-b-0">
+                                <td className="p-2 flex items-center gap-2">
+                                  <Avatar className="w-6 h-6">
+                                    <AvatarImage src={player.avatar || ''} />
+                                    <AvatarFallback>{player.nickname?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                                  </Avatar>
+                                  {player.nickname}
+                                </td>
+                                <td className="p-2">{player.score}</td>
+                                <td className="p-2">
+                                  {player.completedAt && !isNaN(new Date(player.completedAt).getTime())
+                                    ? new Date(player.completedAt).toLocaleString()
+                                    : 'N/A'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-300">
+                  No shared quiz history found yet. Players who complete quizzes via shared links will appear here.
                 </p>
               )}
             </div>

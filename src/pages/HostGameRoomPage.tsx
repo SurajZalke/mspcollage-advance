@@ -24,7 +24,7 @@ const warningSound = new Audio('/sounds/warning.mp3');
 
 const HostGameRoomPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState, setCorrectAnswer, submitAnswer } = useGame();
+  const { activeGame, currentQuiz, currentQuestion, isHost, startGame, nextQuestion, endGame, refreshGameState, setCorrectAnswer, submitAnswer, questionStartTime, serverTimeOffset } = useGame();
   const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState(false);
@@ -204,7 +204,25 @@ const HostGameRoomPage: React.FC = () => {
   };
 
   // Add a state for timeLeft
-  const [timeLeft, setTimeLeft] = useState<number>(30); // Default to 30 seconds or appropriate value
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (activeGame?.status === "active" && currentQuestion && questionStartTime) {
+      timer = setInterval(() => {
+        const now = Date.now() + serverTimeOffset;
+        const elapsed = Math.floor((now - questionStartTime) / 1000);
+        const remaining = currentQuestion.timeLimit - elapsed;
+        setTimeLeft(Math.max(0, remaining));
+
+        if (remaining <= 0) {
+          clearInterval(timer);
+        }
+      }, 1000);
+    }
+
+    return () => clearInterval(timer);
+  }, [activeGame?.status, currentQuestion, questionStartTime, serverTimeOffset]);
 
   const handleRemovePlayer = async (playerId: string): Promise<void> => {
     console.log("Attempting to remove player with ID:", playerId);
@@ -424,6 +442,7 @@ const HostGameRoomPage: React.FC = () => {
                         onHostSelect={handleHostSelect}
                         disableOptions={activeGame.status !== 'active' || hasSubmittedAnswer || activeGame.showScores} // Disable options if correct answer is shown
                         showCorrectAnswer={activeGame.showScores}
+                        timeLeft={timeLeft}
                       />
                     </div>
                   )}

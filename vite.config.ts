@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 10000,
   },
   plugins: [
     react(),

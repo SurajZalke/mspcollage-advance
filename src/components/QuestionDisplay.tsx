@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useGame } from "@/contexts/GameContext";
 import { Howl } from 'howler';
 import { toast } from 'sonner';
+import { calculateCorrectAnswerRate, generateAIExplanation } from "@/services/aiExplanationService";
 
 interface QuestionDisplayProps {
   question: Question;
@@ -16,9 +17,11 @@ interface QuestionDisplayProps {
   markingType?: string;
   negativeValue?: number;
   onHostSelect?: (optionId: string) => void;
-  showCorrectAnswer?: boolean;
+  showCorrectAnswer: boolean;
   isWarningSoundEnabled?: boolean;
   warningSoundVolume?: number;
+  selectedAnswer?: string;
+  timeLeft?: number; // Add timeLeft prop
 }
 
 const warningSound = new Howl({
@@ -35,14 +38,17 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   markingType,
   negativeValue,
   onHostSelect,
-  showCorrectAnswer
+  showCorrectAnswer,
+  selectedAnswer, // Add selectedAnswer to props
+  timeLeft // Add timeLeft to props
 }) => {
-  const [timeLeft, setTimeLeft] = useState(question.timeLimit);
-  const { questionStartTime, serverTimeOffset } = useGame();
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string | null>(selectedAnswer || null);
   const [isAnswered, setIsAnswered] = useState(false);
+  const [hasAnswered, setHasAnswered] = useState(false);
   const { activeGame, currentPlayer } = useGame();
   const [warningSoundPlayed, setWarningSoundPlayed] = useState(false);
+  const [aiExplanation, setAiExplanation] = useState<string>("");
+  const [showExplanation, setShowExplanation] = useState<boolean>(false);
 
   // Polling logic: count answers for each option for this question
   let pollCounts: Record<string, number> = {};
@@ -58,34 +64,13 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     });
   }
 
-  // Timer effect
-  useEffect(() => {
-    if (!showTimer || isAnswered || disableOptions || !questionStartTime) return;
-
-    const calculateTimeLeft = () => {
-      const now = Date.now() + serverTimeOffset;
-      const elapsed = Math.floor((now - questionStartTime) / 1000);
-      return Math.max(0, question.timeLimit - elapsed);
-    };
-
-    setTimeLeft(calculateTimeLeft());
-
-    if (calculateTimeLeft() <= 0) return;
-
-    const interval = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [showTimer, isAnswered, disableOptions, questionStartTime, question.timeLimit, serverTimeOffset]);
-
   // Effect to play sound when 10 seconds remain
   useEffect(() => {
     if (timeLeft === 10 && !warningSoundPlayed) {
       warningSound.play();
       setWarningSoundPlayed(true);
     }
-    if (timeLeft > 10 || timeLeft === question.timeLimit) {
+    if (timeLeft && (timeLeft > 10 || timeLeft === question.timeLimit)) {
       setWarningSoundPlayed(false);
     }
   }, [timeLeft, question.id, question.timeLimit, warningSoundPlayed]);
@@ -94,18 +79,38 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     setSelectedOption(null);
     setIsAnswered(false);
     setWarningSoundPlayed(false);
-  }, [question.id, question.timeLimit, questionStartTime]);
+    setShowExplanation(false); // Reset explanation state when question changes
+    setAiExplanation(""); // Clear any previous explanation
+  }, [question.id, question.timeLimit, selectedAnswer]);
 
   useEffect(() => {
     if (showCorrectAnswer) {
       setIsAnswered(true);
+      
+      // Check if we need to show AI explanation (when player's correct answer rate is below 60%)
+      if (!isHostView && currentPlayer?.answers && selectedOption) {
+        const correctAnswerRate = calculateCorrectAnswerRate(currentPlayer.answers);
+        
+        if (correctAnswerRate < 60) {
+          // Generate AI explanation
+          generateAIExplanation(question, selectedOption)
+            .then(explanation => {
+              setAiExplanation(explanation);
+              setShowExplanation(true);
+            })
+            .catch(error => {
+              console.error("Error generating AI explanation:", error);
+            });
+        }
+      }
     }
-  }, [showCorrectAnswer]);
+  }, [showCorrectAnswer, currentPlayer, question, selectedOption, isHostView]);
   
   const handleSelectOption = (optionId: string) => {
     if (isAnswered || disableOptions) return;
     setSelectedOption(optionId);
     setIsAnswered(true);
+    setHasAnswered(true);
     if (isHostView && onHostSelect) {
       onHostSelect(optionId);
     } else if (onAnswer) {
@@ -114,6 +119,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   };
   
   const getProgressColor = () => {
+    if (!timeLeft || !question.timeLimit) return "bg-gray-300"; // Handle cases where timeLeft or timeLimit might be undefined
     const percentLeft = (timeLeft / question.timeLimit) * 100;
     if (percentLeft > 66) return "bg-green-500";
     if (percentLeft > 33) return "bg-yellow-500";
@@ -133,7 +139,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   return (
     <Card className={`quiz-card ${isHostView ? "host-view" : ""}`}>
       <CardContent className="pt-6 space-y-6">
-        {showTimer && (
+        {showTimer && timeLeft !== undefined && question.timeLimit !== undefined && (
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span>Time remaining</span>
@@ -175,6 +181,32 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     }
                   }}
                 />
+                {/* Answer Polling section */}
+                {isHostView && activeGame && question && (
+                  <div className="mt-4">
+                    <h4 className="text-lg font-semibold mb-2">Answer Polling</h4>
+                    {question.options.map((option, idx) => {
+                      const optionLabel = String.fromCharCode(65 + idx);
+                      const count = pollCounts[option.id] || 0;
+                      const percentage = totalAnswers > 0 ? (count / totalAnswers) * 100 : 0;
+                      return (
+                        <div key={option.id} className="flex items-center mb-2">
+                          <span className="w-8 font-medium">{optionLabel}:</span>
+                          <div className="flex-1 bg-gray-200 rounded-full h-4 dark:bg-gray-700">
+                            <div
+                              className="bg-blue-600 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none"
+                              style={{ width: `${percentage}%` }}
+                            >
+                              {percentage.toFixed(0)}%
+                            </div>
+                          </div>
+                          <span className="ml-2 text-sm">({count})</span>
+                        </div>
+                      );
+                    })}
+                    <p className="text-sm text-gray-500 mt-2">Total answers: {totalAnswers}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -193,6 +225,9 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                   ? option.imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_300,c_limit/')
                   : option.imageUrl;
               }
+
+              // Determine if the option should be disabled
+              const shouldDisable = disableOptions || (showCorrectAnswer && !isCorrect && selectedOption === option.id);
 
               return (
                 <div
@@ -262,6 +297,11 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 ))}
               </div>
               <div className="text-xs text-gray-300 mt-1">Total answers: {totalAnswers}</div>
+              
+              {/* AI Explanation Section */}
+              {!isHostView && showExplanation && aiExplanation && (
+                <div className="mt-4" dangerouslySetInnerHTML={{ __html: aiExplanation }} />
+              )}
             </div>
           )}
         </div>

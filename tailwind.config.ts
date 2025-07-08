@@ -91,6 +91,14 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
         },
+        'bounce-slow': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+        'fadeIn': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
         gradientMove: {
           "0%,100%": { backgroundPosition: "0 50%" },
           "25%": { backgroundPosition: "100% 50%" },
@@ -102,6 +110,8 @@ export default {
         'pulse-scale': 'pulse-scale 2s ease-in-out infinite',
         'glow-border': 'glow-border 2.8s linear infinite',
         'float': 'float 3s ease-in-out infinite',
+        'bounce-slow': 'bounce-slow 3s ease-in-out infinite',
+        'fadeIn': 'fadeIn 0.8s ease-in-out',
         "gradientMove": "gradientMove 12s ease-in-out infinite"
       }
     }

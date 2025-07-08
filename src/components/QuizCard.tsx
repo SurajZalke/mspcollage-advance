@@ -2,11 +2,12 @@ import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Quiz } from "@/types";
-import { Trash2, Play, Download } from "lucide-react";
+import { Trash2, Play, Download, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePDF } from 'react-to-pdf';
 import QuizPdfContent from './QuizPdfContent';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuizCardProps {
   quiz: Quiz;
@@ -35,6 +36,33 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
   const handleDownloadPdf = () => {
     // Trigger PDF generation from the hidden content
     toPDF();
+  };
+
+  const { toast } = useToast();
+
+  const handleShare = async () => {
+    const quizLink = `${window.location.origin}/play-quiz/${quiz.id}`;
+
+      if (navigator.share) {
+        await navigator.share({
+          title: quiz.title,
+          text: `Join my quiz: ${quiz.title}`,
+          url: quizLink,
+        });
+        toast({
+          title: "Quiz link shared!",
+          description: "The quiz link has been shared successfully.",
+        });
+      } else {
+        // Fallback for browsers that do not support Web Share API
+        // For example, open WhatsApp Web with a pre-filled message
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Join my Quiz: ' + quiz.title + ' ' + quizLink)}`;
+        window.open(whatsappUrl, '_blank');
+        toast({
+          title: "Opening WhatsApp...",
+          description: "Your browser does not support direct sharing. Opening WhatsApp to share the link.",
+        });
+      }
   };
 
   return (
@@ -86,6 +114,14 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz, onStart, onDelete }) => {
             >
               <Download className="h-4 w-4" />
               Download PDF
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={handleShare}
+            >
+              <Share2 className="h-4 w-4" />
+              Share Quiz
             </Button>
           </div>
           <div className="flex gap-2 flex-wrap justify-center sm:justify-end">

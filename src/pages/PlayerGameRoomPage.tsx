@@ -43,7 +43,7 @@ const useAudio = (url: string) => {
 
 
 const PlayerGameRoomPage: React.FC = () => {
-  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame, questionStartTime, questionEnded, deductPlayerScore, removePlayer } = useGame();
+  const { activeGame, currentPlayer, currentQuestion, submitAnswer, refreshGameState, joinGame, questionStartTime, questionEnded, deductPlayerScore, removePlayer, serverTimeOffset } = useGame();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
@@ -53,6 +53,32 @@ const PlayerGameRoomPage: React.FC = () => {
   const [confettiTriggered, setConfettiTriggered] = useState(false);
   const { audio: warningSound, loaded: isSoundLoaded } = useAudio('/sounds/warning.mp3');
   const [showScoreboard, setShowScoreboard] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (activeGame?.status === "active" && currentQuestion && questionStartTime) {
+      // Initialize timeLeft immediately when the component mounts or dependencies change
+      const now = Date.now() + serverTimeOffset;
+      const elapsed = Math.floor((now - questionStartTime) / 1000);
+      const remaining = currentQuestion.timeLimit - elapsed;
+      setTimeLeft(Math.max(0, remaining));
+      
+      // Then set up the interval to update it every second
+      timer = setInterval(() => {
+        const currentTime = Date.now() + serverTimeOffset;
+        const elapsedTime = Math.floor((currentTime - questionStartTime) / 1000);
+        const remainingTime = currentQuestion.timeLimit - elapsedTime;
+        setTimeLeft(Math.max(0, remainingTime));
+
+        if (remainingTime <= 0) {
+          clearInterval(timer);
+        }
+      }, 1000);
+    }
+
+    return () => clearInterval(timer);
+  }, [activeGame?.status, currentQuestion, questionStartTime, serverTimeOffset]);
 
   useEffect(() => {
     if (activeGame?.status === 'finished' && !confettiTriggered) {
@@ -66,8 +92,8 @@ const PlayerGameRoomPage: React.FC = () => {
       setConfettiTriggered(true);
     }
 
-    // Show scoreboard immediately when question ends
-    if (questionEnded) {
+    // Show scoreboard immediately when question ends, but not if the game is finished
+    if (questionEnded && activeGame?.status !== 'finished') {
       setShowScoreboard(true);
     }
   }, [activeGame?.status, confettiTriggered, questionEnded]);
@@ -83,12 +109,16 @@ const PlayerGameRoomPage: React.FC = () => {
       return;
     }
 
+    // If game is finished, go directly to leaderboard animation
+    if (activeGame?.status === 'finished') {
+      setShowScoreboard(false);
+      setShowLeaderboardAnimation(true);
+      return;
+    }
+
     if (showScoreboard) {
       timer = setTimeout(() => {
         setShowScoreboard(false);
-        if (activeGame?.status === 'finished') {
-          setShowLeaderboardAnimation(true);
-        }
       }, 10000);
     }
     return () => clearTimeout(timer);
@@ -262,6 +292,14 @@ const PlayerGameRoomPage: React.FC = () => {
     return answers.some(a => a.questionId === currentQuestion.id);
   };
   
+  // Get the player's selected answer for the current question
+  const getSelectedAnswer = () => {
+    if (!currentPlayer || !currentQuestion) return null;
+    const answers = Array.isArray(currentPlayer.answers) ? currentPlayer.answers : [];
+    const answer = answers.find(a => a.questionId === currentQuestion.id);
+    return answer ? answer.selectedOption : null;
+  };
+  
   // --- Emoji Chat State ---
   const [emojiMessage, setEmojiMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -398,7 +436,7 @@ const PlayerGameRoomPage: React.FC = () => {
               activeQuiz={activeGame.quiz}
               showScores={activeGame.showScores} // Changed from true to activeGame.showScores
               hasHostSubmitted={activeGame.hostSubmitted}
-            />
+          />
           ) : (
             <div className="text-center text-red-500 py-8 text-lg">
               Error: Player data or quiz data missing for leaderboard.
@@ -462,6 +500,8 @@ const PlayerGameRoomPage: React.FC = () => {
                       onAnswer={handleAnswerSubmit}
                       disableOptions={hasAnsweredCurrentQuestion() || questionEnded}
                       showCorrectAnswer={questionEnded}
+                      timeLeft={timeLeft}
+                      selectedAnswer={getSelectedAnswer()}
                     />
             )}
 
@@ -526,42 +566,7 @@ const PlayerGameRoomPage: React.FC = () => {
     );
   };
   
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const warningPlayedRef = useRef(false);
 
-  useEffect(() => {
-    if (!currentQuestion || !questionStartTime) {
-      setTimeLeft(null);
-      warningPlayedRef.current = false;
-      return;
-    }
-
-    const totalTime = currentQuestion.timeLimit || 30;
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - questionStartTime) / 1000);
-      const left = Math.max(totalTime - elapsed, 0);
-      setTimeLeft(left);
-
-      if (left === 10 && !warningPlayedRef.current) {
-        console.log("Playing warning sound at 10 seconds left");
-        if (isSoundLoaded) {
-          try {
-            warningSound.play();
-            warningPlayedRef.current = true;
-          } catch (error) {
-            console.error("Error playing warning sound:", error);
-          }
-        } else {
-          console.warn("Warning sound not loaded yet.");
-        }
-      }
-      if (left > 10) {
-        warningPlayedRef.current = false;
-      }
-    }, 300);
-
-    return () => clearInterval(interval);
-  }, [currentQuestion, questionStartTime]);
 
   useEffect(() => {
     const unlock = () => {

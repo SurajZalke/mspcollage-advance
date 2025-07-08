@@ -3,6 +3,7 @@ import { auth, db } from "@/lib/firebaseConfig";
 import { User, onAuthStateChanged, AuthError, Auth, updateProfile as updateProfileFirebase, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { ref, get, set, onValue, update, serverTimestamp } from "firebase/database";
 import { useToast } from "@/components/ui/use-toast";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 interface AuthContextType {
   currentUser: (User & { user_metadata?: {
@@ -22,8 +23,7 @@ interface AuthContextType {
   updateProfile: (data: { name?: string; avatar_url?: string; bio?: string }) => Promise<void>;
   // refreshSession: () => Promise<void>; // Firebase handles sessions differently
   resetPassword: (email: string) => Promise<void>;
-  // Placeholder for custom confirmPasswordReset. Full implementation requires a Cloud Function.
-  confirmPasswordReset: (code: string, newPassword: string) => Promise<void>;
+  confirmPasswordReset: (email: string, code: string, newPassword: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const functions = getFunctions();
 
   console.log('AuthProvider: Setting up onAuthStateChanged listener');
   useEffect(() => {
@@ -239,16 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Placeholder for custom confirmPasswordReset. Full implementation requires a Cloud Function.
-  const confirmPasswordReset = async (code: string, newPassword: string) => {
-    // In a real scenario, this would involve calling a Firebase Cloud Function
-    // that verifies the code and then uses Firebase Admin SDK to update the user's password.
-    // Firebase's client-side `confirmPasswordReset` expects an `oobCode` from a reset link,
-    // not a user-provided code. This is a simplified placeholder.
-    console.warn('Custom confirmPasswordReset called. This requires a Cloud Function for full implementation.');
-    // Simulate success for now
-    return Promise.resolve();
-  };
+
 
   const updateProfile = async (data: { name?: string; avatar_url?: string; bio?: string }): Promise<void> => {
     if (!currentUser) {
@@ -278,7 +270,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
       <AuthContext.Provider value={{
-        confirmPasswordReset,
+        confirmPasswordReset: async (email: string, code: string, newPassword: string): Promise<void> => {
+          try {
+            const confirmReset = httpsCallable(functions, 'confirmPasswordReset');
+            await confirmReset({ email, code, newPassword });
+            toast({ 
+              title: 'Password Reset',
+              description: 'Your password has been successfully reset!',
+            });
+          } catch (error: any) {
+            console.error('Error confirming password reset:', error.message);
+            toast({
+              title: 'Password Reset Failed',
+              description: error.message || 'Failed to reset password.',
+              variant: 'destructive',
+            });
+            throw error;
+          }
+        },
         currentUser,
         loading,
         login,
@@ -288,9 +297,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateProfile,
         resetPassword: async (email: string) => {
           try {
-            await sendPasswordResetEmail(auth, email);
+            const sendResetCode = httpsCallable(functions, 'sendPasswordResetCode');
+            await sendResetCode({ email });
+            toast({
+              title: 'Password Reset',
+              description: 'Password reset code sent! Please check your inbox.',
+            });
           } catch (error: any) {
-            console.error('Error sending password reset email:', error.message);
+            console.error('Error sending password reset code:', error.message);
+            toast({
+              title: 'Password Reset Failed',
+              description: error.message || 'Failed to send password reset code.',
+              variant: 'destructive',
+            });
             throw error;
           }
         },
