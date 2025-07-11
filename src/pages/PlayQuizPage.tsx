@@ -51,6 +51,7 @@ const PlayQuizPage: React.FC = () => {
 
         if (snapshot.exists()) {
           setQuiz({ id, ...snapshot.val() } as Quiz);
+          setAnswers(new Array(snapshot.val().questions.length).fill(''));
           setNotFound(false);
         } else {
           setNotFound(true);
@@ -152,7 +153,12 @@ const PlayQuizPage: React.FC = () => {
     setHasAnswered(true);
 
     setAnswers((prev) => {
-      const newAnswers = [...prev];
+      const newAnswers = Array(quiz!.questions.length).fill('');
+      prev.forEach((answer, index) => {
+        if (answer !== undefined && answer !== null) {
+          newAnswers[index] = answer;
+        }
+      });
       newAnswers[currentQuestionIndex] = optionId;
       return newAnswers;
     });
@@ -180,7 +186,8 @@ const PlayQuizPage: React.FC = () => {
     const updatePlayerScore = async () => {
       if (quizCompleted && playerId && id) {
         try {
-          const result = await saveSharedUrlGameHistory(id!, quiz!.title, quiz!.createdBy, nickname, selectedAvatar!, score, answers);
+          const filteredAnswers = answers.filter((answer): answer is string => answer !== undefined && answer !== null);
+          const result = await saveSharedUrlGameHistory(id!, quiz!.title, quiz!.createdBy, nickname, selectedAvatar!, score, filteredAnswers);
           toast({
             title: 'Quiz Completed',
             description: 'Your score has been saved!',
@@ -293,11 +300,11 @@ const PlayQuizPage: React.FC = () => {
           <CardHeader className="bg-gradient-to-r from-purple-700 to-indigo-700 text-white">
             <CardTitle className="text-center text-2xl font-bold tracking-tight">Quiz Completed! 🎉</CardTitle>
           {nickname && selectedAvatar && (
-            <div className="flex items-center justify-center mt-4">
-              <Avatar className="w-12 h-12 mr-3">
+            <div className="flex items-center justify-center mt-2">
+              <Avatar className="w-8 h-8 mr-2">
                 <img src={selectedAvatar} alt="Player Avatar" className="rounded-full" />
               </Avatar>
-              <p className="text-xl font-semibold text-white">{nickname}</p>
+              <p className="text-sm font-semibold text-white">{nickname}</p>
             </div>
           )}
           </CardHeader>
@@ -318,11 +325,8 @@ const PlayQuizPage: React.FC = () => {
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-blue-900 via-purple-800 to-indigo-900 p-4 transition-all duration-300 animate-fadeIn">
-      <div className="mb-6 flex flex-col items-center animate-bounce-slow">
-        <img src="/msplogo.jpg" alt="MSP Collage Logo" className="h-20 w-20 object-contain rounded-full shadow-lg border-2 border-white/50" />
-        <h2 className="font-bold text-xl mt-3 text-white drop-shadow-md tracking-wide">MSP Collage Manora</h2>
-      </div>
-      <Card className="w-full max-w-2xl rounded-xl shadow-2xl border border-purple-300/20 overflow-hidden transform transition-all hover:scale-[1.01] backdrop-blur-sm bg-white/90 dark:bg-gray-900/90">
+
+      <Card className="w-full max-w-2xl rounded-xl shadow-2xl border border-purple-300/20 overflow-hidden transform transition-all hover:scale-[1.01] backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 relative">
         <CardHeader className="bg-gradient-to-r from-purple-700 to-indigo-700 text-white">
           <CardTitle className="text-2xl font-bold tracking-tight">{quiz.title}</CardTitle>
           <p className="text-sm text-white/80 font-medium">Question {currentQuestionIndex + 1} of {quiz.questions.length}</p>
@@ -336,7 +340,7 @@ const PlayQuizPage: React.FC = () => {
             timeLeft={timeLeft}
             disableOptions={hasAnswered}
           />
-          <div className="mt-6 flex justify-start">
+          <div className="flex justify-start mt-4 w-full">
             <Button
               onClick={handleNextQuestion}
               disabled={!hasAnswered}

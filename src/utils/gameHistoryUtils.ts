@@ -1,6 +1,6 @@
-import { app } from '@/lib/firebaseConfig';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase, ref, get, update } from 'firebase/database';
+import { app } from '@/lib/firebaseConfig';
 
 function generateShortUuid(): string {
   return uuidv4().substring(0, 8);

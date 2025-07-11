@@ -154,7 +154,8 @@ const styles = StyleSheet.create({
 });
 
 // PDF Document component
-export const GameResultsDocument: React.FC<GameResultsPDFProps> = ({ players, quiz, totalQuestions }) => {
+export const GameResultsDocument: React.FC<GameResultsPDFProps> = ({ players, quiz, totalQuestions: propTotalQuestions }) => {
+  const totalQuestions = quiz?.questions?.length || propTotalQuestions || 0;
   // Sort players by score
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
@@ -197,16 +198,20 @@ export const GameResultsDocument: React.FC<GameResultsPDFProps> = ({ players, qu
 
           {/* Table Body */}
           {sortedPlayers.map((player, index) => {
-            const correctAnswers = player.answers?.filter(ans => ans.correct).length || 0;
-            const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+            const correctAnswersCount = player.answers?.filter(ans => ans.correct).length || 0;
+            const accuracy = totalQuestions > 0 ? ((correctAnswersCount / totalQuestions) * 100).toFixed(1) : '0.0';
+
+            // Highlight the top 3 players
+            const isTopPlayer = index < 3;
+            const rowStyle = isTopPlayer ? { ...styles.tableRow, backgroundColor: '#f5f5f5' } : styles.tableRow;  
 
             return (
-              <View key={player.player_id} style={styles.tableRow}>
+              <View style={rowStyle} key={player.id}>
                 <Text style={styles.rankCell}>{index + 1}</Text>
                 <Text style={styles.playerCell}>{player.nickname}</Text>
                 <Text style={styles.scoreCell}>{player.score}</Text>
-                <Text style={styles.accuracyCell}>{correctAnswers}/{totalQuestions}</Text>
-                <Text style={styles.accuracyCell}>{accuracy.toFixed(1)}%</Text>
+                <Text style={styles.accuracyCell}>{correctAnswersCount}/{totalQuestions}</Text>
+                <Text style={styles.accuracyCell}>{accuracy}%</Text>
               </View>
             );
           })}

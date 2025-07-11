@@ -153,7 +153,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         )}
         
         <div className="space-y-4">
-          <h3 className="text-3xl font-bold text-center whitespace-pre-line">{question.text}</h3>
+          <h3 className="text-2xl font-bold text-center whitespace-pre-line">{question.text}</h3>
           
           {question.imageUrl && (
             <div className="flex justify-center my-4">

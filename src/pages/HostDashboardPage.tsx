@@ -12,16 +12,29 @@ import { useGame } from "@/contexts/GameContext";
 import { Quiz, ScienceSubject } from "@/types";
 import { scienceSubjects, sampleQuizzes } from "@/utils/gameUtils";
 import { useToast } from "@/components/ui/use-toast";
+
 import { Filter, Search, BookOpen, Users, Play, Award, Plus, Home, LogOut, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BackgroundContainer from "@/components/BackgroundContainer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import CreateQuizForm from "@/components/CreateQuizForm";
 import ProfileSetup from "@/components/ProfileSetup";
-import { ref, get, remove, update } from "firebase/database";
-import { db } from "@/lib/firebaseConfig";
+import { ref as databaseRef, remove, update } from "firebase/database";
+// db is already imported below, removing duplicate import
+import { ref, get } from 'firebase/database';
+import { db } from '@/lib/firebaseConfig';
+
+async function getQuizById(quizId: string) {
+  const quizRef = ref(db, `quizzes/${quizId}`);
+  const snapshot = await get(quizRef);
+  if (snapshot.exists()) {
+    return snapshot.val();
+  }
+  return null;
+}
 import { Howl, Howler } from 'howler';
 import { GameResultsActions } from "@/components/GameResultsActions";
+import { SharedQuizResultsActions } from "@/components/SharedQuizResultsActions";
 
 interface GameHistory {
   id: string;
@@ -52,8 +65,10 @@ const HostDashboardPage: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [gameHistory, setGameHistory] = useState<GameHistory[]>([]);
   const [sharedQuizHistory, setSharedQuizHistory] = useState<Record<string, SharedGameHistoryEntry[]>>({});
+  const [viewingQuizId, setViewingQuizId] = useState<string | null>(null);
 
   interface SharedGameHistoryEntry {
+    quiz: Quiz;
     quizId: string;
     quizTitle: string;
     players: Record<string, any>;
@@ -142,6 +157,7 @@ const HostDashboardPage: React.FC = () => {
             const players = quizData.players || {};
 
             if (currentUser && createdBy === currentUser.uid && Object.keys(players).length > 0) {
+              const fullQuiz = await getQuizById(quizId); // Fetch the full quiz object
               if (!groupedHistory[quizId]) {
                 groupedHistory[quizId] = [];
               }
@@ -149,7 +165,8 @@ const HostDashboardPage: React.FC = () => {
                 quizId,
                 quizTitle,
                 players,
-                createdBy: createdBy
+                createdBy: createdBy,
+                quiz: fullQuiz // Assign the fetched full quiz object
               });
             }
           }
@@ -941,39 +958,63 @@ setQuizzes(sampleQuizzes.map(quiz => ({
                 <div className="space-y-6">
                   {Object.entries(sharedQuizHistory).map(([quizId, entries]) => (
                     <div key={quizId} className="border dark:border-gray-700 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-quiz-dark dark:text-white mb-2">Quiz: {entries[0].quizTitle}</h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                          <thead>
-                            <tr className="border-b dark:border-gray-700">
-                              <th className="p-2">Player Nickname</th>
-                              <th className="p-2">Score</th>
-                              <th className="p-2">Completed At</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.values(entries[0].players).map((player: any) => (
-                              <tr key={player.id} className="border-b dark:border-gray-700 last:border-b-0">
-                                <td className="p-2 flex items-center gap-2">
-                                  <Avatar className="w-6 h-6">
-                                    <AvatarImage src={player.avatar || ''} />
-                                    <AvatarFallback>{player.nickname?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
-                                  </Avatar>
-                                  {player.nickname}
-                                </td>
-                                <td className="p-2">{player.score}</td>
-                                <td className="p-2">
-                                  {player.completedAt && !isNaN(new Date(player.completedAt).getTime())
-                                    ? new Date(player.completedAt).toLocaleString()
-                                    : 'N/A'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-semibold text-quiz-dark dark:text-white">Quiz: {entries[0].quizTitle}</h3>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            onClick={() => setViewingQuizId(viewingQuizId === quizId ? null : quizId)}
+                            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-md shadow-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 ease-in-out"
+                          >
+                            {viewingQuizId === quizId ? "Hide Players" : "View Players"}
+                          </Button>
+                          <SharedQuizResultsActions
+                            players={Object.values(entries[0].players)}
+                            quiz={entries[0].quiz}
+                                      totalQuestions={entries[0].quiz?.questions?.length || 0}
+                          />
+                        </div>
                       </div>
+                      {viewingQuizId === quizId && (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm">
+                            <thead>
+                              <tr className="border-b dark:border-gray-700">
+                                <th className="p-2">Rank</th>
+                                <th className="p-2">Player Nickname</th>
+                                <th className="p-2">Score</th>
+                                <th className="p-2">Completed At</th>
+
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.values(entries[0].players)
+                                .sort((a: any, b: any) => b.score - a.score)
+                                .map((player: any, index: number) => (
+                                <tr key={player.id} className="border-b dark:border-gray-700 last:border-b-0">
+                                  <td className="p-2">{index + 1}</td>
+                                  <td className="p-2 flex items-center gap-2">
+                                    <Avatar className="w-6 h-6">
+                                      <AvatarImage src={player.avatar || ''} />
+                                      <AvatarFallback>{player.nickname?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                                    </Avatar>
+                                    {player.nickname}
+                                  </td>
+                                  <td className="p-2">{player.score}</td>
+                                  <td className="p-2">
+                                    {player.completedAt && !isNaN(new Date(player.completedAt).getTime())
+                                      ? new Date(player.completedAt).toLocaleString()
+                                      : 'N/A'}
+                                  </td>
+
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   ))}
+
                 </div>
               ) : (
                 <p className="text-gray-600 dark:text-gray-300">
