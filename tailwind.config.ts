@@ -75,7 +75,8 @@ export default {
       },
       boxShadow: {
         glass: "0 4px 32px 0 rgba(100,100,255,0.15), 0 2px 4px rgba(0,0,0,0.04)",
-        'glow-purple': "0 0 16px 2px #b09cff77, 0 2px 4px rgba(0,0,0,0.05)"
+        'glow-purple': "0 0 16px 2px #b09cff77, 0 2px 4px rgba(0,0,0,0.05)",
+        'text-shadow-lg': '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)'
       },
       keyframes: {
         'pulse-scale': {
@@ -104,7 +105,26 @@ export default {
           "25%": { backgroundPosition: "100% 50%" },
           "50%": { backgroundPosition: "50% 100%" },
           "75%": { backgroundPosition: "50% 0" }
-        }
+        },
+        blob: {
+          '0%': {
+            transform: 'translate(0px, 0px) scale(1)',
+          },
+          '33%': {
+            transform: 'translate(30px, -50px) scale(1.1)',
+          },
+          '66%': {
+            transform: 'translate(-20px, 20px) scale(0.9)',
+          },
+          '100%': {
+            transform: 'translate(0px, 0px) scale(1)',
+          },
+        },
+        'bounce-in': {
+          '0%': { transform: 'scale(0.8)', opacity: '0' },
+          '50%': { transform: 'scale(1.05)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
       },
       animation: {
         'pulse-scale': 'pulse-scale 2s ease-in-out infinite',
@@ -112,9 +132,66 @@ export default {
         'float': 'float 3s ease-in-out infinite',
         'bounce-slow': 'bounce-slow 3s ease-in-out infinite',
         'fadeIn': 'fadeIn 0.8s ease-in-out',
-        "gradientMove": "gradientMove 12s ease-in-out infinite"
+        "gradientMove": "gradientMove 12s ease-in-out infinite",
+        blob: 'blob 7s infinite cubic-bezier(0.6, 0.2, 0.4, 0.8)',
+        'bounce-in': 'bounce-in 0.5s ease-out forwards',
       }
     }
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), function ({ addUtilities }) {
+    const newUtilities = {
+      '.animation-delay-2000': {
+        'animation-delay': '2s',
+      },
+      '.animation-delay-4000': {
+        'animation-delay': '4s',
+      },
+      '.animation-delay-700': {
+        'animation-delay': '0.7s',
+      },
+      '.animation-delay-800': {
+        'animation-delay': '0.8s',
+      },
+      '.animation-delay-900': {
+        'animation-delay': '0.9s',
+      },
+      '.animation-delay-1000': {
+        'animation-delay': '1s',
+      },
+      '.animation-delay-1100': {
+        'animation-delay': '1.1s',
+      },
+      '.animation-delay-1200': {
+        'animation-delay': '1.2s',
+      },
+      '.animation-delay-1300': {
+        'animation-delay': '1.3s',
+      },
+      '.animation-delay-1400': {
+        'animation-delay': '1.4s',
+      },
+      '.animation-delay-1500': {
+        'animation-delay': '1.5s',
+      },
+      '.animation-delay-1600': {
+        'animation-delay': '1.6s',
+      },
+      '.animation-delay-1700': {
+        'animation-delay': '1.7s',
+      },
+      '.animation-delay-1800': {
+        'animation-delay': '1.8s',
+      },
+      '.animation-delay-1900': {
+        'animation-delay': '1.9s',
+      },
+      '.animation-delay-2000-duplicate': {
+        'animation-delay': '2s',
+      },
+      '.animation-delay-2100': {
+        'animation-delay': '2.1s',
+      },
+    };
+    addUtilities(newUtilities);
+  }],
 } satisfies Config;
