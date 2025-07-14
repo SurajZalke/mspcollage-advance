@@ -88,13 +88,19 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     if (showCorrectAnswer) {
       setIsAnswered(true);
       
-      // Check if we need to show AI explanation (when player's correct answer rate is below 60%)
-      if (currentPlayer?.answers && selectedOption) {
-        const correctAnswerRate = calculateCorrectAnswerRate(currentPlayer.answers);
-        
-        if ((isHostView || correctAnswerRate < 80) && !aiExplanation) {
-          // Generate AI explanation only if it hasn't been generated yet
-          generateAIExplanation(question, selectedOption)
+      // Determine if AI explanation should be shown
+      const shouldShowAIExplanation = (
+        isHostView || // Host always sees explanation
+        (currentPlayer?.answers && calculateCorrectAnswerRate(currentPlayer.answers) < 80) || // Player's rate is low
+        (timeLeft === 0 && totalAnswers === 0) // Time is up and no one answered
+      );
+
+      if (shouldShowAIExplanation && !aiExplanation) {
+        // If no one answered, use the correct option for explanation context
+        const optionForExplanation = selectedOption || question.correctOption;
+
+        if (optionForExplanation) {
+          generateAIExplanation(question, optionForExplanation)
             .then(explanation => {
               setAiExplanation(explanation);
               setShowExplanation(true);

@@ -29,6 +29,7 @@ const HostGameRoomPage: React.FC = () => {
   const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // New loading state
   const [showAIExplanation, setShowAIExplanation] = useState(false);
+  const [displayExplanationImmediately, setDisplayExplanationImmediately] = useState(false);
   const { toast } = useToast();
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [emojis, setEmojis] = useState<{ id: string; emoji: string; playerId: string; timestamp: number }[]>([]);
@@ -185,6 +186,7 @@ const HostGameRoomPage: React.FC = () => {
     const gameRef = ref(db, `games/${activeGame.id}`);
     await update(gameRef, { showScores: true });
     setShowAIExplanation(true);
+    setDisplayExplanationImmediately(true);
     
 
 
@@ -208,13 +210,19 @@ const HostGameRoomPage: React.FC = () => {
         setTimeLeft(Math.max(0, remaining));
 
         if (remaining <= 0) {
-          clearInterval(timer);
-        }
-      }, 1000);
+            clearInterval(timer);
+            // When time is up, set showScores to true
+            if (activeGame?.id) {
+              const gameRef = ref(db, `games/${activeGame.id}`);
+              update(gameRef, { showScores: true });
+            }
+            setDisplayExplanationImmediately(true);
+          }
+        }, 1000);
     }
 
     return () => clearInterval(timer);
-  }, [activeGame?.status, currentQuestion, questionStartTime, serverTimeOffset]);
+  }, [activeGame?.status, currentQuestion, questionStartTime, serverTimeOffset, activeGame?.id]);
 
   const handleRemovePlayer = async (playerId: string): Promise<void> => {
     console.log("Attempting to remove player with ID:", playerId);
@@ -305,6 +313,11 @@ const HostGameRoomPage: React.FC = () => {
       playedRef.current = false;
     }
   }, [timeLeft]);
+
+  // Reset displayExplanationImmediately when question changes
+  useEffect(() => {
+    setDisplayExplanationImmediately(false);
+  }, [currentQuestion?.id]);
 
 
 
@@ -406,7 +419,7 @@ const HostGameRoomPage: React.FC = () => {
                         isHostView={true}
                         onHostSelect={handleHostSelect}
                         disableOptions={activeGame.status !== 'active' || hasSubmittedAnswer || activeGame.showScores} // Disable options if correct answer is shown
-                        showCorrectAnswer={activeGame.showScores}
+                        showCorrectAnswer={activeGame.showScores || displayExplanationImmediately}
                         timeLeft={timeLeft}
                         showAIExplanation={showAIExplanation}
                       />
