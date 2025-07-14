@@ -15,8 +15,7 @@ import WaitingRoom from "@/components/WaitingRoom";
 const CreatorAttribution = React.lazy(() => import("@/components/CreatorAttribution"));
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import LeaderboardDisplay from "../components/LeaderboardDisplay";
-import ScoreboardPage from "@/pages/ScoreboardPage";
-// First install emoji-mart: npm install emoji-mart @emoji-mart/data @emoji-mart/react
+
 import Picker from "@emoji-mart/react";
 import { ref, push, onValue } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
@@ -52,7 +51,7 @@ const PlayerGameRoomPage: React.FC = () => {
   const [showLeaderboardAnimation, setShowLeaderboardAnimation] = useState(false);
   const [confettiTriggered, setConfettiTriggered] = useState(false);
   const { audio: warningSound, loaded: isSoundLoaded } = useAudio('/sounds/warning.mp3');
-  const [showScoreboard, setShowScoreboard] = useState(false);
+
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
@@ -92,37 +91,11 @@ const PlayerGameRoomPage: React.FC = () => {
       setConfettiTriggered(true);
     }
 
-    // Show scoreboard immediately when question ends, but not if the game is finished
-    if (questionEnded && activeGame?.status !== 'finished') {
-      setShowScoreboard(true);
-    }
+
   }, [activeGame?.status, confettiTriggered, questionEnded]);
 
   // Timer for scoreboard display and transition to leaderboard
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
 
-    // If host moves past scoreboard, hide it immediately for player
-    if (showScoreboard && activeGame && !activeGame.showScores) {
-      setShowScoreboard(false);
-      clearTimeout(timer); // Clear any pending timer
-      return;
-    }
-
-    // If game is finished, go directly to leaderboard animation
-    if (activeGame?.status === 'finished') {
-      setShowScoreboard(false);
-      setShowLeaderboardAnimation(true);
-      return;
-    }
-
-    if (showScoreboard) {
-      timer = setTimeout(() => {
-        setShowScoreboard(false);
-      }, 10000);
-    }
-    return () => clearTimeout(timer);
-  }, [showScoreboard, activeGame?.status, activeGame?.showScores]);
 
 
 
@@ -401,9 +374,6 @@ const PlayerGameRoomPage: React.FC = () => {
     console.log("PlayerGameRoomPage: activeGame.players:", activeGame.players);
     console.log("PlayerGameRoomPage: activeGame.quiz:", activeGame.quiz);
 
-    if (showScoreboard && activeGame?.players) {
-      return <ScoreboardPage players={activeGame.players} currentQuestion={currentQuestion} currentQuiz={activeGame.quiz} />;
-    }
 
     if (activeGame.status === "ended") {
 

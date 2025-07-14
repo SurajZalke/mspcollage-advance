@@ -22,6 +22,7 @@ interface QuestionDisplayProps {
   warningSoundVolume?: number;
   selectedAnswer?: string;
   timeLeft?: number; // Add timeLeft prop
+  showAIExplanation?: boolean; // Add showAIExplanation prop
 }
 
 const warningSound = new Howl({
@@ -88,11 +89,11 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       setIsAnswered(true);
       
       // Check if we need to show AI explanation (when player's correct answer rate is below 60%)
-      if (!isHostView && currentPlayer?.answers && selectedOption) {
+      if (currentPlayer?.answers && selectedOption) {
         const correctAnswerRate = calculateCorrectAnswerRate(currentPlayer.answers);
         
-        if (correctAnswerRate < 60) {
-          // Generate AI explanation
+        if ((isHostView || correctAnswerRate < 80) && !aiExplanation) {
+          // Generate AI explanation only if it hasn't been generated yet
           generateAIExplanation(question, selectedOption)
             .then(explanation => {
               setAiExplanation(explanation);
@@ -299,7 +300,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               <div className="text-xs text-gray-300 mt-1">Total answers: {totalAnswers}</div>
               
               {/* AI Explanation Section */}
-              {!isHostView && showExplanation && aiExplanation && (
+              {showExplanation && showExplanation && aiExplanation && (
+
                 <div className="mt-4" dangerouslySetInnerHTML={{ __html: aiExplanation }} />
               )}
             </div>

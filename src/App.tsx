@@ -22,8 +22,8 @@ import PlayerSetupPage from "./pages/PlayerSetupPage";
 import ProfileSetup from "./components/ProfileSetup";
 import { LeaderAnimationPage } from "./pages/LeaderAnimationPage";
 import CreateQuizForm from "@/components/CreateQuizForm";
-import ScoreboardPage from "./pages/ScoreboardPage";
 import PlayQuizPage from "./pages/PlayQuizPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 const TestAIExplanationPage = lazy(() => import("./pages/TestAIExplanationPage"));
 
 const queryClient = new QueryClient();
@@ -63,13 +63,17 @@ const App = () => {
                 <Route path="/player-setup" element={<PlayerSetupPage />} />
                 <Route path="/leader-animation" element={<LeaderAnimationPage />} />
                 <Route path="/mrdev-celebration" element={<LeaderAnimationPage />} />
-                <Route path="/scoreboard" element={<ProtectedRoute><ScoreboardPage players={[]} currentQuestion={undefined} currentQuiz={undefined} /></ProtectedRoute>} />
-
+                <Route path="/play-quiz" element={
+                  <ProtectedRoute>
+                    <PlayQuizPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/create-quiz" element={<CreateQuizForm onClose={function (): void {
                   throw new Error("Function not implemented.");
                 } } />} />
                 <Route path="/play-quiz/:id" element={<PlayQuizPage />} />
                 <Route path="/test-ai-explanation" element={<TestAIExplanationPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                 
                 {/* Catch-all route for 404 Not Found */}
                 <Route path="*" element={<NotFound />} />

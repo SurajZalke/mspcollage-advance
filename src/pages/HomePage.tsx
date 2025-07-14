@@ -143,7 +143,7 @@ const HomePage: React.FC = () => {
                   color: "blue",
                   teachers: [
                     { name: "Prof. Ram Chavhan", img: "math_teacher1.webp" },
-                    { name: "Prof. Ashitosh Thakare", img: "math_teacher2.webp" },
+                    { name: "Prof. Ashitosh Bhagat", img: "math_teacher2.webp" },
                   ],
                 },
                 {
@@ -151,7 +151,7 @@ const HomePage: React.FC = () => {
                   color: "green",
                   teachers: [
                     { name: "Prof. S. A. Kale", img: "science_teacher1.webp" },
-                    { name: "Prof. Thamevr", img: "science_teacher2.webp" },
+                    { name: "Prof. Thammevr", img: "science_teacher2.webp" },
                   ],
                 },
                 {
@@ -191,22 +191,7 @@ const HomePage: React.FC = () => {
                 />
               ))}
             </div>
-            <div className="flex flex-col items-center justify-center">
-            <h3 className="text-2xl font-bold text-center mb-4 animate-fade-in-up animation-delay-1800">Our Vision</h3>
-            <p className="text-lg text-center text-gray-400 mb-4 max-w-4xl mx-auto animate-fade-in-up animation-delay-1900">
-              "To be a leading centre of Excellence in higher education and research, committed to the development of
-              human personality and to promote the spirit of global citizenship."
-            </p>
-            </div>
-            <div className="flex flex-col items-center justify-center">
-            <h3 className="text-2xl font-bold text-center mb-4 animate-fade-in-up animation-delay-2000">Our Mission</h3>
-            <p className="text-lg text-center text-gray-400 mb-4 max-w-4xl mx-auto animate-fade-in-up animation-delay-2100">
-              "To create an environment of learning, research and innovation, where students can explore their full
-              potential and reach their full potential."
-            </p>
-            </div>
           </FadeInOnScroll>
-
           <CreatorAttribution />
       </BackgroundContainer>
     </>

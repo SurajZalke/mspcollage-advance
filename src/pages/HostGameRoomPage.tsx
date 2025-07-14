@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ref, update, onValue, off, get } from "firebase/database";
 import { db } from "@/lib/firebaseConfig";
-import ScoreboardPage from "@/pages/ScoreboardPage";
 
 const warningSound = new Audio('/sounds/warning.mp3');
 
@@ -29,26 +28,17 @@ const HostGameRoomPage: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connected");
   const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // New loading state
+  const [showAIExplanation, setShowAIExplanation] = useState(false);
   const { toast } = useToast();
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [emojis, setEmojis] = useState<{ id: string; emoji: string; playerId: string; timestamp: number }[]>([]);
   const [animatedEmojis, setAnimatedEmojis] = useState([]);
   const playedRef = useRef(false);
-  const [showScoreboard, setShowScoreboard] = useState(false);
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (showScoreboard) {
-      timer = setTimeout(() => {
-        setShowScoreboard(false);
-        // Check if it's the last question
-        if (activeGame && currentQuiz && activeGame.currentQuestionIndex === currentQuiz.questions.length - 1) {
-          endGame(); // End the game to trigger navigation to leaderboard
-        }
-      }, 10000); // 10 seconds
-    }
-    return () => clearTimeout(timer);
-  }, [showScoreboard, activeGame, currentQuiz, endGame]);
+
+
+
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -194,8 +184,10 @@ const HostGameRoomPage: React.FC = () => {
     // Update game ref to ensure showScores is true
     const gameRef = ref(db, `games/${activeGame.id}`);
     await update(gameRef, { showScores: true });
+    setShowAIExplanation(true);
     
-    setShowScoreboard(true); // Show scoreboard
+
+
     
     toast({
       title: "Answer Selected",
@@ -314,14 +306,7 @@ const HostGameRoomPage: React.FC = () => {
     }
   }, [timeLeft]);
 
-  useEffect(() => {
-    // Synchronize local showScoreboard state with activeGame.showScores
-    if (activeGame?.showScores) {
-      setShowScoreboard(true);
-    } else {
-      setShowScoreboard(false);
-    }
-  }, [activeGame?.showScores]);
+
 
   useEffect(() => {
     // No automatic transition to next question
@@ -380,27 +365,7 @@ const HostGameRoomPage: React.FC = () => {
         <main className="container mx-auto p-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-3 space-y-6">
-              {showScoreboard ? (
-                <><ScoreboardPage
-                  players={activeGame?.players || []}
-                  currentQuestion={currentQuestion}
-                  currentQuiz={currentQuiz} /><div className="flex justify-center space-x-4 mt-4">
-                    <Button
-                      onClick={() => {
-                        setShowScoreboard(false);
-                        if (activeGame && currentQuiz && activeGame.currentQuestionIndex === currentQuiz.questions.length - 1) {
-                          endGame();
-                        } else {
-                          nextQuestion();
-                        }
-                        setHasSubmittedAnswer(false);
-                      } }
-                      className="quiz-btn-primary"
-                    >
-                      {activeGame && currentQuiz && activeGame.currentQuestionIndex === currentQuiz.questions.length - 1 ? "End Game" : "Next Question"}
-                    </Button>
-                  </div></>
-              ) : activeGame?.status === "waiting" ? (
+              {activeGame?.status === "waiting" ? (
                 <WaitingRoom 
                   players={activeGame.players}
                   onStartGame={startGame}
@@ -443,6 +408,7 @@ const HostGameRoomPage: React.FC = () => {
                         disableOptions={activeGame.status !== 'active' || hasSubmittedAnswer || activeGame.showScores} // Disable options if correct answer is shown
                         showCorrectAnswer={activeGame.showScores}
                         timeLeft={timeLeft}
+                        showAIExplanation={showAIExplanation}
                       />
                     </div>
                   )}

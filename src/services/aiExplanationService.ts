@@ -1,4 +1,9 @@
-import { Question, PlayerAnswer } from '@/types';
+import { Question, PlayerAnswer } from '../types';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const GEMINI_API_KEY = "AIzaSyA-HGWK-h5vO2h9GgD9Wsun-guwtKNZnJ4"; // Replace with your actual Gemini API Key. Use environment variables in production.
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 /**
  * Calculate the correct answer rate for a player based on their answer history
@@ -20,68 +25,78 @@ export const calculateCorrectAnswerRate = (answers: PlayerAnswer[]): number => {
  */
 export const generateAIExplanation = async (question: Question, selectedOption: string): Promise<string> => {
   try {
-    // For now, we'll use a simple template-based approach
-    // In a production environment, you would integrate with an actual AI service like OpenAI
-    
     const correctOption = question.options.find(opt => opt.id === question.correctOption);
     const selectedOptionObj = question.options.find(opt => opt.id === selectedOption);
     
     if (!correctOption) return "Sorry, I couldn't generate an explanation for this question.";
+
+    // Construct a prompt for the AI service
+    const prompt = `Given the following quiz question and options, provide a concise and accurate explanation.
+
+    Question: ${question.text}
+    Correct Answer: ${correctOption.text} (${correctOption.id.toUpperCase()})
+    Selected Answer: ${selectedOptionObj?.text || selectedOption} (${selectedOption.toUpperCase()})
     
-    let explanation = `<div class="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg mt-4 border border-blue-200 dark:border-blue-800">
+    Provide a single, unified, and concise explanation. This explanation should:
+    1. Briefly state the core concept or principle related to the correct answer (1-2 sentences).
+    2. Explain why the selected answer is wrong (if applicable).
+    3. Explain why the correct answer is right.
+    
+    Do not provide multiple explanations, separate sections, or any introductory/concluding remarks. Focus solely on the points above.`;
+
+    let aiGeneratedExplanation = "";
+    const MAX_RETRIES = 2;
+    let retries = 0;
+    let success = false;
+
+    while (retries < MAX_RETRIES && !success) {
+      try {
+        console.log("AI Explanation Prompt:", prompt); // Log the prompt for debugging
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash"});
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        aiGeneratedExplanation = response.text();
+        success = true;
+      } catch (error: any) {
+        console.error(`Error calling AI service (attempt ${retries + 1}/${MAX_RETRIES}):`, error);
+        if (error.response && error.response.status === 429) { // Check for Too Many Requests status
+          const delay = Math.pow(2, retries) * 1000; // Exponential backoff
+          console.warn(`Rate limit exceeded. Retrying in ${delay / 1000} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          retries++;
+        } else {
+          let detailedErrorMessage = "Failed to get a detailed explanation from AI. Please try again later.";
+          if (error instanceof Error) {
+            detailedErrorMessage = `Failed to get a detailed explanation from AI: ${error.message}`;
+          } else {
+            detailedErrorMessage = `Failed to get a detailed explanation from AI: ${JSON.stringify(error)}`;
+          }
+          aiGeneratedExplanation = detailedErrorMessage;
+          break; // Exit loop for non-429 errors
+        }
+      }
+    }
+
+    if (!success) {
+      aiGeneratedExplanation = "Failed to get a detailed explanation from AI after multiple attempts due to quota limits. Please check your API plan.";
+    }
+
+    let explanationHtml = `<div class="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg mt-4 border border-blue-200 dark:border-blue-800">
       <h3 class="text-lg font-bold mb-2 text-blue-700 dark:text-blue-300">AI Explanation</h3>
       <p class="mb-3">Let me explain this question step by step:</p>
       <div class="space-y-2">
-    `;
-    
-    // Add question context
-    explanation += `<p><strong>Question:</strong> ${question.text}</p>`;
-    
-    // Add explanation based on question type (this would be more sophisticated with a real AI)
-    if (selectedOption !== question.correctOption) {
-      explanation += `
-        <p><strong>Your answer:</strong> ${selectedOptionObj?.text || selectedOption} (incorrect)</p>
+        <p><strong>Question:</strong> ${question.text}</p>
+        <p><strong>Your answer:</strong> ${selectedOptionObj?.text || selectedOption} ${selectedOption !== question.correctOption ? '(incorrect)' : '(correct)'}</p>
         <p><strong>Correct answer:</strong> ${correctOption.text}</p>
         <p class="mt-2"><strong>Explanation:</strong></p>
-        <p>The correct answer is ${correctOption.id.toUpperCase()} because ${generateSimpleExplanation(question)}</p>
-      `;
-    } else {
-      explanation += `
-        <p><strong>Your answer:</strong> ${selectedOptionObj?.text || selectedOption} (correct)</p>
-        <p class="mt-2"><strong>Explanation:</strong></p>
-        <p>You selected the correct answer! ${generateSimpleExplanation(question)}</p>
-      `;
-    }
-    
-    explanation += `
+        <p>${aiGeneratedExplanation.replace(/\n/g, '<br/>')}</p>
       </div>
       <p class="text-xs text-blue-500 dark:text-blue-400 mt-4">This explanation was generated by AI to help you understand the concept better.</p>
     </div>`;
-    
-    return explanation;
+
+    return explanationHtml;
   } catch (error) {
     console.error("Error generating AI explanation:", error);
     return "Sorry, I couldn't generate an explanation for this question.";
-  }
-};
-
-/**
- * Generate a simple explanation based on the question
- * This is a placeholder for a real AI-generated explanation
- */
-const generateSimpleExplanation = (question: Question): string => {
-  // In a real implementation, this would call an AI service
-  // For now, we'll return a generic explanation based on the question subject
-  
-  const questionLower = question.text.toLowerCase();
-  
-  if (questionLower.includes('math') || questionLower.includes('calculate') || questionLower.includes('equation')) {
-    return "this mathematical concept requires applying the correct formula and calculating the result accurately.";
-  } else if (questionLower.includes('science') || questionLower.includes('chemistry') || questionLower.includes('physics')) {
-    return "this scientific principle is based on established laws and experimental evidence in the field.";
-  } else if (questionLower.includes('history') || questionLower.includes('year') || questionLower.includes('century')) {
-    return "historical facts and chronology are important to understand the context and significance of events.";
-  } else {
-    return "understanding the key concepts and relationships in the question leads to the correct answer.";
   }
 };
