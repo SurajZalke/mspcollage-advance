@@ -30,7 +30,7 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({ onResetSuccess, e
 
     setLoading(true);
     try {
-      await confirmPasswordReset(code, newPassword);
+      await confirmPasswordReset(email, code, newPassword);
       toast({
         title: 'Success',
         description: 'Password reset successful!',
