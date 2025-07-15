@@ -7,6 +7,7 @@ import { useGame } from "@/contexts/GameContext";
 import { Howl } from 'howler';
 import { toast } from 'sonner';
 import { calculateCorrectAnswerRate, generateAIExplanation } from "@/services/aiExplanationService";
+import { useRef } from 'react'; // Import useRef
 
 interface QuestionDisplayProps {
   question: Question;
@@ -50,6 +51,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   const [warningSoundPlayed, setWarningSoundPlayed] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
+  const explanationFetchedRef = useRef<string | null>(null); // Add useRef
 
   // Polling logic: count answers for each option for this question
   let pollCounts: Record<string, number> = {};
@@ -82,6 +84,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     setWarningSoundPlayed(false);
     setShowExplanation(false); // Reset explanation state when question changes
     setAiExplanation(""); // Clear any previous explanation
+    explanationFetchedRef.current = null; // Reset the ref when question changes
   }, [question.id, question.timeLimit, selectedAnswer]);
 
   useEffect(() => {
@@ -96,11 +99,13 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         (timeLeft === 0 && totalAnswers === 0) // Time is up and no one answered
       );
 
-      if (shouldShowAIExplanation && !aiExplanation) {
-        // If no one answered, use the correct option for explanation context
+      if (shouldShowAIExplanation && explanationFetchedRef.current !== question.id) {
         const optionForExplanation = selectedOption || question.correctOption;
 
         if (optionForExplanation) {
+          // Mark as fetched immediately to prevent duplicate calls
+          explanationFetchedRef.current = question.id; 
+
           generateAIExplanation(question, optionForExplanation)
             .then(explanation => {
               setAiExplanation(explanation);
@@ -108,11 +113,13 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
             })
             .catch(error => {
               console.error("Error generating AI explanation:", error);
+              // If there's an error, clear the ref to allow a retry
+              explanationFetchedRef.current = null; 
             });
         }
       }
     }
-  }, [showCorrectAnswer, currentPlayer, question, selectedOption, isHostView]);
+  }, [showCorrectAnswer, currentPlayer, question, selectedOption, isHostView, timeLeft, totalAnswers]); // Add timeLeft and totalAnswers to dependencies
   
   const handleSelectOption = (optionId: string) => {
     if (isAnswered || disableOptions) return;

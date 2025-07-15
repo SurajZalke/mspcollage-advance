@@ -202,11 +202,11 @@ const HostGameRoomPage: React.FC = () => {
   useEffect(() => {
     if (hasSubmittedAnswer) {
       setDisableNextButton(true);
-      setNextButtonText("Wait for Concept apper...");
+      setNextButtonText("Wait for Concept...");
       const timer = setTimeout(() => {
         setDisableNextButton(false);
         setNextButtonText("Next Question..⏭️");
-      }, 7000); // Disable for 7 seconds
+      }, 6000); // Disable for 6 seconds
       return () => clearTimeout(timer);
     }
   }, [hasSubmittedAnswer]);
@@ -332,6 +332,7 @@ const HostGameRoomPage: React.FC = () => {
   // Reset displayExplanationImmediately when question changes
   useEffect(() => {
     setDisplayExplanationImmediately(false);
+    setHasSubmittedAnswer(false); // Reset when question changes
   }, [currentQuestion?.id]);
 
 
