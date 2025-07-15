@@ -24,12 +24,14 @@ const PlayQuizPage: React.FC = () => {
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string>('');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [playerReady, setPlayerReady] = useState<boolean>(false);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [disableNextButton, setDisableNextButton] = useState(false);
+  const [nextButtonText, setNextButtonText] = useState("Next Question");
   const { toast } = useToast();
 
   // Fetch quiz from Realtime Database
@@ -127,7 +129,7 @@ const PlayQuizPage: React.FC = () => {
   // Timer effect
   useEffect(() => {
     if (!quiz || !quiz.questions[currentQuestionIndex] || hasAnswered) {
-      setTimeLeft(0);
+      setTimeLeft(null);
       return;
     }
 
@@ -146,6 +148,18 @@ const PlayQuizPage: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [quiz, currentQuestionIndex, hasAnswered]);
+
+  useEffect(() => {
+    if (hasAnswered || timeLeft === 0) {
+      setDisableNextButton(true);
+      setNextButtonText("Wait for Concept apper...");
+      const timer = setTimeout(() => {
+        setDisableNextButton(false);
+        setNextButtonText("Next Question..⏭️");
+      }, 7000); // Disable for 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [hasAnswered, timeLeft]);
 
   // Handle answer selection
   function handleAnswerSelect(questionId: string, optionId: string) {
@@ -323,6 +337,8 @@ const PlayQuizPage: React.FC = () => {
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
+  console.log('PlayQuizPage Render - hasAnswered:', hasAnswered, 'timeLeft:', timeLeft);
+
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-blue-900 via-purple-800 to-indigo-900 p-4 transition-all duration-300 animate-fadeIn">
 
@@ -335,18 +351,18 @@ const PlayQuizPage: React.FC = () => {
           <QuestionDisplay
             question={currentQuestion}
             onAnswer={handleAnswerSelect}
-            showCorrectAnswer={hasAnswered}
+            showCorrectAnswer={hasAnswered || timeLeft === 0}
             selectedAnswer={selectedAnswer}
             timeLeft={timeLeft}
-            disableOptions={hasAnswered}
+            disableOptions={hasAnswered || timeLeft === 0}
           />
           <div className="flex justify-start mt-4 w-full">
             <Button
               onClick={handleNextQuestion}
-              disabled={!hasAnswered}
+              disabled={disableNextButton}
               className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium px-6 py-2 rounded-full transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
-              {currentQuestionIndex === quiz.questions.length - 1 ? '🏁 Finish Quiz' : '👉 Next Question'}
+              {nextButtonText}
             </Button>
           </div>
         </CardContent>
