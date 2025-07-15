@@ -96,11 +96,6 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         (timeLeft === 0 && totalAnswers === 0) // Time is up and no one answered
       );
 
-      console.log('QuestionDisplay useEffect - showCorrectAnswer:', showCorrectAnswer);
-      console.log('QuestionDisplay useEffect - selectedOption:', selectedOption);
-      console.log('QuestionDisplay useEffect - question.correctOption:', question.correctOption);
-      console.log('QuestionDisplay useEffect - shouldShowAIExplanation:', shouldShowAIExplanation);
-
       if (shouldShowAIExplanation && !aiExplanation) {
         // If no one answered, use the correct option for explanation context
         const optionForExplanation = selectedOption || question.correctOption;

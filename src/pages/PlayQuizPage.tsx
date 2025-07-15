@@ -373,6 +373,3 @@ const PlayQuizPage: React.FC = () => {
 
 
 export default PlayQuizPage;
-
-
-

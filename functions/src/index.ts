@@ -1,60 +1,97 @@
-import * as functions from "firebase-functions";
-import * as admin from "firebase-admin";
-import * as nodemailer from "nodemailer";
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import * as nodemailer from 'nodemailer';
 
 admin.initializeApp();
 
-export const sendPasswordResetCode = functions.https.onCall(async (data, context) => {
-  const { email } = data.data;
-  // Check if user exists
-  const userSnap = await admin.firestore().collection("users").where("email", "==", email).get();
-  if (userSnap.empty) {
-    throw new functions.https.HttpsError("not-found", "Email not found");
+export const sendPasswordResetCode = functions.https.onCall(async (data: any, context: any) => {
+  const email = data.email;
+
+  if (!email) {
+    throw new functions.https.HttpsError('invalid-argument', 'Email is required.');
   }
 
-  // Generate code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  try {
+    const actionCodeSettings = {
+      url: 'https://mspcollage.firebaseapp.com/login',
+      handleCodeInApp: true,
+    };
 
-  // Save code with expiry
-  await admin.firestore().collection("passwordResetCodes").doc(email).set({
-    code,
-    expiresAt: Date.now() + 10 * 60 * 1000,
-  });
+    const link = await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
 
-  // Send code via email (configure your transporter)
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: functions.config().smtp.user,
-      pass: functions.config().smtp.pass,
-    },
-  });
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: functions.config().gmail.email,
+        pass: functions.config().gmail.password,
+      },
+    });
 
-  await transporter.sendMail({
-    from: functions.config().smtp.user,
-    to: email,
-    subject: "Your Verification Code",
-    text: `Your verification code is: ${code}`,
-  });
+    const mailOptions = {
+      from: 'your-app-name@gmail.com',
+      to: email,
+      subject: 'Password Reset',
+      html: `<p>Click <a href="${link}">here</a> to reset your password.</p>`,
+    };
 
-  return { success: true };
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw new functions.https.HttpsError('internal', 'Unable to send password reset email.');
+  }
 });
+export const generateQuestions = functions.https.onCall(async (data: any, context: any) => {
+  // Ensure the user is authenticated
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+  }
 
-export const confirmPasswordReset = functions.https.onCall(async (data, context) => {
-  const { email, code, newPassword } = data.data; // <-- FIX: destructure from data.data
-  const doc = await admin.firestore().collection("passwordResetCodes").doc(email).get();
-  const dataDoc = doc.data();
-  if (!doc.exists || !dataDoc) throw new functions.https.HttpsError("not-found", "No code sent");
+  const { topic, numQuestions } = data;
 
-  if (dataDoc.code !== code) throw new functions.https.HttpsError("invalid-argument", "Invalid code");
-  if (Date.now() > dataDoc.expiresAt) throw new functions.https.HttpsError("deadline-exceeded", "Code expired");
+  // Validate input
+  if (!topic || typeof topic !== 'string' || numQuestions <= 0 || typeof numQuestions !== 'number') {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Invalid topic or number of questions provided.'
+    );
+  }
 
-  // Update password in Firebase Auth
-  const userRecord = await admin.auth().getUserByEmail(email);
-  await admin.auth().updateUser(userRecord.uid, { password: newPassword });
+  try {
+    // Call an external AI service (e.g., OpenAI API)
+    // Replace with your actual AI API call
+    const aiResponse = await fetch('https://api.openai.com/v1/engines/davinci-codex/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${functions.config().openai.key}`,
+      },
+      body: JSON.stringify({
+        prompt: `Generate ${numQuestions} multiple-choice questions about ${topic}. Each question should have 4 options (A, B, C, D) and indicate the correct answer. Format as JSON.`, 
+        max_tokens: 1000,
+        n: 1,
+        stop: null,
+        temperature: 0.7,
+      }),
+    });
 
-  // Delete the code
-  await admin.firestore().collection("passwordResetCodes").doc(email).delete();
+    if (!aiResponse.ok) {
+      const errorData = await aiResponse.json();
+      console.error('AI API Error:', errorData);
+      throw new functions.https.HttpsError('internal', 'Failed to get response from AI service.', errorData);
+    }
 
-  return { success: true };
+    const aiData = await aiResponse.json();
+    const questions = JSON.parse(aiData.choices[0].text);
+
+    // Basic validation of the AI-generated questions structure
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new functions.https.HttpsError('internal', 'AI service did not return questions in the expected format.');
+    }
+
+    return questions;
+  } catch (error) {
+    console.error('Error generating questions:', error);
+    throw new functions.https.HttpsError('internal', 'Unable to generate questions.', error);
+  }
 });

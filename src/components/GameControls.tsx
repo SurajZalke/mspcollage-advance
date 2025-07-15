@@ -10,6 +10,8 @@ interface GameControlsProps {
   showStart?: boolean;
   showNext?: boolean;
   disabled?: boolean;
+  disableNextButton?: boolean;
+  nextButtonText?: string;
 }
 
 const GameControls: React.FC<GameControlsProps> = ({
@@ -45,8 +47,9 @@ const GameControls: React.FC<GameControlsProps> = ({
           <Button 
             className="quiz-btn-primary animate-pulse-scale"
             onClick={onNextQuestion}
+            disabled={disabled}
           >
-            Next Question
+            {"Next Question"}
           </Button>
         </div>
       )}

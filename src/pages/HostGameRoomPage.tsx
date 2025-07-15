@@ -35,6 +35,8 @@ const HostGameRoomPage: React.FC = () => {
   const [emojis, setEmojis] = useState<{ id: string; emoji: string; playerId: string; timestamp: number }[]>([]);
   const [animatedEmojis, setAnimatedEmojis] = useState([]);
   const playedRef = useRef(false);
+  const [disableNextButton, setDisableNextButton] = useState(false);
+  const [nextButtonText, setNextButtonText] = useState("Next Question");
 
 
 
@@ -197,6 +199,18 @@ const HostGameRoomPage: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    if (hasSubmittedAnswer) {
+      setDisableNextButton(true);
+      setNextButtonText("Wait for Concept apper...");
+      const timer = setTimeout(() => {
+        setDisableNextButton(false);
+        setNextButtonText("Next Question..⏭️");
+      }, 7000); // Disable for 7 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [hasSubmittedAnswer]);
+
   // Add a state for timeLeft
   const [timeLeft, setTimeLeft] = useState(0);
 
@@ -210,15 +224,16 @@ const HostGameRoomPage: React.FC = () => {
         setTimeLeft(Math.max(0, remaining));
 
         if (remaining <= 0) {
-            clearInterval(timer);
-            // When time is up, set showScores to true
-            if (activeGame?.id) {
-              const gameRef = ref(db, `games/${activeGame.id}`);
-              update(gameRef, { showScores: true });
-            }
-            setDisplayExplanationImmediately(true);
+          clearInterval(timer);
+          // When time is up, set showScores to true
+          if (activeGame?.id) {
+            const gameRef = ref(db, `games/${activeGame.id}`);
+            update(gameRef, { showScores: true });
           }
-        }, 1000);
+          setDisplayExplanationImmediately(true);
+          setHasSubmittedAnswer(true); // <-- Fix: disables next button for 7s after time up
+        }
+      }, 1000);
     }
 
     return () => clearInterval(timer);
@@ -398,14 +413,16 @@ const HostGameRoomPage: React.FC = () => {
                     <h2 className="text-xl font-bold text-quiz-dark dark:text-white">
                       Question {activeGame.currentQuestionIndex + 1} of {currentQuiz?.questions.length}
                     </h2>
-                    <GameControls 
-                        onEndGame={endGame}
-                        onNextQuestion={() => {
-                          nextQuestion();
-                          setHasSubmittedAnswer(false);
-                        }}
-                        showNext={true} 
-                        onStartGame={startGame}
+                    <GameControls
+                      onEndGame={endGame}
+                      onNextQuestion={() => {
+                        nextQuestion();
+                        setHasSubmittedAnswer(false);
+                      }}
+                      showNext={true}
+                      onStartGame={startGame}
+                      disableNextButton={disableNextButton}
+                      nextButtonText={nextButtonText}
                     />
                   </div>
                   
@@ -418,7 +435,7 @@ const HostGameRoomPage: React.FC = () => {
                         }}
                         isHostView={true}
                         onHostSelect={handleHostSelect}
-                        disableOptions={activeGame.status !== 'active' || hasSubmittedAnswer || activeGame.showScores} // Disable options if correct answer is shown
+                        disableOptions={hasSubmittedAnswer || activeGame.status !== 'active'}
                         showCorrectAnswer={activeGame.showScores || displayExplanationImmediately}
                         timeLeft={timeLeft}
                         showAIExplanation={showAIExplanation}

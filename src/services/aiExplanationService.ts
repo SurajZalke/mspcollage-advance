@@ -1,21 +1,26 @@
-import { Question, PlayerAnswer } from '../types';
+import { PlayerAnswer, Question } from '@/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const GEMINI_API_KEY = "AIzaSyA-HGWK-h5vO2h9GgD9Wsun-guwtKNZnJ4"; // Replace with your actual Gemini API Key. Use environment variables in production.
+interface QuizOption {
+  id: string;
+  text: string;
+}
+
+interface QuizQuestion {
+  id: string;
+  text: string;
+  imageUrl?: string;
+  imageFile?: File | null;
+  publicId?: string; // Add publicId for Cloudinary
+  options: QuizOption[];
+  correctOption: string;
+  timeLimit: number;
+  Marks: number;
+}
+
+const GEMINI_API_KEY = "AIzaSyA-HGWK-h5vO2h9GgD9Wsun-guwtKNZnJ4"; // TODO: Replace with your actual Gemini API Key. Use environment variables in production.
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
-/**
- * Calculate the correct answer rate for a player based on their answer history
- * @param answers Array of player answers
- * @returns Percentage of correct answers (0-100)
- */
-export const calculateCorrectAnswerRate = (answers: PlayerAnswer[]): number => {
-  if (!answers || answers.length === 0) return 100; // Default to 100% if no answers yet
-  
-  const correctAnswers = answers.filter(answer => answer.correct).length;
-  return (correctAnswers / answers.length) * 100;
-};
 
 /**
  * Generate an AI explanation for a question
@@ -23,28 +28,11 @@ export const calculateCorrectAnswerRate = (answers: PlayerAnswer[]): number => {
  * @param selectedOption The option selected by the player
  * @returns A step-by-step explanation of the question
  */
-export const generateAIExplanation = async (question: Question, selectedOption: string): Promise<string> => {
+export const generateExplanation = async (topic: string, numQuestions: number): Promise<QuizQuestion[]> => {
   try {
-    const correctOption = question.options.find(opt => opt.id === question.correctOption);
-    const selectedOptionObj = question.options.find(opt => opt.id === selectedOption);
-    
-    if (!correctOption) return "Sorry, I couldn't generate an explanation for this question.";
+    const prompt = `Generate ${numQuestions} multiple-choice questions about ${topic}. Each question should have 4 options (A, B, C, D) and indicate the correct answer. The output should be a JSON array of objects, where each object has 'text', 'options' (an array of objects with 'id' and 'text'), and 'correctOption'.`;
 
-    // Construct a prompt for the AI service
-    const prompt = `Given the following quiz question and options, provide a concise and accurate explanation.
-
-    Question: ${question.text}
-    Correct Answer: ${correctOption.text} (${correctOption.id.toUpperCase()})
-    Selected Answer: ${selectedOptionObj?.text || selectedOption} (${selectedOption.toUpperCase()})
-    
-    Provide a single, unified, and concise explanation. This explanation should:
-    1. Briefly state the core concept or principle related to the correct answer (1-2 sentences).
-    2. Explain why the selected answer is wrong (if applicable).
-    3. Explain why the correct answer is right.
-    
-    Do not provide multiple explanations, separate sections, or any introductory/concluding remarks. Focus solely on the points above.`;
-
-    let aiGeneratedExplanation = "";
+    let aiGeneratedQuestions: QuizQuestion[] = [];
     const MAX_RETRIES = 2;
     let retries = 0;
     let success = false;
@@ -55,7 +43,26 @@ export const generateAIExplanation = async (question: Question, selectedOption: 
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash"});
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        aiGeneratedExplanation = response.text();
+        const rawResponse = response.text();
+        try {
+          // Attempt to extract JSON from the raw response, as the AI might include extra text
+          const jsonMatch = rawResponse.match(/```json\n([\s\S]*?)\n```/);
+          let jsonString = rawResponse;
+          if (jsonMatch && jsonMatch[1]) {
+            jsonString = jsonMatch[1];
+          } else {
+            // Fallback for cases where the AI doesn't wrap in ```json
+            const firstBracket = rawResponse.indexOf('[');
+            const lastBracket = rawResponse.lastIndexOf(']');
+            if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+              jsonString = rawResponse.substring(firstBracket, lastBracket + 1);
+            }
+          }
+          aiGeneratedQuestions = JSON.parse(jsonString);
+        } catch (parseError) {
+          console.error("Error parsing AI response:", parseError, "Raw response:", rawResponse);
+          throw new Error("Invalid JSON response from AI.");
+        }
         success = true;
       } catch (error: any) {
         console.error(`Error calling AI service (attempt ${retries + 1}/${MAX_RETRIES}):`, error);
@@ -71,32 +78,19 @@ export const generateAIExplanation = async (question: Question, selectedOption: 
           } else {
             detailedErrorMessage = `Failed to get a detailed explanation from AI: ${JSON.stringify(error)}`;
           }
-          aiGeneratedExplanation = detailedErrorMessage;
+          throw new Error(detailedErrorMessage);
           break; // Exit loop for non-429 errors
         }
       }
     }
 
     if (!success) {
-      aiGeneratedExplanation = "Failed to get a detailed explanation from AI after multiple attempts due to quota limits. Please check your API plan.";
+      throw new Error("Failed to generate questions from AI after multiple attempts due to quota limits. Please check your API plan.");
     }
 
-    let explanationHtml = `<div class="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg mt-4 border border-blue-200 dark:border-blue-800">
-      <h3 class="text-lg font-bold mb-2 text-blue-700 dark:text-blue-300">AI Explanation</h3>
-      <p class="mb-3">Let me explain this question step by step:</p>
-      <div class="space-y-2">
-        <p><strong>Question:</strong> ${question.text}</p>
-        <p><strong>Your answer:</strong> ${selectedOptionObj?.text || selectedOption} ${selectedOption !== question.correctOption ? '(incorrect)' : '(correct)'}</p>
-        <p><strong>Correct answer:</strong> ${correctOption.text}</p>
-        <p class="mt-2"><strong>Explanation:</strong></p>
-        <p>${aiGeneratedExplanation.replace(/\n/g, '<br/>')}</p>
-      </div>
-      <p class="text-xs text-blue-500 dark:text-blue-400 mt-4">This explanation was generated by AI to help you understand the concept better.</p>
-    </div>`;
-
-    return explanationHtml;
+    return aiGeneratedQuestions;
   } catch (error) {
     console.error("Error generating AI explanation:", error);
-    return "Sorry, I couldn't generate an explanation for this question.";
+    throw error;
   }
 };

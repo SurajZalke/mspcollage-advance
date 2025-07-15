@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ref as dbRef, push as dbPush, set as dbSet, get, child, update, remove as dbRemove } from "firebase/database";
+import { generateExplanation } from '../services/aiExplanationService';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -431,6 +432,10 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [showSymbolPicker, setShowSymbolPicker] = useState(false);
 
+  const [aiTopic, setAiTopic] = useState('');
+  const [numAiQuestions, setNumAiQuestions] = useState(1);
+  const [loadingAiQuestions, setLoadingAiQuestions] = useState(false);
+
   const location = useLocation();
   const quizId = location.state?.quizId;
   const isEdit = Boolean(quizId);
@@ -831,6 +836,50 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
+  const handleGenerateAiQuestions = async () => {
+    if (!aiTopic || numAiQuestions <= 0) {
+      toast({
+        title: "Input Error",
+        description: "Please provide a topic and a valid number of questions.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoadingAiQuestions(true);
+    try {
+      const generatedQuestions = await generateExplanation(aiTopic, numAiQuestions);
+      
+      const formattedQuestions: QuizQuestion[] = generatedQuestions.map((q: any) => ({
+        id: `q_${Date.now()}_${Math.random().toString(36).substring(7)}`, // Generate a unique ID
+        text: q.text,
+        options: q.options.map((opt: any) => ({ id: opt.id, text: opt.text })),
+        correctOption: q.correctOption,
+        timeLimit: 30, // Default value
+        Marks: 4, // Default value
+        imageUrl: undefined,
+        imageFile: undefined,
+        publicId: undefined,
+      }));
+
+      setQuestions(prevQuestions => [...prevQuestions, ...formattedQuestions]);
+      toast({
+        title: "Questions Generated",
+        description: `Successfully generated ${generatedQuestions.length} questions.`, 
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error generating AI questions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate questions from AI. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAiQuestions(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -1035,6 +1084,41 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               />
             )}
           </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium dark:text-white">Generate Questions with Jarvis AI❣️</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium dark:text-gray-200 mb-1">AI Topic</label>
+              <Input
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="e.g., 'Photosynthesis', 'Calculus'"
+                className="dark:bg-gray-700 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium dark:text-gray-200 mb-1">Number of AI Questions</label>
+              <Input
+                type="number"
+                value={numAiQuestions}
+                onChange={(e) => setNumAiQuestions(parseInt(e.target.value))}
+                min="1"
+                max="50"
+                placeholder="1-10"
+                className="dark:bg-gray-700 dark:border-gray-600"
+              />
+            </div>
+          </div>
+          <Button
+            type="button"
+            onClick={handleGenerateAiQuestions}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={loadingAiQuestions}
+          >
+            {loadingAiQuestions ? "Generating..." : "Generate AI Questions"}
+          </Button>
         </div>
 
         <Button
