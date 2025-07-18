@@ -960,18 +960,20 @@ setQuizzes(sampleQuizzes.map(quiz => ({
                     <div key={quizId} className="border dark:border-gray-700 rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="text-lg font-semibold text-quiz-dark dark:text-white">Quiz: {entries[0].quizTitle}</h3>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2" >
                           <Button
                             onClick={() => setViewingQuizId(viewingQuizId === quizId ? null : quizId)}
                             className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-md shadow-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 ease-in-out"
                           >
                             {viewingQuizId === quizId ? "Hide Players" : "View Players"}
                           </Button>
-                          <SharedQuizResultsActions
-                            players={Object.values(entries[0].players)}
-                            quiz={entries[0].quiz}
-                                      totalQuestions={entries[0].quiz?.questions?.length || 0}
-                          />
+                          <div className="w-full sm:w-auto">
+                            <SharedQuizResultsActions
+                              players={Object.values(entries[0].players)}
+                              quiz={entries[0].quiz}
+                              totalQuestions={entries[0].quiz?.questions?.length || 0}
+                            />
+                          </div>
                         </div>
                       </div>
                       {viewingQuizId === quizId && (
