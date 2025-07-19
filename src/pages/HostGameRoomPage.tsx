@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { Player } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGame } from "@/contexts/GameContext";
 import BackgroundContainer from "@/components/BackgroundContainer";
-import { lazy, Suspense } from "react";
 const CreatorAttribution = lazy(() => import("@/components/CreatorAttribution"));
 import { useToast } from "@/components/ui/use-toast";
 import GameHeader from "@/components/GameHeader";
 import GameControls from "@/components/GameControls";
 import PlayerStates from "@/components/PlayerStates";
 import WaitingRoom from "@/components/WaitingRoom";
-import QuestionDisplay from "@/components/QuestionDisplay";
+import { QuestionDisplay } from "@/components/QuestionDisplay";
 import GameCodeDisplay from "@/components/GameCodeDisplay";
 import TrophyAnimation from "@/components/TrophyAnimation";
 import { Button } from "@/components/ui/button";
@@ -172,6 +171,17 @@ const HostGameRoomPage: React.FC = () => {
     if (!cardRef.current) return;
     cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
   }, []);
+
+  const handleNextQuestion = async () => {
+    if (!activeGame || !currentQuiz) return;
+
+    // Reset states for the next question
+    setHasSubmittedAnswer(false);
+    setShowAIExplanation(false);
+    setDisplayExplanationImmediately(false);
+
+    await nextQuestion();
+  };
 
   const handleHostSelect = async (answerId: string) => {
     if (!currentQuestion || !activeGame) return;
@@ -436,7 +446,7 @@ const HostGameRoomPage: React.FC = () => {
                         }}
                         isHostView={true}
                         onHostSelect={handleHostSelect}
-                        disableOptions={hasSubmittedAnswer || activeGame.status !== 'active'}
+                        disableOptions={activeGame.status !== 'active'}
                         showCorrectAnswer={activeGame.showScores || displayExplanationImmediately}
                         timeLeft={timeLeft}
                         showAIExplanation={showAIExplanation}

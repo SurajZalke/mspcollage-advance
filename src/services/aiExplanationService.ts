@@ -19,6 +19,7 @@ export interface QuizQuestion {
   correctOption: string;
   timeLimit: number;
   Marks: number;
+  explanation?: string;
 }
 /* ------------------------------------------------------------------ */
 
@@ -36,52 +37,32 @@ const resetApiKeyIndex  = () => { currentApiKeyIndex = 0; };
 
 /* ───────────────────────── Generate MCQs ────────────────────────── */
 export const generateExplanation = async (
-  topic: string,
-  numQuestions: number
-): Promise<QuizQuestion[]> => {
-  const prompt = `Generate ${numQuestions} multiple‑choice questions about ${topic}.
-Each question must have 4 options (A, B, C, D) and indicate the correct answer.
-Return ONLY valid JSON:
-[
-  {
-    "id": "uuid",
-    "text": "Question text",
-    "options": [
-      { "id": "a", "text": "Option A" },
-      { "id": "b", "text": "Option B" },
-      { "id": "c", "text": "Option C" },
-      { "id": "d", "text": "Option D" }
-    ],
-    "correctOption": "a",
-    "timeLimit": 30,
-    "Marks": 4
-  }
-]`;
+questionText: string): Promise<string> => {
+  const prompt = `Generate a detailed explanation for the following question:
 
+"${questionText}"
+
+Return ONLY the explanation text, without any additional formatting or conversational elements.`
   const MAX_API_KEY_RETRIES = GEMINI_API_KEYS.length;
 
   for (let apiRetry = 0; apiRetry < MAX_API_KEY_RETRIES; apiRetry++) {
     try {
       const model   = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' });
       const result  = await model.generateContent(prompt);
-      const raw     = result.response.text();
-
-      const match   = raw.match(/```json\s*([\s\S]*?)```/i);
-      const jsonStr = match ? match[1] : raw;
-      const questions = JSON.parse(jsonStr) as QuizQuestion[];
+      const explanationText = result.response.text();
 
       resetApiKeyIndex();
-      return questions;                                    // ✅ success
+      return explanationText;                                    // ✅ success
     } catch (err: any) {
       if (err.response?.status === 429) {
         switchApiKey();
         console.warn(
-          `Question‑gen quota exceeded. Switched key. Retries left: ${MAX_API_KEY_RETRIES - 1 - apiRetry}`
+          `Explanation generation quota exceeded. Switched key. Retries left: ${MAX_API_KEY_RETRIES - 1 - apiRetry}`
         );
       } else {
         resetApiKeyIndex();
         throw new Error(
-          'Failed to generate questions from AI. ' +
+          'Failed to generate explanation from AI. ' +
           (err instanceof Error ? err.message : JSON.stringify(err))
         );
       }
@@ -89,7 +70,7 @@ Return ONLY valid JSON:
   }
 
   resetApiKeyIndex();
-  throw new Error('All API keys exhausted. Please try again later.');
+  throw new Error('All API keys exhausted for explanation generation. Please try again later.');
 };
 
 /* ───────────────────── Player Accuracy Helper ───────────────────── */

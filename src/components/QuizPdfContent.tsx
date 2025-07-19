@@ -1,5 +1,7 @@
 import React from 'react';
 import { Quiz, Question } from '@/types';
+import 'katex/dist/katex.min.css';
+import katex from 'katex';
 
 interface QuizPdfContentProps {
   quiz: Quiz;
@@ -16,6 +18,24 @@ const chunkRemainingQuestions = (questions: Question[]): Question[][] => {
     i += 7;
   }
   return chunks;
+};
+
+const renderMath = (text: string) => {
+  // Preprocess the text to convert common notations to LaTeX
+  let latexText = text;
+  // Convert x^y to x^{y}
+  latexText = latexText.replace(/(\w+)\^(\w+)/g, '$1^{$2}');
+  // Convert squ(x) to \sqrt{x}
+  latexText = latexText.replace(/squ\(([^)]*)\)/g, '\\sqrt{$1}');
+  // Convert division like a/b to \frac{a}{b}
+  latexText = latexText.replace(/(\w+)\/(\w+)/g, '\\frac{$1}{$2}');
+
+  try {
+    return katex.renderToString(latexText, { throwOnError: false });
+  } catch (e) {
+    console.error("KaTeX rendering error:", e);
+    return text; // Return original text if rendering fails
+  }
 };
 
 const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAvatarUrl }) => {
@@ -166,6 +186,12 @@ const QuizPdfContent: React.FC<QuizPdfContentProps> = ({ quiz, hostName, hostAva
               Correct Answer:{' '}
               {question.options.find((opt) => opt.id === question.correctOption)?.text || 'N/A'}
             </p>
+            {question.explanation && (
+              <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                <h3 style={{ fontSize: '14px', color: '#333', marginBottom: '5px' }}>Explanation:</h3>
+                <div dangerouslySetInnerHTML={{ __html: renderMath(question.explanation) }} />
+              </div>
+            )}
           </div>
         ))}
       </div>

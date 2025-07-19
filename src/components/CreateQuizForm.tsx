@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ref as dbRef, push as dbPush, set as dbSet, get, child, update, remove as dbRemove } from "firebase/database";
 import { generateExplanation } from '../services/aiExplanationService';
+import { Question } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -390,6 +391,7 @@ interface QuizOption {
 }
 
 interface QuizQuestion {
+  explanation?: string | null;
   id: string;
   text: string;
   imageUrl?: string;
@@ -421,7 +423,8 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     ],
     correctOption: "a",
     timeLimit: 30,
-    Marks: 4
+    Marks: 4,
+    explanation: null
   }]);
   const [hasNegativeMarking, setHasNegativeMarking] = useState(false);
   const [negativeMarkingValue, setNegativeMarkingValue] = useState(25);
@@ -623,7 +626,8 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       ],
       correctOption: "a",
       timeLimit: 30,
-      Marks: 4
+      Marks: 4,
+      explanation: null
     }]);
   };
 
@@ -848,9 +852,9 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     setLoadingAiQuestions(true);
     try {
-      const generatedQuestions = await generateExplanation(aiTopic, numAiQuestions);
+      const generatedQuestions = await generateExplanation(aiTopic);
       
-      const formattedQuestions: QuizQuestion[] = generatedQuestions.map((q: any) => ({
+      const formattedQuestions: QuizQuestion[] = (Array.isArray(generatedQuestions) ? generatedQuestions : []).map((q: any) => ({
         id: `q_${Date.now()}_${Math.random().toString(36).substring(7)}`, // Generate a unique ID
         text: q.text,
         options: q.options.map((opt: any) => ({ id: opt.id, text: opt.text })),
@@ -860,6 +864,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         imageUrl: undefined,
         imageFile: undefined,
         publicId: undefined,
+        explanation: q.explanation || null, // Ensure explanation is included
       }));
 
       setQuestions(prevQuestions => [...prevQuestions, ...formattedQuestions]);
@@ -904,7 +909,8 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       return;
     }
 
-    for (const question of questions) {
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
       if (!question.text) {
         toast({
           title: "Incomplete Question",
@@ -920,6 +926,23 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             title: "Incomplete Options",
             description: `Please fill all options for question "${question.text.substring(0, 20)}..."`,
             variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Generate explanation if not already present
+      if (!question.explanation) {
+        try {
+          const explanation = await generateExplanation(question.text); // Call with single argument
+          questions[i] = { ...question, explanation };
+        } catch (error) {
+          console.error(`Error generating explanation for question ${i + 1}:`, error);
+          toast({
+            title: "Explanation Generation Failed",
+            description: `Could not generate explanation for question ${i + 1}. Please try again.`, 
+            variant: "destructive",
           });
           setIsSubmitting(false);
           return;
@@ -949,6 +972,7 @@ const CreateQuizForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           correctOption: q.correctOption,
           timeLimit: q.timeLimit,
           Marks: q.Marks,
+          explanation: q.explanation || null, // Add explanation field
         })),
         createdBy: currentUser.uid,
         createdAt: new Date().toISOString(),

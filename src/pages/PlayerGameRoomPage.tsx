@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
 import Logo from "@/components/Logo";
 import { useIsMobile } from "@/hooks/use-mobile";
-import QuestionDisplay from "@/components/QuestionDisplay";
+import { QuestionDisplay } from "@/components/QuestionDisplay";
 import { Button } from "@/components/ui/button";
 import BackgroundContainer from "@/components/BackgroundContainer";
 import { AlertCircle, Award, Clock, Wifi, RefreshCw, CheckCircle, UserRound, LogIn, ArrowLeft } from "lucide-react";

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Question, PlayerAnswer } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import QuestionDisplay from '@/components/QuestionDisplay';
+import { QuestionDisplay } from '@/components/QuestionDisplay';
 import { calculateCorrectAnswerRate, generateAIExplanation } from '@/services/aiExplanationService';
 
 const TestAIExplanationPage: React.FC = () => {

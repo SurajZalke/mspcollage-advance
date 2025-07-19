@@ -61,6 +61,7 @@ export interface Question {
   timeLimit: number; // in seconds
   imageUrl?: string;
   imageFile?: File | null;
+  explanation?: string;
 }
 
 export interface QuestionOption {

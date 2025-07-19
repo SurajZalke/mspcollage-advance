@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getDatabase, ref, get, update } from 'firebase/database';
 import { Quiz } from '@/types';
-import QuestionDisplay from '@/components/QuestionDisplay';
+import { QuestionDisplay } from '@/components/QuestionDisplay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -52,8 +51,10 @@ const PlayQuizPage: React.FC = () => {
         const snapshot = await get(quizRef);
 
         if (snapshot.exists()) {
-          setQuiz({ id, ...snapshot.val() } as Quiz);
-          setAnswers(new Array(snapshot.val().questions.length).fill(''));
+          const fetchedQuiz = { id, ...snapshot.val() } as Quiz;
+          setQuiz(fetchedQuiz);
+          console.log('Fetched Quiz Data:', fetchedQuiz); // Log the fetched quiz data
+          setAnswers(new Array(fetchedQuiz.questions.length).fill(''));
           setNotFound(false);
         } else {
           setNotFound(true);
@@ -128,7 +129,7 @@ const PlayQuizPage: React.FC = () => {
 
   // Timer effect
   useEffect(() => {
-    if (!quiz || !quiz.questions[currentQuestionIndex] || hasAnswered) {
+    if (!playerReady || !quiz || !quiz.questions[currentQuestionIndex] || hasAnswered) {
       setTimeLeft(null);
       return;
     }
@@ -147,7 +148,7 @@ const PlayQuizPage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [quiz, currentQuestionIndex, hasAnswered]);
+  }, [quiz, currentQuestionIndex, hasAnswered, playerReady]);
 
   useEffect(() => {
     if (hasAnswered || timeLeft === 0) {
@@ -179,8 +180,19 @@ const PlayQuizPage: React.FC = () => {
 
     // Scoring: check if correct
     const currentQ = quiz?.questions[currentQuestionIndex];
-    if (currentQ && optionId === currentQ.correctOption) {
-      setScore((prev) => prev + (currentQ.Marks || 1));
+    if (currentQ) {
+      if (optionId === currentQ.correctOption) {
+        setScore((prev) => prev + (currentQ.Marks || 1));
+      } else if (quiz.hasNegativeMarking) {
+        // Calculate negative marks as a percentage of question marks
+        const negativeMarks = ((currentQ.Marks || 1) * (quiz.negativeMarkingValue / 100));
+        setScore((prev) => prev - negativeMarks);
+        toast({
+          title: "Negative Marking",
+          description: `-${negativeMarks} mark(s) for wrong answer.`,
+          variant: "destructive",
+        });
+      }
     }
   }
 
@@ -293,7 +305,10 @@ const PlayQuizPage: React.FC = () => {
             </div>
             <Button
               onClick={handlePlayerSetup}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium px-6 py-2 rounded-full transition-all transform hover:scale-105 shadow-md"
+              disabled={!nickname.trim() || !selectedAvatar}
+              className={`bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium px-6 py-2 rounded-full transition-all transform hover:scale-105 shadow-md ${
+                (!nickname.trim() || !selectedAvatar) ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               Start Quiz
             </Button>
@@ -324,7 +339,14 @@ const PlayQuizPage: React.FC = () => {
           </CardHeader>
           <CardContent className="text-center p-8">
             <div className="text-3xl font-bold mb-2 mt-4">Your Score</div>
-            <div className="text-5xl font-bold mb-6 text-purple-700">{score} <span className="text-2xl text-gray-500">/ {quiz.questions.reduce((sum, q) => sum + (q.Marks || 1), 0)}</span></div>
+            <div className="text-5xl font-bold mb-6 text-purple-700">
+              {score} <span className="text-2xl text-gray-500">/ {quiz.questions.reduce((sum, q) => sum + (q.Marks || 1), 0)}</span>
+            </div>
+            {quiz.hasNegativeMarking && (
+              <div className="mb-4 text-red-600 font-semibold">
+                Negative Marking: -{quiz.negativeMarkingValue} per wrong answer
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
               <Button onClick={() => window.location.reload()} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium px-6 py-2 rounded-full transition-all transform hover:scale-105 shadow-md">Play Again</Button>
               <Button onClick={() => window.location.href = "/"} className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-medium px-6 py-2 rounded-full transition-all transform hover:scale-105 shadow-md">Go Home</Button>

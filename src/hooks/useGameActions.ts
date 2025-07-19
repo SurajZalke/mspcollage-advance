@@ -23,6 +23,18 @@ export const useGameActions = (
          questionStartTime: Date.now() + serverTimeOffset, // Use calculated server time
        });
 
+       // Explicitly clear all players' answers when the game starts
+       const playersRef = ref(db, `games/${activeGame.id}/players`);
+       const playersSnapshot = await getDatabaseData(playersRef);
+       if (playersSnapshot.exists()) {
+         const playersData = playersSnapshot.val();
+         const updates: { [key: string]: any } = {};
+         for (const playerId in playersData) {
+           updates[`${playerId}/answers`] = [];
+         }
+         await update(playersRef, updates);
+       }
+
       // No direct state update here, GameContext's onSnapshot will handle it
     } catch (error: any) {
       console.error('Error starting game in Realtime Database:', error);
@@ -163,6 +175,11 @@ export const useGameActions = (
          showScores: false,
          hostSubmitted: false
        };
+
+       // Clear all players' answers for the new question
+       activeGame.players.forEach((player) => {
+         updates[`players/${player.player_id}/answers`] = [];
+       });
 
        // Reset all players' status to 'waiting'
        activeGame.players.forEach((player) => {
